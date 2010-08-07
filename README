@@ -1,0 +1,7 @@
+Add your package source files to this directory.  If your package is to have
+multiple files, make a subdirectory whose name is the same as the name of the
+package, and add
+
+	 AuxiliaryFiles => true
+
+as an argument to newPackage.
