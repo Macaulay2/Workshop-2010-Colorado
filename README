@@ -5,3 +5,13 @@ package, and add
 	 AuxiliaryFiles => true
 
 as an argument to newPackage.
+
+Your files here can be seen by the world, so don't put anything confidential
+here.
+
+Run this command
+
+    svn cat svn://svn.macaulay2.com/Macaulay2/trunk/M2/Macaulay2/packages/README
+
+to learn how licensing of your software will work, if you want it included with
+Macaulay2 in a binary distribution.
