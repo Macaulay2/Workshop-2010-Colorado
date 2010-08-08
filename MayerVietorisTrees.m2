@@ -14,7 +14,11 @@ newPackage(
         DebuggingMode => true
         )
 
-export {MVT}
+export {MVT,relevantNodes}
+
+--TO DO:
+-- v0: document methods
+-- v1: make things fast!
 
  ----------------------------
 -- Internal Support Methods --
