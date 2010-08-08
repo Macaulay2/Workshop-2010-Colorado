@@ -26,8 +26,15 @@ newPackage(
        -- author: Josephine Yu
        -- date: August 8, 2010
        apply(#L, i ->
-	    l := toSequence L#i;
-	    
+	    l := sort toList(L#i);
+	    sigma := l | sort(toList (set(0..n) - l) );
+	    apply(flatten entries vars ring P, p -> (
+		     varName := (baseName p)#0;
+		     newIndex := apply(toList (baseName p)#1, i -> sigma#i);
+		     sig = sign newIndex;
+		     sub(((basename p)#0)_toSequence(newIndex), ring P)
+		 ) 
+		 );
 	    )
        
        )
