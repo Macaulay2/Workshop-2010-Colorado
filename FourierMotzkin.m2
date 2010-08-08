@@ -623,4 +623,111 @@ path = prepend(homeDirectory | "Code/", path);
 installPackage "FourierMotzkin"
 check "FourierMotzkin"
 
+getFilename = () -> (
+     filename := temporaryFileName();
+     while fileExists(filename) or fileExists(filename|".ine") or fileExists(filename|".out") do filename = temporaryFileName();
+     filename)
+	 
+putMatrix = method()
+putMatrix (File, Matrix) := (F,A) ->(
+    
+	F << "polytope" << endl;
+	F << "H-representation" << endl;
+	F << "begin" << endl;
+	m := numColumns A;
+	n := numRows A;
+	A = matrix({toList(m:0)})||A;
+	F << m << " " << n+1 << " rational" << endl;
+	
+	L := entries transpose A;
+     for i from 0 to m-1 do (
+	  for j from 0 to n do (
+	       F << L#i#j << " ";
+	       );
+	  F << endl;
+	  );
+	
+	F << "end" << endl;
+	
+	
+)
+
+transpose {toList(4:0)}
+A = transpose matrix {
+{1,1,0,0},
+{-1,-1,0,0},
+{1,0,1,0},
+{1,0,0,1},
+{0,0,0,0},
+{0,0,0,0},
+{1,-1,0,0},
+{1,0,-1,0},
+{1,0,0,-1}}
+B := -A;
+lrs B
+loadPackage "FourierMotzkin"
+f = fourierMotzkin B
+sort f#0
+lrs B
+cdd B
+viewHelp FourierMotzkin
+
+C = transpose matrix {
+   { 1,-1, 0, 0 },
+{ 1, 0,-1 ,0 },
+{ 1, 0, 0,-1 },
+{ 0, 1, 0, 0 },
+{ 0, 0, 1, 0 },
+{ 0, 0, 0, 1 }}
+fourierMotzkin C
+cdd C
+lrs C
+
+
+
+getMatrix = method()
+getMatrix String := (filename) -> (
+     L := lines get (filename | ".out");
+     b := position(L,i->i==="begin"); 
+     e := position(L,i->i==="end");
+     << L << endl;
+     matrix transpose sort for i from b+2 to e-1 list(
+	  f := (replace(" ","",L#i))#0;
+	  if f==="0" then drop(apply(select(separate(" ",replace("  "," ",L#i)),l->l=!=""), j->value j),1)
+	  else continue
+	  ) 
+)
+	
+
+	 
+lrs = method()
+lrs Matrix := Matrix => A ->(
+     filename := getFilename();
+     << "using temporary file name " << filename << endl;
+     F := openOut(filename|".ine");
+     putMatrix(F,-A);
+     close F;
+     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".out" ;
+     run execstr;
+     getMatrix filename
+     )
+
+cdd = method()
+cdd Matrix := Matrix => A ->(
+     filename := getFilename();
+     << "using temporary file name " << filename << endl;
+     F := openOut(filename|".ine");
+     putMatrix(F,-A);
+     close F;
+     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".out" ;
+     run execstr;
+     getMatrix filename
+     )
+
+
+
+
+
+
+
 
