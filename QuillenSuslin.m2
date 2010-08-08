@@ -30,7 +30,7 @@ computeFreeBasis(Matrix) := Matrix => phi -> (
 	  Vi := submatrix(Ui,{0..nrowi'-1},{nrowi..nrowi'-1});
 	  Ci := fphi.dd_(p-i-1)*Vi;
 	  Ai = Ci;
-	  )
+	  );
      Ai)
 	 
      
