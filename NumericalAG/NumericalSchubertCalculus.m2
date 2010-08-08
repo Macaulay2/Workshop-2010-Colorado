@@ -24,9 +24,9 @@ export {
 -- Date:  October 29, 2009
 -----------------------
 
-needsPackage ("NumericalAlgebraicGeometry", FileName=>"../NumericalAlgebraicGeometry.m2", DebuggingMode=>true)
+needsPackage "NumericalAlgebraicGeometry"
 
-H := new MutableHashTable;
+H = new MutableHashTable;
 
 ---------------------------
 --  skewSchubertVariety  --
@@ -185,10 +185,7 @@ solveSimpleSchubert(Sequence,List,List,List) := (kn,l,m,G)->(
       -- of the Starting system S
       ------------------------
       assert all(start, s->norm sub(matrix{S},matrix{s}) < 1e-3);
-      H#(l,m) = track(S,T,start,gamma=>exp(2*pi*ii*random RR) 
-      --,Software=>Bertini
-      --,Software=>PHCpack
-      ) / first;
+      H#(l,m) = track(S,T,start,gamma=>exp(2*pi*ii*random RR)) / first;
       ---------------------
       ---- make sure that you got solutions of the Target System --
       ---------------------
@@ -307,8 +304,7 @@ doc ///
        d = k*(n-k)-sum(l)-sum(m);
        G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
        ---------------------------------
-       H = new MutableHashTable from {};
-       solveSimpleSchubert((k,n),l,m)
+       solveSimpleSchubert((k,n),l,m,G)
    SeeAlso
        createRandomFlagsForSimpleSchubert 
 			 skewSchubertVariety

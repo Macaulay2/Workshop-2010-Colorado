@@ -1,12 +1,14 @@
 restart
-needs "pieriHom.m2"
+debug needsPackage "NumericalSchubertCalculus" 
 
-M = skewSchubertVariety((3,7),{2,1,0},{1,1,0})
-launchSimpleSchubert((3,7),{2,1,0},{1,1,0})
-peek H	
-H#({2,1,0},{1,1,0})
+---- Simple Schubert Problem
+(k,n) = (3,7)
+l = {2,1,0}
+m = {1,1,0}
+----  Generate random flags G----
+d = k*(n-k)-sum(l)-sum(m);
+G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+---------------------------------
+S = solveSimpleSchubert((k,n),l,m,G);
 
-
-M = skewSchubertVariety((2,4),{1,0},{1,0})
-launchSimpleSchubert((2,4),{1,0},{1,0})
-H#({1,0},{1,0})
+     

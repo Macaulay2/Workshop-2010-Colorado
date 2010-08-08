@@ -1,4 +1,4 @@
-needsPackage ("NumericalAlgebraicGeometry", FileName=>"../../NumericalAlgebraicGeometry.m2", DebuggingMode=>true)
+needsPackage "NumericalAlgebraicGeometry"
 
 skewSchubertVariety = method(TypicalValue=>Matrix)
 skewSchubertVariety(Sequence,List,List) := (kn,l,m)->(
