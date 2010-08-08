@@ -118,7 +118,7 @@ digraph List := (g) -> (
      -- Output:  A hashtable with keys the names of the nodes 
      --          with values the children.
      h := new MutableHashTable;
-     apply(#g, i -> h#(g#i#0) = set g#i#1);
+     scan(#g, i -> h#(g#i#0) = set g#i#1);
      new Digraph from h)
      
 
