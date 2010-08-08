@@ -17,3 +17,34 @@ newPackage(
    
   -- Josephine's code:  Step 2 --
   
+  factorBrackets := (P, d, n, L) -> (
+       -- INPUT: P is a bracket polynomial in Grassmannian(d,n);
+       --     	 L is a list of atomic extensors of P; 
+       --        each element of L is a list of indices.
+       -- Output: (L', P') where L' is the list of step d+1 extensors of P, 
+       --         and P' is the result of factoring out elements of L' from P
+       -- author: Josephine Yu
+       -- date: August 8, 2010
+       apply(#L, i ->
+	    l := toSequence L#i;
+	    
+	    )
+       
+       )
+  
+  permuteAndStraighten := (P, d, n, sigma) -> (
+       -- INPUT: P is a bracket polynomial in Grassmannian(d,n)
+       --     	 sigma is a permutation of 0..n (encoded as a list)
+       -- OUTPUT: Result the straightening algorithm with permuted variables
+       -- author: Josephine Yu
+       -- date: August 8, 2010
+       
+       )
+  
+  sign := sigma ->(
+       -- Sign of a permutation
+       (-1)^(sum flatten table(#sigma, #sigma, (i,j) -> (
+		 if(i < j and sigma#i > sigma#j) then 1 else 0
+		 )
+	    ))
+       )
