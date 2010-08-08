@@ -26,7 +26,7 @@ computeFreeBasis(Matrix) := Matrix => phi -> (
 	  Ui := QSAlgorithm(Bi);
 	  nrowi := rank target Bi;
 	  nrowi' := rank target Ui;
-	  ncoli := ncoli'-nrowi;
+	  ncoli := nrowi'-nrowi;
 	  Vi := submatrix(Ui,{0..nrowi'-1},{nrowi..nrowi'-1});
 	  Ci := fphi.dd_(p-i-1)*Vi;
 	  Ai = Ci;
