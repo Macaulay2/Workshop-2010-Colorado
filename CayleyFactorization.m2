@@ -12,8 +12,49 @@ newPackage(
    
    
    -- Jessica's code:  Step 1 --
+   ----------------------------------------------------
    
+   listAtoms := (P, d, n) ->(
+	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, d, n
+	--OUTPUT: AtomicExt = list of equivalence classes of points.  Each equivalence class is an atomic extensor.
+	
+	--points = list of the n+1 points
+	points:= toList(0..n);
+	
+	--AtomicExt
+	AtomicExt := {};
+	
+	 
+	--while points is nonempty
+	
+	--call isAtom(points_0, points_1, P, d, n)
+	
+	)
    
+   isAtom := (a,b,P,d,n) ->(
+	--INPUT: a,b = distinct numbers between 1 and n,
+	--P = bracket polynomial of rank d+1 in n+1 points, d, n
+	--OUTPUT: 1 if a join b is an atomic extensor, 0 otherwise
+	
+	R := ring P;
+	
+	--list the subcripts of all of the variables in order
+	S:=apply(flatten entries vars R , p ->(baseName p)#1);
+	SLength:=#S;
+	for i from 0 to (SLength-1)(
+	     --replace S_i by 0_R if a and b are in
+	     if isSubset({a,b}, S_i)==true then S_i := 0_R
+	     else if isSubset({b}, S_i)==true then 
+	        R := replace(b,a,S_i);
+	      	sign(R)*p_(sort(R))
+	     
+	     --replace b by a in S_i and then replace S_i by p_(S_i)
+	     )
+	
+	
+	
+	
+	)
    
   -- Josephine's code:  Step 2 --
   
