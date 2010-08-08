@@ -9,3 +9,11 @@ newPackage(
     	Headline => "Cayley Factorization",
     	DebuggingMode => true
     	)
+   
+   
+   -- Jessica's code:  Step 1 --
+   
+   
+   
+  -- Josephine's code:  Step 2 --
+  
