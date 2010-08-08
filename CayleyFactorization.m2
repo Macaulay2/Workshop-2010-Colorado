@@ -43,8 +43,8 @@ newPackage(
   
   sign := sigma ->(
        -- Sign of a permutation
-       (-1)^(sum flatten table(#sigma, #sigma, (i,j) -> (
-		 if(i < j and sigma#i > sigma#j) then 1 else 0
+       product flatten table(#sigma, #sigma, (i,j) -> (
+		 if(i < j and sigma#i > sigma#j) then -1 else 1
 		 )
-	    ))
+	    )
        )
