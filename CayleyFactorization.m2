@@ -98,9 +98,45 @@ newPackage(
        )
       )
   
-  permutePoints = (R, d, n, sigma) -> (
-       -- INPUT: R is Grassmannian(*,n)
-       --     	 sigma is a list of length of n, containing elements from {0,..,*}, with repetition allowed
+<<<<<<< .mine
+   ------------------- Step 3 ------------------------------------------------ 
+
+ findPairFactor = (P, d, n, L) -> (
+      -- INPUT: P is a polynomial in Grassmannian(d,n);
+      --     	 L is a list of atomic extensors of P; 
+      -- OUTPUT: A pair (E,F) such that E ^ F is a primitive factor of P
+      -- Method: Step 3 in Algorithm 3.5.6 of Sturmfels' Algorithmic Inv. Theory
+      atomicExt := select(L, ll-> (#ll =!= d+1));
+      scan(legalPairs, a -> (
+		E := atomicExt#(a#0);
+		F := atomicExt#(a#1);
+		if(#E + #F > d+1) then (
+		     newOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F)); 
+		     PermP := sub(P, matrix{permutePoints(ring P, n, newOrder)});
+		     found := 1;
+		     scan(terms PermP, monomial -> (
+			  supp := (support(monomial))_{0,1};
+			  firstRow := set (baseName(supp#0))#1; --first row of tableau
+			  secondRow := set (baseName(supp#1))#1; -- second row of tableau
+			  if((not isSubset(E,firstRow)) or (isSubset(F, firstRow+secondRow))) then (
+     	       	    	      found = 0;
+			      break;
+			       )
+			  )
+		     );
+		     if(found == 1) then     
+		     	  break({E,F});
+		     )
+		)
+      )
+ )
+  
+   -------------------- Auxiliary functions ---------------------------------
+
+  
+  permutePoints = (R,d, n, sigma) -> (
+       -- INPUT: R is Grassmannian(d,n)
+       --     	 sigma is a list of length of n, containing elements from {0,..,d}, with repetition allowed
        -- OUTPUT: list of "permuted variable"s, can be used to make a ring map
        -- author: Josephine Yu
        -- date: August 8, 2010
@@ -161,7 +197,10 @@ n=5;
 d=2;
 L = {{0,1,2},{1,3},{3,4,5},{0,1,4,5},{1,3,5}};
 L = {{0,1,2},{1,3},{3,4,5},{0,1,4,5}};
+L = subsets(n+1,d-1)| subsets(n+1,d) | {{0,1,2},{3,4,5}}
 factorBrackets(P, d, n, L)
+E = {0,2}; F = {1,4};
+
 
 ------ Jessica's tests
 
