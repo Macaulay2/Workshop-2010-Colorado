@@ -98,21 +98,22 @@ getMatrixFromFile String := (filename) -> (
 
 getMatrix = method()
 getMatrix String := (filename) -> (
+     -- << get filename << endl;
      L := separateRegexp("linearity|begin|end", get filename);
      local m, M;
      if #L==3 then (
 	  L = L#1;
      	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
      	  m = value( M#1);
-     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ)),i-> i#0==0),l->drop(l,1)),0)
+     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ)),i-> i#0==0),l->primitive drop(l,1)),matrix {{0}})
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
      	  m = value( M#1);
      	  mat :=  pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ));
-	  linearity := sort transpose matrix apply(mat_lin, l-> drop(l,1));
+	  linearity := sort transpose matrix apply(mat_lin, l-> primitive drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
-	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->drop(l,1));
+	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->primitive drop(l,1));
 	  (rays, linearity)
 	  )
 )
@@ -130,6 +131,7 @@ lrs Matrix := Matrix => A ->(
      getMatrix (filename | ".ext")
      )
 lrs (Matrix,Matrix) := Matrix => (A,B) ->(
+     if B==0 then return cdd A else(
       filename := getFilename();
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
@@ -138,7 +140,7 @@ lrs (Matrix,Matrix) := Matrix => (A,B) ->(
      execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      getMatrix (filename | ".ext")
-     )
+     ))
 
 cdd = method()
 cdd Matrix := Matrix => A ->(
@@ -151,6 +153,18 @@ cdd Matrix := Matrix => A ->(
      run execstr;
      getMatrix (filename | ".ext")
      )
+cdd (Matrix, Matrix) := Matrix => (A,B) ->(
+     if B==0 then return cdd A else(
+       filename := getFilename();
+     << "using temporary file name " << filename << endl;
+     F := openOut(filename|".ine");
+     putMatrix(F,-A,B);
+     close F;
+     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     run execstr;
+     getMatrix (filename | ".ext")
+     ))
+     
 
 end
 
@@ -200,15 +214,23 @@ C = transpose matrix{{1,1,0}, {0,1,1}}
 H = transpose matrix{{1,0,-1}}
 C|H
 fourierMotzkin (C,H)
+cdd(C,H)
 
+C = transpose matrix{{1,0,3,1},{1,1,0,7},{1,2,1,1}}
+fourierMotzkin C
+D = transpose matrix apply(entries transpose C, l-> reverse l)
+G = cdd D
+lrs lrs lrs lrs C
+cdd cdd cdd cdd C
 
+C = transpose random(ZZ^5, ZZ^8, Density=>.5)
+fourierMotzkin C
+cdd C
+fourierMotzkin fourierMotzkin lrs C
 
+cdd(C,H)
 lrs(C,H)
 P = fourierMotzkin fourierMotzkin (C,H)
 assert(P#0 == transpose matrix{{0,1,1}})
 assert(P#1 == H)
-
-
-
-
-
+(matrix {{0}})==0
