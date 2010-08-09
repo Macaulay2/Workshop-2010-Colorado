@@ -656,7 +656,7 @@ doc ///
   	  {f, {}}, {g, {}}, {h, {}}})
       cH = children(D,e)
 ///
-
+end
 
 doc ///
   Key
