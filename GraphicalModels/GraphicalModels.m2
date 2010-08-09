@@ -92,7 +92,6 @@ needsPackage"Graphs"
 -- code. 
 -------------------------
 
-
 convertToIntegers := (G) -> (
      n := #G;
      h := new MutableHashTable;
