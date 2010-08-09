@@ -92,9 +92,46 @@ degreeZeroPart=(T,A)->(
 	       piT.dd#j=substitute(((T.dd_j)^co)_ro,A)));
      piT)
 
+degreeD = method()
+degreeD(ZZ,Module) := (d,F) -> (
+     -- assume, for now, that F is a free module
+     if not isFreeModule F then error "required a free module";
+     R := ring F;
+     R^(-select(degrees F, e -> e#0 == d))
+     )
+degreeD(ZZ,Matrix) := (d,m) -> (
+     tar := positions(degrees target m, e -> e#0 == d);
+     src := positions(degrees source m, e -> e#0 == d);
+     submatrix(m, tar, src)
+     )
+degreeD(ZZ,ChainComplex) := (d, F) -> (
+     -- takes the first degree d part of F
+     a := min F;
+     b := max F;
+     G := new ChainComplex;
+     G.ring = ring F;
+     for i from a to b do
+	  G#i = degreeD(d, F#i);
+     for i from a+1 to b do (
+	  G.dd#i = map(G#(i-1), G#i, degreeD(d, F.dd_i));
+	  );
+     G
+     )
+
+Rpistar0regular = method()
+Rpistar0regular Module := (M) -> (
+     -- assumption: M is 0-regular in a ring A[x0,x1,...]
+     --  in terms of x vars
+     phi := symmetricToExteriorOverA M;
+     E := ring phi;
+     FF := res image phi;
+     FF0 := degreeD(0, FF);
+     toA := map(coefficientRing E,E,DegreeMap=>i -> drop(i,1));
+     toA FF0
+     )
 end	      
 restart
-path = append(path, "/Users/david/src/Colorado-2010/PushForward")
+--path = append(path, "/Users/david/src/Colorado-2010/PushForward")
 load "computingRpi_star.m2"
 kk=ZZ/101
 A = kk[s,t]
@@ -104,12 +141,26 @@ degrees S
 degree s_S
 I=intersect(ideal(x_0), ideal (s*x_0-t*x_1, x_2)) -- ideal of a point moving across a line
 M = S^{{2,0}}**module I
+Rpistar0regular M
+
 phi=symmetricToExteriorOverA M
 E=ring phi
 FF=res image phi
 FF.dd
-betti (E^{{-3,0}}** FF[2])
+GG = (E^{{-3,0}}** FF[2])
+betti GG
 
+GG0 = degreeD(0, GG)
+isHomogeneous GG0
+GG0.dd
+
+toA = map(A,E,DegreeMap=>i -> drop(i,1))
+GGA = toA GG0
+isHomogeneous GGA
+HH GGA
+toA GG.dd_1
+
+betti GGA
 isHomogeneous M
 betti (F=res M)
 F.dd
