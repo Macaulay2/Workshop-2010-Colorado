@@ -19,23 +19,66 @@ runBenchmark Ideal := Ideal => I -> (
  R = ambient ring I;
  p := char R;
  assert( p == 2 );
+ FP := ideal apply( gens R, x -> x^2 + x);
 
- Rlex := ZZ/(char R)[gens R, MonomialOrder=>Lex];
- T := timing gens gb( sub( I, Rlex));
+ Rlex = ZZ/(char R)[gens R, MonomialOrder=>Lex];
+ T := timing gens gb( sub( I, Rlex) + sub( FP, Rlex) );
  tt := first T;
  G := last T;
- print ("Lex Order: " | toString tt | " seconds.");
+ print ("Lex Order of (I+FP): " | toString tt | " seconds.");
 
- RgRevLex := ZZ/(char R)[gens R, MonomialOrder=>GRevLex];
- T = timing gens gb( sub( I, RgRevLex));
+ RgRevLex = ZZ/(char R)[gens R, MonomialOrder=>GRevLex];
+ T = timing gens gb( sub( I, RgRevLex) + sub( FP, RgRevLex) );
+ tt = first T;
+ G = ideal last T;
+ print ("GRevLex Order of (I+FP): " | toString tt | " seconds.");
+
+ T = timing gens gb( sub( G, Rlex) + sub( FP, Rlex) );
+ tt = first T;
+ G = ideal last T;
+ print ("Lex order from GRevLex basis of (I+FP): " | toString tt | " seconds.\n");
+
+ QRlex = Rlex/ sub( FP, Rlex);
+ T = timing gens gb( sub( I, QRlex));
  tt = first T;
  G = last T;
+ print ("Quotient Ring Lex Order: " | toString tt | " seconds.");
 
- print ("GRevLex Order: " | toString tt | " seconds.");
- T = timing gens gb( sub( G, Rlex));
+ QRgRevLex = RgRevLex/ sub( FP, RgRevLex);
+ T = timing gens gb( sub( I, QRgRevLex));
  tt = first T;
  G = last T;
- print ("Lex order from GRevLex basis: " | toString tt | " seconds.")
+ print ("Quotient Ring GRevLex Order: " | toString tt | " seconds.");
+
+ T = timing gens gb( sub( G, QRlex));
+ tt = first T;
+ G = last T;
+ print ("Quotient Ring GRevLex Order: " | toString tt | " seconds.\n");
+ 
+ T = timing gens gb( sub( I, QRlex), Algorithm=>Sugarless);
+ tt = first T;
+ G = last T;
+ print ("Quotient Ring Lex Order, Sugarless: " | toString tt | " seconds.");
+
+ QRgRevLex = RgRevLex/ideal FP;
+ T = timing gens gb( sub( I, QRgRevLex), Algorithm=>Sugarless);
+ tt = first T;
+ G = last T;
+ print ("Quotient Ring GRevLex Order, Sugarless: " | toString tt | " seconds.");
+
+ T = timing gens gb( sub( G, QRlex), Algorithm=>Sugarless);
+ tt = first T;
+ G = last T;
+ print ("Quotient Ring GRevLex Order, Sugarless: " | toString tt | " seconds.\n");
+ 
+ T = timing gbBoolean I;
+ tt = first T;
+ G = last T;
+ print ("gbBoolean: " | toString tt | " seconds.");
+ 
+
+
+
 )
 
 end
@@ -46,20 +89,6 @@ I = ideal(x+y)
 runBenchmark I 
 
   
-
-
- n := numgens R;
-
-  -- work in R, first Lex, then gRevLev -> Lex
-  
- timing G = 
- QR = makeRing(n,p); -- quotient ring
-)
-
-
-
-
-
 beginDocumentation()
 
   doc ///
