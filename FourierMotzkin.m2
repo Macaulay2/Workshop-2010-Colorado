@@ -683,7 +683,7 @@ C_{1..((numColumns C) -1)}
 fourierMotzkin C
 cdd C
 lrs C
-
+lift(0,QQ)
 getMatrix2 = method()
 getMatrix2 String := (filename) -> (
      L := value \ replace("E","e",select("-?[0-9]+(E[-0-9]+)?", get filename));
