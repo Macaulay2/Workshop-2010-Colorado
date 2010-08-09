@@ -12,7 +12,8 @@ newPackage(
 export {   
    skewSchubertVariety,
    solveSimpleSchubert,
-   launchSimpleSchubert
+   launchSimpleSchubert,
+   createRandomFlagsForSimpleSchubert
    }
 
 -------------------------
@@ -26,7 +27,7 @@ export {
 
 needsPackage "NumericalAlgebraicGeometry"
 
-H = new MutableHashTable;
+H := new MutableHashTable;
 
 ---------------------------
 --  skewSchubertVariety  --
@@ -41,7 +42,7 @@ skewSchubertVariety(Sequence,List,List) := (kn,l,m)->(
 		 x:={};
      if #l < k then x = for i to k-#l-1 list 0;
      l = l | x; -- makes sure l have size k
-     if #m < k then x = for i to k-#l-1 list 0;
+     if #m < k then x = for i to k-#m-1 list 0;
      m = m | x; -- makes sure m have size k
      ---------------------------------------------------
      d := (k*(n-k)-sum(l)-sum(m));  
@@ -129,7 +130,7 @@ precookPieriHomotopy(Sequence,List,List) := (kn,l,m)->(
      P:=toList(set toList(0..n-1)-T);
      G:=mutableMatrix(S,n-k,n);
      apply(#P, j->G_(j,P#j)=1);
-     F=matrix E || sub(matrix G, ring E);
+     F:=matrix E || sub(matrix G, ring E);
      return F;
 )
 
@@ -141,9 +142,15 @@ precookPieriHomotopy(Sequence,List,List) := (kn,l,m)->(
 --------------------------
 createRandomFlagsForSimpleSchubert = method( )
 createRandomFlagsForSimpleSchubert(Sequence, List, List) := (kn,l,m)->(
-   (k,n) := kn;
+	 (k,n) := kn;
+   ----- make sure both partitions are of size k  ----
+	 x:={};
+   if #l < k then x = for i to k-#l-1 list 0;
+   l = l | x; -- makes sure l have size k
+   if #m < k then x = for i to k-#m-1 list 0;
+   m = m | x; -- makes sure m have size k
+   ---------------------------------------------------   
    d := k*(n-k)-sum(l)-sum(m);
-   H = new MutableHashTable from {};
    apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)))
    )
 
@@ -151,15 +158,26 @@ createRandomFlagsForSimpleSchubert(Sequence, List, List) := (kn,l,m)->(
 solveSimpleSchubert = method(TypicalValue=>List)
 solveSimpleSchubert(Sequence,List,List,List) := (kn,l,m,G)->(
    -- l and m are partitions of n
+   -- G is a flag
    (k,n) := kn;
+
+   ----- make sure both partitions are of size k  ----
+	 x:={};
+   if #l < k then x = for i to k-#l-1 list 0;
+   l = l | x; -- makes sure l have size k
+   if #m < k then x = for i to k-#m-1 list 0;
+   m = m | x; -- makes sure m have size k
+   ---------------------------------------------------
+
    d := k*(n-k)-sum(l)-sum(m);
    E := skewSchubertVariety(kn,l,m);
-   if H#?(l,m) then(
-   H # (l,m)
+	--- maybe change H#() by H#{}
+   if H#?(l,m,G) then(
+   H # (l,m,G)
    )
    else if d == 1 then (
       -- solve linear equation
-      H#(l,m) = solveEasy det (matrix E || sub(G#0, ring E), Strategy=>Cofactor)
+      H#(l,m,G) = solveEasy det (matrix E || sub(G#0, ring E), Strategy=>Cofactor)
    )
    else(
       -- generate the children problems
@@ -185,12 +203,12 @@ solveSimpleSchubert(Sequence,List,List,List) := (kn,l,m,G)->(
       -- of the Starting system S
       ------------------------
       assert all(start, s->norm sub(matrix{S},matrix{s}) < 1e-3);
-      H#(l,m) = track(S,T,start,gamma=>exp(2*pi*ii*random RR)) / first;
+      H#(l,m,G) = track(S,T,start,gamma=>exp(2*pi*ii*random RR)) / first;
       ---------------------
       ---- make sure that you got solutions of the Target System --
       ---------------------
-      assert all(H#(l,m), s->norm sub(matrix{T},matrix{s}) < 1e-3);
-      H#(l,m)
+      assert all(H#(l,m,G), s->norm sub(matrix{T},matrix{s}) < 1e-3);
+      H#(l,m,G)
    )
 )
 
