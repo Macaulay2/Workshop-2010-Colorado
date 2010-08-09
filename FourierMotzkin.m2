@@ -672,30 +672,37 @@ lrs B
 cdd B
 viewHelp FourierMotzkin
 
-C = transpose matrix {
-   { 1,-1, 0, 0 },
-{ 1, 0,-1 ,0 },
-{ 1, 0, 0,-1 },
-{ 0, 1, 0, 0 },
-{ 0, 0, 1, 0 },
-{ 0, 0, 0, 1 }}
+l = get "in7.ine"
+l = separateRegexp("begin|end",l)
+l = separateRegexp("begin",l)
+l =l#1
+l = separateRegexp("end",l)
+l = l#0
+C = getMatrix "in5.ine"
+C_{1..((numColumns C) -1)}
 fourierMotzkin C
 cdd C
 lrs C
 
+getMatrix2 = method()
+getMatrix2 String := (filename) -> (
+     L := value \ replace("E","e",select("-?[0-9]+(E[-0-9]+)?", get filename));
+     << L << endl;
+     m := L#1;
+     << m << endl;
+     matrix pack_m drop(L,3)	
+)
 
 
 getMatrix = method()
 getMatrix String := (filename) -> (
-     L := lines get (filename | ".out");
-     b := position(L,i->i==="begin"); 
-     e := position(L,i->i==="end");
-     << L << endl;
-     matrix transpose sort for i from b+2 to e-1 list(
-	  f := (replace(" ","",L#i))#0;
-	  if f==="0" then drop(apply(select(separate(" ",replace("  "," ",L#i)),l->l=!=""), j->value j),1)
-	  else continue
-	  ) 
+     L := (separateRegexp("begin|end", get filename))#1;
+     -- << L << endl;
+     M := select(separateRegexp("[[:space:]]", L), m->m=!="");
+     << M << endl;
+     m := value( M#1);
+     << apply(drop(M,3), k-> value replace("e-0+?","e",replace("E\\+?","e",k))) << endl;
+     transpose matrix pack_m apply(drop(M,3), m-> value replace("e,","",replace("e-0+?","e",replace("E\\+?","e",m))))
 )
 	
 
@@ -709,7 +716,7 @@ lrs Matrix := Matrix => A ->(
      close F;
      execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".out" ;
      run execstr;
-     getMatrix filename
+     getMatrix (filename | ".out")
      )
 
 cdd = method()
@@ -721,7 +728,7 @@ cdd Matrix := Matrix => A ->(
      close F;
      execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".out" ;
      run execstr;
-     getMatrix filename
+     getMatrix (filename | ".out")
      )
 
 
