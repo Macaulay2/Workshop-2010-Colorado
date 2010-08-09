@@ -679,11 +679,10 @@ l =l#1
 l = separateRegexp("end",l)
 l = l#0
 C = getMatrix "in5.ine"
-C_{1..((numColumns C) -1)}
 fourierMotzkin C
 cdd C
 lrs C
-lift(0,QQ)
+
 getMatrix2 = method()
 getMatrix2 String := (filename) -> (
      L := value \ replace("E","e",select("-?[0-9]+(E[-0-9]+)?", get filename));
@@ -701,8 +700,8 @@ getMatrix String := (filename) -> (
      M := select(separateRegexp("[[:space:]]", L), m->m=!="");
      << M << endl;
      m := value( M#1);
-     << apply(drop(M,3), k-> value replace("e-0+?","e",replace("E\\+?","e",k))) << endl;
-     transpose matrix pack_m apply(drop(M,3), m-> value replace("E\\+","e",m))
+     << apply(drop(M,3), k-> promote(value replace("E\\+?","e",k),RR)) << endl;
+     transpose matrix pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))
 )
 	
 
