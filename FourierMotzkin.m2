@@ -679,9 +679,24 @@ l =l#1
 l = separateRegexp("end",l)
 l = l#0
 C = getMatrix "in5.ine"
-fourierMotzkin C
 cdd C
 lrs C
+
+compare "in2.ine"
+compare "in3.ine"
+compare "in4.ine"
+compare "in5.ine"
+compare "in6.ine"
+compare "in7.ine"
+
+compare = method()
+compare String := filename ->(
+     D := getMatrix(filename);
+     A := cdd D;
+     B := lrs D;
+     << A << endl << B << endl;
+     A-B
+     )
 
 getMatrix2 = method()
 getMatrix2 String := (filename) -> (
@@ -698,7 +713,7 @@ getMatrix String := (filename) -> (
      L := (separateRegexp("begin|end", get filename))#1;
      M := select(separateRegexp("[[:space:]]", L), m->m=!="");
      m := value( M#1);
-     transpose matrix pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))
+     transpose matrix select((sort pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))),l-> l#0==0)
 )
 	
 
