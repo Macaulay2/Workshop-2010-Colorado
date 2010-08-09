@@ -72,7 +72,7 @@ newPackage(
 	    if(#(L#i) == d+1) then (
 	    l := sort toList(L#i);
 	    sigma := l | sort(toList (set(0..n) - l) ); -- reorder so that indices in l comes first in the straightening order
-	    permP := sub(P , matrix{permutePoints(ring P,n,sigma)}) -- apply permutation with signs
+	    permP := sub(P , matrix{permutePoints(ring P,n,sigma)}); -- apply permutation with signs
 	    if(permP % (ring P)_0 == 0) then (
 	    	 P = sub(permP/ring(P)_0, matrix{permutePoints(ring P,n, inversePermutation sigma)});
 	    	 )
@@ -126,7 +126,7 @@ newPackage(
 ---- Josephie's tests
  
 restart
-debug loadPackage "CayleyFactorization"
+debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M2codes/Colorado-2010/CayleyFactorization.m2")
 Grassmannian(2,5)
 use((ring oo) / oo)
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
