@@ -36,7 +36,7 @@ applyRowShortcut(Matrix) := g -> (
 	  W_(t,1) = h_0;
 	  if ( ss>1 or t>1 )
 	  then (
-	       r := first rsort {s,t};
+	       r := first rsort {ss,t};
 	       W_(1,1) = 0;
 	       W_(1,r) = 1;
 	       W_(r,r) = 0;
