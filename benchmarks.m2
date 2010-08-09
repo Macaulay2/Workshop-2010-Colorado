@@ -33,8 +33,8 @@ II6 = ideal(b*c*e*j+b*c*j*n+b*e*j*n+c*e+c*n+c,g*k+g,d*e*f*o+d*f*o*r+d*f*o+e*f*o+
 
 --idealList = {II0, II0+II00, II1, II2, II3, II4, II5, II6}
 --idealList = {II0, II0+II00, II2, II3, II4, II5, II6}
-idealList = {II3, II0+II00, II5, II6, II0, II4, II2}
---idealList = { II3, II4, II5, II6}
+--idealList = {II3, II0+II00, II5, II6, II0, II4, II2}
+idealList = {II3, II0+II00, II5, II6, II0, II4}
 ff := "outputtmp.txt";
 counter := 0;
 scan( idealList, i -> (
