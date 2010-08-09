@@ -14,6 +14,7 @@ newPackage(
      DebuggingMode => true
      )
 
+-- 9aug2010: updates, changes, bugs, typos, organization, documentation -- the algstats grp at colorado!
 ---- 28.10.09 ---- 
 ---- Version by the Working group at Aim  and MSRI
 ---- Amelia Taylor and Augustine O'Keefe
@@ -103,98 +104,6 @@ convertToIntegers := (G) -> (
      new Digraph from h
      )
 
------------------------------------------------------------
--- Statement calculus ----  Local and Global Statements ---
------------------------------------------------------------
--- A dependency is a list {A,B,C}x
---  where A,B,C are (disjoint) subsets of positive integers.
---  The meaning is: A is independent of B given C.
--- A dependency list is a list of dependencies
-
--- No serious attempt is made to remove redundant dependencies.
--- However, we have several very simple routines to remove
--- the most obvious redundant elements
--- If S and T represent exactly the same dependency, return true.
-
-
----- M2 does seem to remove dependencies reasonably well in removeRedundants, but 
----- it is definitely not finding all, only "obvious" ones in that function --- below 
----- the comment suggests "more serious removal of redundancies."
- 
----- This is the section where the local and global statements are done. 
-
-equivStmts = (S,T) -> S#2 === T#2 and set{S#0,S#1} === set{T#0,T#1}
-
--- More serious removal of redundancies.  This was taken from MES's indeps.m2
-setit = (d) -> {set{d#0,d#1},d#2}
-
-under = (d) -> (
-     d01 := toList d_0;
-     d0 := toList d01_0;
-     d1 := toList d01_1;
-     d2 := toList d_1;
-     e0 := subsets d0;
-     e1 := subsets d1;
-     z1 := flatten apply(e0, x -> apply(e1, y -> (
-		    {set{d01_0 - set x, d01_1 - set y}, set x + set y + d_1})));
-     z2 := flatten apply(e0, x -> apply(e1, y -> (
-		    {set{d01_0 - set x, d01_1 - set y}, d_1})));
-     z = join(z1,z2);
-     z = select(z, z0 -> not member(set{}, z0_0));
-     set z
-     )
-
--- input: ds
--- first make list where each element is {-a*b, set{A,B}, set C}
--- sort the list
--- remove the first element
-sortdeps = Ds -> (
-     i := 0;
-     ds := apply(Ds, d -> (x := toList d#0; i=i+1; { - #x#0 * #x#1, i, d#0, d#1}));
-     ds = sort ds;
-     apply(ds, d -> {d#2, d#3})
-     )
-
-normalizeStmt = (D) -> (
-     -- D has the form: {set{set{A},set{B}},set{C}}
-     -- output is {A,B,C}, where A,B,C are sorted in increasing order
-     --  and A#0 < B#0
-     D0 := sort apply(toList(D#0), x -> sort toList x);
-     D1 := toList(D#1);
-     {D0#0, D0#1, D1}
-     )
-minimize = (Ds) -> (
-     -- each element of Ds should be a list {A,B,C}
-     answer := {};
-     -- step 1: first make the first two elements of each set a set
-     Ds = Ds/setit;
-     while #Ds > 0 do (
-	  Ds = sortdeps Ds;
-	  f := Ds_0;
-	  funder := under f;
-	  answer = append(answer, f);
-	  Ds = set Ds - funder;
-	  Ds = toList Ds;
-	  );
-     apply(answer, normalizeStmt))
-
-removeRedundants = (Ds) -> (
-     -- Ds is a list of triples of sets {A,B,C}
-     -- test1: returns true if D1 can be removed
-     -- Return a sublist of Ds which removes any 
-     --  that test1 declares not necessary.
-     test1 := (D1,D2) -> (D1_2 === D2_2 and 
-                          ((isSubset(D1_0, D2_0) and isSubset(D1_1, D2_1))
-	               or (isSubset(D1_1, D2_0) and isSubset(D1_0, D2_1))));
-     -- first remove non-unique elements, if any
-     Ds = apply(Ds, d -> {set{d#0,d#1}, d#2});
-     Ds = unique Ds;
-     Ds = apply(Ds, d -> append(toList(d#0), d#1));
-     c := toList select(0..#Ds-1, i -> (
-	       a := Ds_i;
-	       D0 := drop(Ds,{i,i});
-	       all(D0, b -> not test1(a,b))));
-     minimize(Ds_c))
 
 --------------------------
 -- Bayes ball algorithm --
@@ -335,6 +244,100 @@ globalMarkovStmts Digraph := (G) -> (
      )
 --- The function above gives output as they describe it,  the first
 --- set is independent of the second set, given the third set.  
+
+
+------------------------------------------------------------------
+-- Removing redundant statements:
+------------------------------------------------------------------
+
+-- A dependency is a list {A,B,C}
+--  where A,B,C are (disjoint) subsets of labels for nodes in the graph.
+--  The meaning is: A is independent of B given C.
+-- A dependency list is a list of dependencies.
+
+-- No serious attempt is made to remove redundant dependencies.
+-- However, we have several very simple routines to remove
+-- the most obvious redundant elements
+-- If S and T represent exactly the same dependency, return true.
+ 
+-- check for symmetry:
+equivStmts = (S,T) -> S#2 === T#2 and set{S#0,S#1} === set{T#0,T#1} 
+
+-- More serious removal of redundancies.  This was taken from MES's indeps.m2:
+setit = (d) -> {set{d#0,d#1},d#2}
+
+under = (d) -> (
+           d01 := toList d_0;
+           d0 := toList d01_0;
+           d1 := toList d01_1;
+           d2 := toList d_1;
+           e0 := subsets d0;
+           e1 := subsets d1;
+           z1 := flatten apply(e0, x -> apply(e1, y -> (
+      		    {set{d01_0 - set x, d01_1 - set y}, set x + set y + set d_1})));--added "set" to d_1 [9aug2010]
+           z2 := flatten apply(e0, x -> apply(e1, y -> (
+      		    {set{d01_0 - set x, d01_1 - set y}, set d_1})));--added "set" to d_1 [9aug2010]
+           z = join(z1,z2);
+           z = select(z, z0 -> not member(set{}, z0_0));
+           set z
+           )
+
+sortdeps = Ds -> (
+     -- input: ds
+     -- first make list where each element is {-a*b, set{A,B}, set C}
+     -- sort the list
+     -- remove the first element
+     i := 0;
+     ds := apply(Ds, d -> (x := toList d#0; i=i+1; { - #x#0 * #x#1, i, d#0, d#1}));
+     ds = sort ds;
+     apply(ds, d -> {d#2, d#3})
+     )
+
+normalizeStmt = (D) -> (
+     -- D has the form: {set{set{A},set{B}},set{C}}
+     -- output is {A,B,C}, where A,B,C are sorted in increasing order
+     --  and A#0 < B#0
+     D0 := sort apply(toList(D#0), x -> sort toList x);
+     D1 := toList(D#1);
+     {D0#0, D0#1, D1}
+     )
+minimize = (Ds) -> (
+     -- each element of Ds should be a list {A,B,C}
+     answer := {};
+     -- step 1: first make the first two elements of each set a set
+     Ds = Ds/setit;
+     while #Ds > 0 do (
+	  Ds = sortdeps Ds;
+	  f := Ds_0;
+	  funder := under f;
+	  answer = append(answer, f);
+	  Ds = set Ds - funder;
+	  Ds = toList Ds;
+	  );
+     apply(answer, normalizeStmt))
+
+removeRedundants = (Ds) -> (
+     -- Ds is a list of triples of sets {A,B,C}
+     -- test1: returns true if D1 can be removed
+     -- Return a sublist of Ds which removes any 
+     --  that test1 declares not necessary.
+     test1 := (D1,D2) -> (D1_2 === D2_2 and 
+                          ((isSubset(D1_0, D2_0) and isSubset(D1_1, D2_1))
+	               or (isSubset(D1_1, D2_0) and isSubset(D1_0, D2_1))));
+     -- first remove non-unique elements, if any
+     Ds = apply(Ds, d -> {set{d#0,d#1}, d#2});
+     Ds = unique Ds;
+     Ds = apply(Ds, d -> append(toList(d#0), d#1));
+     c := toList select(0..#Ds-1, i -> (
+	       a := Ds_i;
+	       D0 := drop(Ds,{i,i});
+	       all(D0, b -> not test1(a,b))));
+     minimize(Ds_c))
+------------------------------------------------------------------
+-- END of removing redundant statements.
+------------------------------------------------------------------
+
+
 
 -------------------
 -- Markov rings ---

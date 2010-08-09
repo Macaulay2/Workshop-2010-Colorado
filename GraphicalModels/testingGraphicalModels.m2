@@ -12,9 +12,9 @@ help GraphicalModels
 --?           * "hideMap"
 --y           * "localMarkovStmts"
 --?           * "marginMap"
---           * "markovIdeal"
---           * "markovMatrices"
---ok          * "markovRing" -- ring of probability distributions on several discrete random variables
+--y           * "markovIdeal"
+--y           * "markovMatrices"
+--y          * "markovRing" -- ring of probability distributions on several discrete random variables
 --y           * "pairMarkovStmts"
 --           * "removeRedundants"
 
@@ -47,6 +47,7 @@ load "GraphicalModels.m2"
 Dint = digraph({{8, {7,6}}, {7,{5,4}}, {6, {4,1}}, {5, {3}}, {4, {3,2}}, 
 	  {3, {}}, {2, {}}, {1, {}}}) 
 globalMarkovStmts Dint --works for integer labels.
+glo=oo;
 --let's put line 313 back and run it:
 globalMarkovStmts D --executed. 
 globalMarkovStmts Dint --executed, comparison against Markov.m2 OK
@@ -58,6 +59,11 @@ pairMarkovStmts Dint --executed, comparison against Markov.m2 OK
 -- testing function "localMarkovStmts"
 localMarkovStmts D --executed
 localMarkovStmts Dint --executed, comparison against Markov.m2 OK
+
+--printWidth=200
+removeRedundants glo
+break
+--see below at the end of file!! 
 
 -------------------------------------
 -- TO DO:
@@ -92,6 +98,8 @@ localMarkovStmts Dint --executed, comparison against Markov.m2 OK
 --finishTime(u)=time.
 -------------------------------------
 
+-- once that is done, the topSort will return the new type SortedDigraph. 
+-- TO DO: change markov statements fns to map the integer labels back to original labels. 
 
 -------------------------------------
 -- testing function "markovRing", "markovIdeal", "markovMatrices":
@@ -103,11 +111,20 @@ numgens R
 R_0 --the first variable.
 
 help markovMatrices --no doc.
-S=localMarkovStmts(D)
-markovMatrices(R,S)
-break
+L=localMarkovStmts(Dint)
+d=();
+apply(#Dint,j-> d=append(d,2));
+R = markovRing(d)
+M=markovMatrices(R,L);--it runs but it is huge! do not display
 
 help markovIdeal --no doc.
+--this just takes minors of the markovMatrices. as in the book :) 
+I=markovIdeal(R,L);-- this works. it calls markovMatrices too.
+-- THERE should be an option for passing markovMatrices to this method 
+--so we don't recompute!
+betti I
+
+
 
 -------------------------------------
 -- I have no idea what these do:
@@ -123,4 +140,25 @@ help marginMap --no doc.
 marginMap(1,markovRing(2,3))-- this marginalizes the first variable, as expected :)
 --this is supposed to be used to marginalize hidden vars!!
 
+setit = (d) -> {set{d#0,d#1}, d#2}
 
+under = (d) -> (
+           d01 := toList d_0;
+           d0 := toList d01_0;
+           d1 := toList d01_1;
+           d2 := toList d_1;
+           e0 := subsets d0;
+           e1 := subsets d1;
+           z1 := flatten apply(e0, x -> apply(e1, y -> (
+      		    {set{d01_0 - set x, d01_1 - set y}, set x + set y + set d_1})));--added "set" to d_1
+           z2 := flatten apply(e0, x -> apply(e1, y -> (
+      		    {set{d01_0 - set x, d01_1 - set y}, set d_1})));--added "set" to d_1
+           z = join(z1,z2);
+           z = select(z, z0 -> not member(set{}, z0_0));
+           set z
+           )
+s=glo_0
+under setit s
+load "GraphicalModels.m2"
+removeRedundants glo; ----NEED TO RUN THIS W/ UNDER CHANGED!!
+break
