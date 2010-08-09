@@ -30,18 +30,21 @@ netList for i from 0 to 4 list(
      I := JJ(2,{2,1,i});
      {regularity I,I}
      )
+
 -- Note that these are just 3-generated ideals with generators of degree 4 + i
 
 -- Example 4 - larger tuples
 -- It seems that a tuple starting with k "2"s followed by "1,i" has regularity growing
 -- asymptotically as (k+2)^i, but these quickly become difficult to compute with.
-I = JJ(2,{2,2,1,1},BaseField=>ZZ/32003)
+I = JJ(2,{2,2,1,0},BaseField=>ZZ/32003)
 gbTrace = 3
 G = time gb(I,Algorithm=>LinearAlgebra)
 lt = leadTerm gens G;
 betti lt
 time regularity ideal lt
 dim ring I
+regularity I
+flatten entries gens G
 
 I = JJ(2,{2,2,2,1,0},BaseField=>ZZ/32003)
 gbTrace = 3

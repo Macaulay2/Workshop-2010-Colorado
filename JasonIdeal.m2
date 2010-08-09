@@ -20,7 +20,7 @@ export{JJ,socleCheck,jasonIdeal,BaseField}
 --
 -- Note: if #M = 1 then us function K below
 --       g >= 2, #M >= 2
-JJ = method( Options => { BaseField => QQ } )
+JJ = method( Options => { BaseField => QQ} )
 JJ(ZZ,List) := opt -> (g,M) -> ( 
      n := #M;
      if n == 1 
@@ -57,27 +57,16 @@ JJ(ZZ,List) := opt -> (g,M) -> (
      	  matrixList := apply(middle(0,g,M)|matrixListPre, i -> i | map(ZZ^g, ZZ^(n-rank source i), 0));
           k := opt.BaseField;
 	  indList := ind(g,M);
-	  wts := for i from 1 to g*n list 1;
-	  for zz in indList do(
-	       wts = append(wts,1);
-	       );
-	  B = k[x_(1,1)..x_(n,g), apply(indList, i -> z_i),Weights=>wts];--,MonomialOrder=>Lex];
+	  v := (toList (x_(1,1)..x_(n,g))) | apply(indList, i -> z_i);
+	  B = k[v,MonomialOrder=>Lex];
+	  --B = k[v];
 	  I = ideal(apply(x_(1,1)..x_(1,g), i -> i^(d 1)),sum apply(matrixList,m-> product flatten for i to g-1 list ( for j to n-1 list x_(j+1,i+1)^(m_(i,j))))+sum apply(indList,m-> (product flatten for i to g-1 list ( for j to n-1 list x_(j+1,i+1)^(m_(i,j))))*z_m));
-     	  --I = ideal(apply(x_(n,1)..x_(n,g), i -> i^(d 1)),sum apply(matrixList,m-> product flatten for i to g-1 list ( for j to n-1 list x_(n-(j),i+1)^(m_(i,j))))+sum apply(indList,m-> (product flatten for i to g-1 list ( for j to n-1 list x_(n-(j),i+1)^(m_(i,j))))*z_m));
-	  --reverse 2nd subscript:
-	  --I = ideal(apply(x_(1,1)..x_(1,g), i -> i^(d 1)),sum apply(matrixList,m-> product flatten for i to g-1 list ( for j to n-1 list x_(j+1,n-i)^(m_(i,j))))+sum apply(indList,m-> (product flatten for i to g-1 list ( for j to n-1 list x_(j+1,n-i)^(m_(i,j))))*z_m));
-	  --I.cache.gen = g;
-     	  --I.cache.num = n;
-	  
-     	  --B = k[x_(1,1)..x_(g,n), apply(indList, i -> z_i)];
-     	  --I = ideal(apply(x_(1,1)..x_(g,1), i -> i^(d 1)),sum apply(matrixList,m-> product flatten for i to g-1 list ( for j to n-1 list x_(i+1,j+1)^(m_(i,j))))+sum apply(indList,m-> (product flatten for i to g-1 list ( for j to n-1 list x_(i+1,j+1)^(m_(i,j))))*z_m));
-     	  --I.cache.gen = g;
-     	  --I.cache.num = n;
-	  --I.cache.socle = product( x_(1,1)..x_(g,n), deepSplice{ g:apply ( 1..n,i-> (d(i)-1) ) },  (i,j) -> i^j );
+     	  I.cache.gen = g;
+     	  I.cache.num = n;
+	  I.cache.socle = product( x_(1,1)..x_(n,g), deepSplice{ apply ( 1..n,i-> g:(d(i)-1) )},  (i,j) -> i^j )
 	  );
      I
 )     
-
 
 
 -- input: Ideal J(g,M)
