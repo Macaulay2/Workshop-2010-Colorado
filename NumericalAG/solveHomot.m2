@@ -85,3 +85,28 @@ findGaloisElement((l,m,k,n), G, S)
        ));
    apply(S, s->positions(tempSlns, j-> areEqual(j,s)))   
 
+///
+###############################################################################
+# Launches GAP to see if "perms" generate a full symmetric group
+isFullSymmetricViaGAP := proc(f::string,perms::list)
+local g, p;
+  g := ""||f||".gapjob";
+  fopen(g,WRITE);
+  fprintf( g, "u := Group(\n" );
+  for p in perms do
+   if lhs(p) = 'cycle' then
+     fprintf( g, "(%q),\n", rhs(p)[] );
+   elif lhs(p) = 'plist' then
+     fprintf( g, "PermList(%a),\n", rhs(p) );
+   else error "uknown type of permutation";
+   fi;
+  od;
+  fprintf( g, "());\n");
+  fprintf( g, "if NrMovedPoints(u)=%d and IsNaturalSymmetricGroup(u) then RemoveFile(\"%s\"); fi;\n", nSols, g);
+  fprintf( g, "QUIT;\n");
+  fclose(g);
+  ssystem("gap "||g);
+  #print(ssystem("c/gap4r4/bin/gap.bat"||g));
+  return evalb(not FileTools[Exists](g));
+end proc:
+///
