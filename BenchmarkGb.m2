@@ -98,8 +98,8 @@ runBenchmark (Ideal,String) := Ideal => (I,ff) -> (
  T = timing gens gb( sub( G, QRlex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
- print ("Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" | toString tt | " seconds.\n" << endl;
- ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" << toString tt << " seconds.\n");
+ print ("Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" | toString tt | " seconds.\n");
+ ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" << toString tt << " seconds.\n" << endl;
  
  T = timing gbBoolean I;
  tt = first T;
