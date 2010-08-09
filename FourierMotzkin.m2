@@ -696,11 +696,8 @@ getMatrix2 String := (filename) -> (
 getMatrix = method()
 getMatrix String := (filename) -> (
      L := (separateRegexp("begin|end", get filename))#1;
-     -- << L << endl;
      M := select(separateRegexp("[[:space:]]", L), m->m=!="");
-     << M << endl;
      m := value( M#1);
-     << apply(drop(M,3), k-> promote(value replace("E\\+?","e",k),RR)) << endl;
      transpose matrix pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))
 )
 	
