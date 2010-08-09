@@ -10,10 +10,10 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   
+   export{isAtom}
    -- Jessica's code:  Step 1 --
    ----------------------------------------------------
-   
+ {*  
    listAtoms := (P, d, n) ->(
 	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, d, n
 	--OUTPUT: AtomicExt = list of equivalence classes of points.  Each equivalence class is an atomic extensor.
@@ -30,31 +30,33 @@ newPackage(
 	--call isAtom(points_0, points_1, P, d, n)
 	
 	)
+   *}
+
+   rep = (a,b,L)-> (for x in L list (if x==a then b else x))
    
-   isAtom := (a,b,P,d,n) ->(
+   isAtom = (a,b,P,d,n) ->(
 	--INPUT: a,b = distinct numbers between 1 and n,
 	--P = bracket polynomial of rank d+1 in n+1 points, d, n
-	--OUTPUT: 1 if a join b is an atomic extensor, 0 otherwise
-	
-	R := ring P;
-	
+	--OUTPUT: 1 if a join b is an atomic extensor, 0 otherwise	
+	R := ring P;	
 	--list the subcripts of all of the variables in order
-	S:=apply(flatten entries vars R , p ->(baseName p)#1);
+	S:=new MutableList from apply(flatten entries vars R , p ->(baseName p)#1);
 	SLength:=#S;
-	for i from 0 to (SLength-1)(
+	for i from 0 to (SLength-1) do (
 	     --replace S_i by 0_R if a and b are in
-	     if isSubset({a,b}, S_i)==true then S_i := 0_R
-	     else if isSubset({b}, S_i)==true then 
-	        R := replace(b,a,S_i);
-	      	sign(R)*p_(sort(R))
+	     if isSubset({a,b}, S#i) then S#i = 0_R
+	     --replace b by a in S_i and then replace S_i by sign of permutation* p_(S_i)
+	     else if isSubset({b}, S#i) then 
+	       ( tempR := rep(a,b,S#i);
+	      	S#i= sign(tempR)*((baseName R_0)#0)_(toSequence sort(tempR)))
+	     else S#i=((baseName R_0)#0)_(S#i);
+	     );
+     	  f:=map(R,R, toList S);
+	  f(P)==0_R
+)	     
 	     
-	     --replace b by a in S_i and then replace S_i by p_(S_i)
-	     )
-	
-	
-	
-	
-	)
+       
+
    
   -- Josephine's code:  Step 2 --
   
@@ -89,10 +91,16 @@ newPackage(
        
        )
   
-  sign := sigma ->(
+  sign = sigma ->(
        -- Sign of a permutation
        product flatten table(#sigma, #sigma, (i,j) -> (
 		 if(i < j and sigma#i > sigma#j) then -1 else 1
 		 )
 	    )
        )
+end
+restart
+debug loadPackage "CayleyFactorization"
+R = ring Grassmannian(2,4)
+L =isAtom(1,2,p_(1,2,3)*p_(2,3,4),2,4)
+
