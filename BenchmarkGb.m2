@@ -73,7 +73,7 @@ runBenchmark Ideal := Ideal => I -> (
  T = timing gbBoolean I;
  tt = first T;
  G = last T;
- print ("gbBoolean: " | toString tt | " seconds.");
+ print ("gbBoolean: " | toString tt | " seconds.\n\n");
  
  G
 )
