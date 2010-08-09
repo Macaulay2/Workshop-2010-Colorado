@@ -60,7 +60,6 @@ runBenchmark Ideal := Ideal => I -> (
  G = last T;
  print ("Quotient Ring Lex Order, Sugarless: " | toString tt | " seconds.");
 
- QRgRevLex = RgRevLex/ideal FP;
  T = timing gens gb( sub( I, QRgRevLex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
@@ -76,54 +75,80 @@ runBenchmark Ideal := Ideal => I -> (
  G = last T;
  print ("gbBoolean: " | toString tt | " seconds.");
  
-
-
-
+ G
 )
 
-end
-
-loadPackage "BenchmarkGb"
-R = ZZ/2[x,y,z]
-I = ideal(x+y)
-runBenchmark I 
 
   
 beginDocumentation()
 
-  doc ///
-  Key
-  BenchmarkGB
-  Headline
-  Description
+doc ///
+Key
+  (BenchmarkGb)
+  BenchmarkGb
+Headline
+  Run groebner basis computations in several monomial orders
+Description
   Text
+    Runs and times gb computations for an ideal in several monomials
+    orders
   Example
-  Caveat
-  SeeAlso
-  ///
+Caveat
+SeeAlso
+///
 
-  doc ///
-  Key
-  Headline
-  Usage
-  Inputs
-  Outputs
-  Consequences
-  Description
+doc ///
+Key
+  runBenchmark
+  (runBenchmark,Ideal)
+Headline
+  run groebner basis computations in several monomial orders
+Usage
+  G = runBenchmark I
+Inputs
+  I:Ideal
+    Ideal to compute the basis for
+Outputs
+  G:Ideal
+    Basis in Lex order
+Consequences
+Description
   Text
+    Run Groebner Basis computation in several rings and in several monomial orders. FP are the field polynomials, 
+    i.e., $x + x^2$. The quotient ring is the ambient ring of the ideal mod the field polynomials. 
   Example
+    R = ZZ/2[x,y,z];
+    I = ideal(x+y,x);
+    runBenchmark I
   Code
   Pre
-  Caveat
-  SeeAlso
-  ///
+Caveat
+  The ring must have characteristic 2, because we mod out by the field polynomials.
+SeeAlso
+  (BenchmarkGb)
+  "BooleanGB"
+///
 
-  TEST ///
-  -- test code and assertions here
-  -- may have as many TEST sections as needed
-  ///
+TEST ///
+  R = ZZ/2[x,y,z]
+  I = ideal(x+y,x)
+  runBenchmark I 
+///
 
 
-
+----
 
 end
+
+restart
+
+loadPackage "BooleanGB"
+loadPackage "BenchmarkGb"
+installPackage "BenchmarkGb"
+check "BenchmarkGb"
+viewHelp runBenchmark
+
+R = ZZ/2[x,y,z]
+I = ideal(x+y)
+runBenchmark I 
+
