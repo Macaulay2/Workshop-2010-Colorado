@@ -10,7 +10,7 @@ newPackage("Graphs",
      Version => "0.1"
      )
 
-export {Graph, Digraph, LabeledGraph, graph, digraph, labeledGraph, Singletons, descendents, nondescendents, 
+export {Graph, Digraph, MixedGraph, LabeledGraph, graph, digraph, mixedGraph, labeledGraph, Singletons, descendents, nondescendents, 
      parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
      simpleGraph, removeNodes, inducedSubgraph, completeGraph,
      cycleGraph, writeDotFile,SortedDigraph,topSort,DFS}
@@ -36,6 +36,9 @@ Graph = new Type of Digraph
      -- edge that are not a key earlier in the hash table. This 
      -- version removes the redunancy of each edge appearing twice. 
      -- simpleGraph is an internal conversion function. 
+
+MixedGraph = new Type of HashTable
+     -- a mixed graph is a HashTable of Digraphs whose keys (vertex sets) are the same.
      
 LabeledGraph = new Type of Graph 
    
@@ -81,6 +84,21 @@ graph List := opts -> (g) -> (
      apply(#vertices, i -> h#(vertices#i) = neighbors#i);
      new Graph from h
      )
+
+mixedGraph = method()
+mixedGraph HashTable := (g) -> (
+    -- Input: A hashtable of digraphs.
+    -- Output: A hashtable of digraphs with the same vertex set,
+    --         which is the union of the vertex sets of the input digraphs.
+	scanKeys(g, i-> if not instance(g#i, Digraph) then error "expected HashTable of Digraphs");
+	vertices := toList sum(apply(keys(g),i->set keys(g#i)));
+	print(vertices);
+	applyValues(g, i->(
+	  hh := new MutableHashTable;
+	  scan(vertices,j->if i#?j then hh#j=i#j else hh#j={});
+	  new class(i) from hh
+	))
+)     
 
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
