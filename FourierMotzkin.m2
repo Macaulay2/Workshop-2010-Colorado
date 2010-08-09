@@ -688,14 +688,23 @@ compare "in4.ine"
 compare "in5.ine"
 compare "in6.ine"
 compare "in7.ine"
+compare "cyc.ine"
+compare "cube.ine"
+compare "cube2.ine"
+
+
+getMatrix "cyc.ine"
 
 compare = method()
 compare String := filename ->(
      D := getMatrix(filename);
      A := cdd D;
      B := lrs D;
-     << A << endl << B << endl;
-     A-B
+     A = matrix select(transpose entries A, a->a#0==0);
+     B = matrix select(transpose entries B, b->b#0==0);
+     -- << class A << endl;
+     -- << A << endl << B << endl;
+     norm(promote(A-B,RR))
      )
 
 getMatrix2 = method()
@@ -713,7 +722,7 @@ getMatrix String := (filename) -> (
      L := (separateRegexp("begin|end", get filename))#1;
      M := select(separateRegexp("[[:space:]]", L), m->m=!="");
      m := value( M#1);
-     transpose matrix select((sort pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))),l-> l#0==0)
+     transpose matrix sort pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))
 )
 	
 
