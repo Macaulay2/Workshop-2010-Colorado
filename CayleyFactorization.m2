@@ -60,47 +60,87 @@ newPackage(
    
   -- Josephine's code:  Step 2 --
   
-  factorBrackets := (P, d, n, L) -> (
+  factorBrackets = (P, d, n, L) -> (
        -- INPUT: P is a bracket polynomial in Grassmannian(d,n);
        --     	 L is a list of atomic extensors of P; 
        --        each element of L is a list of indices.
-       -- Output: (L', P') where L' is the list of step d+1 extensors of P, 
+       -- Output: {L', P'} where L' is the list of step d+1 extensors of P, 
        --         and P' is the result of factoring out elements of L' from P
        -- author: Josephine Yu
        -- date: August 8, 2010
-       apply(#L, i ->
+       exFactors := apply(#L, i ->
+	    if(#(L#i) == d+1) then (
 	    l := sort toList(L#i);
-	    sigma := l | sort(toList (set(0..n) - l) );
-	    apply(flatten entries vars ring P, p -> (
-		     varName := (baseName p)#0;
-		     newIndex := apply(toList (baseName p)#1, i -> sigma#i);
-		     sig = sign newIndex;
-		     sub(((basename p)#0)_toSequence(newIndex), ring P)
-		 ) 
-		 );
+	    sigma := l | sort(toList (set(0..n) - l) ); -- reorder so that indices in l comes first in the straightening order
+	    permP := sub(P , matrix{permutePoints(ring P,n,sigma)}) -- apply permutation with signs
+	    if(permP % (ring P)_0 == 0) then (
+	    	 P = sub(permP/ring(P)_0, matrix{permutePoints(ring P,n, inversePermutation sigma)});
+	    	 )
 	    )
-       
-       )
+       );
+       {exFactors, P}
+  )
   
-  permuteAndStraighten := (P, d, n, sigma) -> (
-       -- INPUT: P is a bracket polynomial in Grassmannian(d,n)
-       --     	 sigma is a permutation of 0..n (encoded as a list)
-       -- OUTPUT: Result the straightening algorithm with permuted variables
+  permutePoints = (R, n, sigma) -> (
+       -- INPUT: R is Grassmannian(*,n)
+       --     	 sigma is a list of length of n, containing elements from {0,..,*}, with repetition allowed
+       -- OUTPUT: list of "permuted variable"s, can be used to make a ring map
        -- author: Josephine Yu
        -- date: August 8, 2010
-       
+       apply(flatten entries vars R, v -> (
+	     newIndex := apply(toList (baseName v)#1, i -> sigma#i);
+     	     indicesToRingElement(R, d,n, newIndex)
+	 ) 
+	 )
        )
+  
+
+  indicesToRingElement = (R, d, n, indexList) -> (
+      -- INPUT:  R is the ring of Grassmannian(d,n), 
+      --         indexList is a list or sequence of indices between 0 and n
+      --     	  The list gets sorted and appropriate sign is assigned
+      --     	  If there are repeated indices, 0 is assigned
+      -- OUTPUT: the Plucker variable with indices indexList
+      if(#indexList == d+1 and isSubset(set indexList, set(0..n)) ) then (
+    	   if(#(unique indexList) == #indexList) then (
+	   	 sig := sign indexList;
+       	    	 sig * sub(value ((baseName R_0)#0)_(toSequence(sort indexList)), R)
+	    ) else (
+	    	 sub(0, R)
+    		 )
+      ) else (
+          print "error:  index set has wrong size or contains illegal elements";
+      )
+ )
   
   sign = sigma ->(
        -- Sign of a permutation
-       product flatten table(#sigma, #sigma, (i,j) -> (
-		 if(i < j and sigma#i > sigma#j) then -1 else 1
+       product apply(subsets(#sigma,2), l -> (
+		 if(sigma#(l#0) > sigma#(l#1)) then -1 else 1
 		 )
 	    )
        )
+
+----- TEST
+
+---- Josephie's tests
+ 
+restart
+debug loadPackage "CayleyFactorization"
+Grassmannian(2,5)
+use((ring oo) / oo)
+ P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
+  P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4)
+l = {1,2,5}
+n=5;
+d=2;
+
+------ Jessica's tests
+
 end
 restart
 debug loadPackage "CayleyFactorization"
 R = ring Grassmannian(2,4)
 L =isAtom(1,2,p_(1,2,3)*p_(2,3,4),2,4)
+
 
