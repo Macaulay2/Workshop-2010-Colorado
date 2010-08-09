@@ -118,18 +118,51 @@ degreeD(ZZ,ChainComplex) := (d, F) -> (
      G
      )
 
-Rpistar0regular = method()
-Rpistar0regular Module := (M) -> (
-     -- assumption: M is 0-regular in a ring A[x0,x1,...]
-     --  in terms of x vars
-     phi := symmetricToExteriorOverA M;
+RpistarLinPres = method()
+RpistarLinPres(Module) := (M) -> (
+     -- assumption: M has x-linear resolution, with all generators
+     -- in the same x-degree, in a ring A[x0,x1,...]
+     regM := first degree M_0;
+     S := ring M;
+     xm := regM * degree(S_0);
+     phi := symmetricToExteriorOverA(M ** S^{xm});
      E := ring phi;
-     FF := res image phi;
+     FF := res( image phi, LengthLimit => regM);
+     complete FF;
+     E := ring FF;
+     FF = E^{-xm} ** FF[regM];
      FF0 := degreeD(0, FF);
-     toA := map(coefficientRing E,E,DegreeMap=>i -> drop(i,1));
+     toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
      toA FF0
      )
+
+Rpistar = method()
+Rpistar Module := (M) -> (
+     -- M is a graded A[x0,...xn] module, of x-regularity m.
+     -- returns an A-complex representing R pi_* (M~), where pi
+     -- is the map Spec A x P^n --> Spec A.
+     m := regularity M; -- we think this is the x-regularity.
+     m = max(m, 0);
+     -- (1) truncate M in degrees = m in x variables
+     -- (2) then apply Rpistar0regular to M(m), 
+     --     obtaining a complex FF over A.
+     -- (3) return FF[-m]
+     )
 end	      
+restart
+
+--------------------------------
+restart
+--path = append(path, "/Users/david/src/Colorado-2010/PushForward")
+load "computingRpi_star.m2"
+kk=ZZ/101
+S = kk[x,y]
+I = ideal"x2,xy2"
+regularity I
+I3 = (prune module truncate(3,I)) ** S^{3}
+symmetricToExteriorOverA I3
+---------------------------------
+
 restart
 --path = append(path, "/Users/david/src/Colorado-2010/PushForward")
 load "computingRpi_star.m2"
@@ -141,7 +174,9 @@ degrees S
 degree s_S
 I=intersect(ideal(x_0), ideal (s*x_0-t*x_1, x_2)) -- ideal of a point moving across a line
 M = S^{{2,0}}**module I
+M = module I
 Rpistar0regular M
+RpistarLinPres M
 
 phi=symmetricToExteriorOverA M
 E=ring phi
