@@ -240,13 +240,28 @@ cayleyFactor(RingElement, ZZ, ZZ) := List => (P,d,n) -> (
      )
 cayleyFactor(RingElement, ZZ, ZZ, List) := List => (P,d,n, partialAtomicExt) -> (
      L := toList listAtoms(P,partialAtomicExt, d,n);
-     pureFactors := factorBrackets(P,d,n,toList L);
-     P = pureFactors#1;
-     pairFactor := findPairFactor(P,d,n,L);
-     newIndices := set(0..(#pairFactor#1#0+#pairFactor#1#1-d-2));
-     newPartialAtomicExt := append(drop(L, pairFactor#0), newIndices);    
-     cayleyFactor(pairFactor#2, newPartialAtomicExt, d,n)
+     if(set(L) == set(partialAtomicExt) or max apply(subsets(L,2), S-> #S#0+#S#1) < d+1) then (
+	  print "NOT FACTORABLE";
+	  null
+	  ) else (
+        	  pureFactors := factorBrackets(P,d,n,toList L); -- Step 2
+     	  	  P = pureFactors#1;
+     	  	  if(degree(P)#0 == 0) then ({P})
+	  	  else (
+	       	       pairFactor := findPairFactor(P,d,n,L); -- Step 3
+		       if(pairFactor == null) then (
+			    	  print "NOT FACTORABLE";
+	  			  null
+			    ) else (
+     		       	    newIndices := set(0..(#pairFactor#1#0+#pairFactor#1#1-d-2));
+     		       	    newPartialAtomicExt := append(drop(L, pairFactor#0), newIndices);    
+			    cayleyFactor(pairFactor#2, newPartialAtomicExt, d,n)
+			    )
+     	  	       )
+     		  )
 )
+
+
 
 
  ------------------------------------------------------------------- 
