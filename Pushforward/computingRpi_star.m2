@@ -21,13 +21,60 @@ bettiT(ChainComplex):=(F)->(
      betti bT
      )     
 
+
+symmetricToExteriorOverA=method()
+symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) ->(
+--this function converts between a  presentation matrix m with 
+--entries m^i_j of degree deg_x m^i_j = 0 or 1 only 
+--of a module over a symmetric algebra A[x] and the linear part of the
+--presentation map for the module 
+--    P=ker (Hom_A(E,(coker m)_0) -> Hom_A(E,(coker m)_1))
+--over the  exterior algebra A<e>.
+--                                 Berkeley, 19/12/2004, Frank Schreyer.
+     S:= ring x; E:=ring e;
+     a:=rank source m;
+     La:=degrees source m;
+     co:=toList select(0..a-1,i->  (La_i)_0==0);
+     M0:=coker substitute(m_co,vars E);
+     M:=coker m;
+     m1:=presentation (ideal x * M);
+-- script uses the fact that the generators of ideal x* M are ordered
+---as follows
+-- x_0 generators of M,x_1*generators of M, ...
+     b:=rank source m1;
+     Lb:=degrees source m1;     
+     cob:=toList select(0..b-1,i->  (Lb_i)_0==1);
+     M1:=coker substitute(m1_cob,vars E);
+     F:=substitute(id_(target m),vars E);
+     G:=e_{0}**F;
+     n:=rank source e -1;
+     apply(n,j->G=G|(e_{j+1}**F)); -- (vars E)**F
+     phi:=map(M1,M0,transpose G)
+     --presentation prune ker phi
+     )
+
+symmetricToExteriorOverA(Module) := M -> (
+     --M is a module over S = A[x0...].  must be gen in x-degree 0,
+     --related in x-degree 1
+     S := ring M;
+     xvars := vars S;
+     A := coefficientRing S;
+     if not S.?Exterior then(
+	  --S.Exterior = exterior alg over A on dual vars to the vars of S (new vars have deg = {-1,0})
+	  S.Exterior = A[Variables => numgens S, SkewCommutative => true, Degrees=>{numgens S:-1}]
+	  );
+     E := S.Exterior;
+     symmetricToExteriorOverA(presentation M, vars E, vars S)
+     )
+
 degreeZeroPart=(T,A)->(
 --Takes a (doubly) graded free complex over E (the exterior algebra 
 --over a ring A, where the variables of E have grading {1,1} and {2*,0}) 
 --and extracts the the degree {*,0} part of T \tensor_E A, 
 --a complex of free A-modules.
 --                  Berkeley, 18/12/2004, David Eisenbud, Frank Schreyer. 
-     a:=min T;b:=max T;
+     a:=min T;
+     b:=max T;
      piT:=new ChainComplex;
      piT.ring=A;
      bj:=0;aj:=0;LLj:={};Lj:=LLj;co:={};ro:={};
@@ -45,41 +92,28 @@ degreeZeroPart=(T,A)->(
 	       piT.dd#j=substitute(((T.dd_j)^co)_ro,A)));
      piT)
 
-symmetricToExteriorOverA=method()
-symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) ->(
---this function converts between a  presentation matrix m with 
---entries m^i_j of degree deg_x m^i_j = 0 or 1 only 
---of a module over a symmetric algebra A[x] and the linear part of the
---presentation map for the module 
---    P=ker (Hom_A(E,(coker m)_0) -> Hom_A(E,(coker m)_1))
---over the  exterior algebra A<e>.
---                                 Berkeley, 19/12/2004, Frank Schreyer.
-     S:= ring x; E:=ring e;
-     a:=rank source m;
-     La:=degrees source m;
-     co:=toList select(0..a-1,i->  (La_i)_1==0);
-     M0:=coker substitute(m_co,vars E);
-     M:=coker m;
-     m1:=presentation (ideal x * M);
--- script uses the fact that the generators of ideal x* M are ordered
----as follows
--- x_0 generators of M,x_1*generators of M, ...
-     b:=rank source m1;
-     Lb:=degrees source m1;     
-     cob:=toList select(0..b-1,i->  (Lb_i)_1==1);
-     M1:=coker substitute(m1_cob,vars E);
-     F:=substitute(id_(target m),vars E);
-     G:=e_{0}**F;
-     n:=rank source e -1;
-     apply(n,j->G=G|(e_{j+1}**F));
-     phi:=map(M1,M0,transpose G);
-     presentation prune ker phi)
-
-     
 end	      
 restart
 path = append(path, "/Users/david/src/Colorado-2010/PushForward")
 load "computingRpi_star.m2"
+kk=ZZ/101
+A = kk[s,t]
+S = A[x_0..x_2] -- ring of P^2_A
+describe S
+degrees S
+degree s_S
+I=intersect(ideal(x_0), ideal (s*x_0-t*x_1, x_2)) -- ideal of a point moving across a line
+M = S^{{2,0}}**module I
+phi=symmetricToExteriorOverA M
+E=ring phi
+FF=res image phi
+FF.dd
+betti (E^{{-3,0}}** FF[2])
+
+isHomogeneous M
+betti (F=res M)
+F.dd
+regularity M
 
 -- example 5.1 
 
@@ -124,3 +158,5 @@ M = module intersect(ideal x_0, ideal (s*x_0-t*x_1, x_2)) -- ideal of a point mo
 betti res M
 
 -------
+
+restart
