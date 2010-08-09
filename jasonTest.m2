@@ -36,7 +36,7 @@ netList for i from 0 to 4 list(
 -- It seems that a tuple starting with k "2"s followed by "1,i" has regularity growing
 -- asymptotically as (k+2)^i, but these quickly become difficult to compute with.
 I = JJ(2,{2,2,1,1},BaseField=>ZZ/32003)
-gbTrace = 0
+gbTrace = 3
 G = time gb(I,Algorithm=>LinearAlgebra)
 lt = leadTerm gens G;
 betti lt

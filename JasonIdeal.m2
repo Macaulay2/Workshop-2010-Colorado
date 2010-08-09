@@ -57,8 +57,11 @@ JJ(ZZ,List) := opt -> (g,M) -> (
      	  matrixList := apply(middle(0,g,M)|matrixListPre, i -> i | map(ZZ^g, ZZ^(n-rank source i), 0));
           k := opt.BaseField;
 	  indList := ind(g,M);
-	  
-	  B = k[x_(1,1)..x_(n,g), apply(indList, i -> z_i),Weights=>wts,MonomialOrder=>Lex];
+	  wts := for i from 1 to g*n list 1;
+	  for zz in indList do(
+	       wts = append(wts,1);
+	       );
+	  B = k[x_(1,1)..x_(n,g), apply(indList, i -> z_i),Weights=>wts];--,MonomialOrder=>Lex];
 	  I = ideal(apply(x_(1,1)..x_(1,g), i -> i^(d 1)),sum apply(matrixList,m-> product flatten for i to g-1 list ( for j to n-1 list x_(j+1,i+1)^(m_(i,j))))+sum apply(indList,m-> (product flatten for i to g-1 list ( for j to n-1 list x_(j+1,i+1)^(m_(i,j))))*z_m));
      	  --I = ideal(apply(x_(n,1)..x_(n,g), i -> i^(d 1)),sum apply(matrixList,m-> product flatten for i to g-1 list ( for j to n-1 list x_(n-(j),i+1)^(m_(i,j))))+sum apply(indList,m-> (product flatten for i to g-1 list ( for j to n-1 list x_(n-(j),i+1)^(m_(i,j))))*z_m));
 	  --reverse 2nd subscript:
