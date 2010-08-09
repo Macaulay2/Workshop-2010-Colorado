@@ -13,11 +13,12 @@ newPackage(
    export{isAtom, listAtoms}
    -- Jessica's code:  Step 1 --
    ----------------------------------------------------
-  
-   listAtoms = (P, d, n) ->(
+   listAtoms = method()
+     
+   listAtoms(RingElement, ZZ, ZZ) := (P, d, n) ->(
 	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, d, n
 	--OUTPUT: AtomicExt = list of equivalence classes of points.  Each equivalence class is an atomic extensor.
-       	
+       	--Jessica Sidman, August 9, 2010
 	R:= ring P;
 	
       	--points = list of the n+1 points
@@ -45,7 +46,45 @@ newPackage(
 	AtomicExt
 		)
 
-
+ listAtoms(RingElement, List, ZZ, ZZ) := (P, partialAtomsInput, d, n) ->(
+	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, partialAtoms = MutableList whose elements are sets of points already known to be in the same equivalence class, d, n
+	--OUTPUT: AtomicExt = list of equivalence classes of points (consisting of unions of the elements in partialAtoms.  Each equivalence class is an atomic extensor.
+       	--Jessica Sidman, August 9, 2010
+	R:= ring P;
+	
+	partialAtoms:= new MutableList from partialAtomsInput;
+	
+	--AtomicExt 
+	AtomicExt := new MutableList from {};
+	
+	atomicClass :=set{};
+	
+	while (#partialAtoms) > 0 do(
+	     --take the first element of partialAtoms
+	     currentAtom := partialAtoms#0;
+	     
+	     --the currentAtom is a set.  We'll use it to form a new atomicClass
+	     atomicClass = currentAtom;
+	     
+	     --remove this atomic class from the list of partialAtoms
+	     partialAtoms = drop(partialAtoms, {0,0});
+	  
+	     --Determine if this AtomicClass should contain more elements by testing to see if its first element is in the same atomic class as the first elment of 
+	     --each element in the partialAtoms list
+	     temporaryAtoms := partialAtoms; 
+	     for i from 0 to (#temporaryAtoms-1) do(
+		  if isAtom((toList currentAtom)_0, ((toList temporaryAtoms#i))_0, P, d,n) then (
+		       atomicClass=atomicClass+temporaryAtoms#i;
+		       partialAtoms = new MutableList from toList( (set toList partialAtoms) - {temporaryAtoms#i});
+		  );
+	     );
+	     AtomicExt = append(AtomicExt, atomicClass);
+	     );
+	AtomicExt
+	)
+	     
+	   
+	   
    rep = (a,b,L)-> (for x in L list (if x==a then b else x))
    
    isAtom = (a,b,P,d,n) ->(
@@ -72,10 +111,7 @@ newPackage(
      	  f:=map(R,R, toList S);
 	  f(P)==0_R
 )	     
-	     
-       
 
-   
   -- Josephine's code:  Step 2 --
  
  ------------------- Step 2 ------------------------------------------------ 
@@ -97,7 +133,7 @@ newPackage(
        	 print("error: the input polynomial is not divisible by the given bracket variables");
        )
       )
-  
+
    ------------------- Step 3 ------------------------------------------------ 
 
  findPairFactor = (P, d, n, L) -> (
@@ -216,17 +252,16 @@ debug loadPackage "CayleyFactorization"
 R = ring Grassmannian(2,5)
 
 L = listAtoms(p_(0,1,2)*p_(3,4,5)+p_(0,1,3)*p_(2,4,5),2,5)
-toList L
-#L
-toList L#0
-toList L#1
-toList L#2
-toList L#3
-toList L#4
+
 R = ring Grassmannian(2,8)
 
 L=listAtoms(p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8), 2, 8)
 toList L
+
+K = listAtoms(p_(0,4,5)*p_(6,7,8)-p_(0,4,6)*p_(5,7,8), {set {0}, set {7, 8}, set {4}, set {5, 6}}, 2, 8)
+
+toList K     
+isAtom(0,4, p_(0,4,5)*p_(6,7,8)-p_(0,4,6)*p_(5,7,8),2,8)
 
 isAtom(2,3,p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8), 2, 8)
 
