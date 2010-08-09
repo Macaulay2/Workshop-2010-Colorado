@@ -10,12 +10,37 @@ newPackage(
     )
 
 loadPackage "gbHelper"
-export {runBenchmark}
+export {runBenchmark, makeBooleanNetwork}
 
 -- Code here
 
+-- function generates random boolean networks
+makeBooleanNetwork = method()
+makeBooleanNetwork (QuotientRing, ZZ, ZZ) := Matrix => (R, valence, nterms) -> (
+  -- R should be a boolean ring
+  -- output: a random finite dynamical system
+  -- where each function depends on up to 'valence' variables
+  -- and 'nterms' terms
+  choices := subsets(gens R, valence);
+  ll := for x in gens R list (
+    r := random (#choices);
+    inputs := choices#r;
+    allelems := subsets inputs;
+    allelems = allelems/product;
+    nt := 1 + random(nterms);
+    -- random( allelems ) might pick the same monomial twice
+    -- TODO fix that!
+    sum for i from 1 to nt list allelems#(random (#allelems))
+  );
+  matrix(R, {ll})
+)
+
 runBenchmark = method()
 runBenchmark Ideal := Ideal => I -> (
+  runBenchmark(I, "stdout")
+)
+
+runBenchmark (Ideal,String) := Ideal => (I,ff) -> (
  R = ambient ring I;
  p := char R;
  assert( p == 2 );
@@ -26,24 +51,27 @@ runBenchmark Ideal := Ideal => I -> (
  tt := first T;
  G := last T;
  print ("Lex Order of (I+FP):\t\t\t\t" | toString tt | " seconds.");
+ ff << "Lex Order of (I+FP):\t\t\t\t" << toString tt << " seconds." << endl;
 
  RgRevLex = ZZ/(char R)[gens R, MonomialOrder=>GRevLex];
  T = timing gens gb( sub( I, RgRevLex) + sub( FP, RgRevLex) );
  tt = first T;
  G = ideal last T;
  print ("GRevLex Order of (I+FP):\t\t\t" | toString tt | " seconds.");
+ ff << "GRevLex Order of (I+FP):\t\t\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( G, Rlex) + sub( FP, Rlex) );
  tt = first T;
  G = ideal last T;
  print ("Lex order from GRevLex basis of (I+FP):\t\t" | toString tt | " seconds.\n");
+ ff << "Lex order from GRevLex basis of (I+FP):\t\t" << toString tt << " seconds.\n" << endl;
 
  QRlex = Rlex/ sub( FP, Rlex);
 -- T = timing gens gb( sub( I, QRlex));
 -- tt = first T;
 -- G = last T;
 -- print ("Quotient Ring Lex Order:\t\t\t" | toString tt | " seconds.");
-
+--
  QRgRevLex = RgRevLex/ sub( FP, RgRevLex);
 -- T = timing gens gb( sub( I, QRgRevLex));
 -- tt = first T;
@@ -53,28 +81,32 @@ runBenchmark Ideal := Ideal => I -> (
 -- T = timing gens gb( sub( G, QRlex));
 -- tt = first T;
 -- G = last T;
--- print ("Quotient Ring GRevLex Order:\t\t\t" | toString tt | " seconds.\n");
+-- print ("Quotient Ring Lex order from GRevLex basis:\t\t\t" | toString tt | " seconds.\n");
  
  T = timing gens gb( sub( I, QRlex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
  print ("Quotient Ring Lex Order, Sugarless:\t\t" | toString tt | " seconds.");
+ ff << "Quotient Ring Lex Order, Sugarless:\t\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( I, QRgRevLex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
  print ("Quotient Ring GRevLex Order, Sugarless:\t\t" | toString tt | " seconds.");
+ ff << "Quotient Ring GRevLex Order, Sugarless:\t\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( G, QRlex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
- print ("Quotient Ring GRevLex Order, Sugarless:\t\t" | toString tt | " seconds.\n");
+ print ("Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" | toString tt | " seconds.\n" << endl;
+ ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" << toString tt << " seconds.\n");
  
  T = timing gbBoolean I;
  tt = first T;
  G = last T;
  print ("gbBoolean:\t\t\t\t\t" | toString tt | " seconds.\n\n");
- 
+ ff << "gbBoolean:\t\t\t\t\t" << toString tt << " seconds.\n\n" << endl;
+
  G
 )
 
@@ -129,10 +161,48 @@ SeeAlso
   "BooleanGB"
 ///
 
+doc ///
+Key
+  makeBooleanNetwork 
+  (makeBooleanNetwork, QuotientRing, ZZ, ZZ)
+Headline
+  generate a random ideal in a quotient ring 
+Usage
+  I = makeBooleanNetwork( QR, valence, nterms)
+Inputs
+  QR:QuotientRing
+    a quotient ring with char 2
+  valence:ZZ
+    number of variables involved in each generator
+  nterms:ZZ
+    number of terms in each generator
+Outputs
+  G:Matrix
+    a random ideal
+Consequences
+Description
+  Text 
+    Generate a random network
+  Example
+    R = ZZ/2[x,y,z]/(x^2+x, y^2+y, z^2+z)
+    makeBooleanNetwork(R, 2, 2)
+  Code
+  Pre
+Caveat
+SeeAlso
+  (BenchmarkGb)
+  "BooleanGB"
+///
+
 TEST ///
   R = ZZ/2[x,y,z]
   I = ideal(x+y,x)
   runBenchmark I 
+///
+
+TEST ///
+  R = ZZ/2[x,y,z]/(x^2+x, y^2+y, z^2+z)
+  makeBooleanNetwork(R, 2, 2)
 ///
 
 
@@ -150,5 +220,5 @@ viewHelp runBenchmark
 
 R = ZZ/2[x,y,z]
 I = ideal(x+y)
-runBenchmark I 
-load "benchmarks.m2"
+runBenchmark (I, "outputtmp.txt")
+"outputtmp.txt" << close
