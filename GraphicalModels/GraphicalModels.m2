@@ -178,8 +178,7 @@ pairMarkovStmts Digraph := (G) -> (
      -- where A,B,C are disjoint sets, and for every vertex v
      -- and non-descendent w of v,
      -- {v, w, nondescendents(G,v) - w}
-     G = convertToIntegers(G);
-     removeRedundants flatten apply(toList(1..#G), v -> (
+     removeRedundants flatten apply(keys G, v -> (
 	       ND := nondescendents(G,v);
 	       W := ND - parents(G,v);
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
