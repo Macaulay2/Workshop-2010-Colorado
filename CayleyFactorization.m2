@@ -59,27 +59,35 @@ newPackage(
 
    
   -- Josephine's code:  Step 2 --
+ 
+ ------------------- Step 2 ------------------------------------------------ 
   
   factorBrackets = (P, d, n, L) -> (
-       -- INPUT: P is a bracket polynomial in Grassmannian(d,n);
+       -- INPUT: P is a polynomial in Grassmannian(d,n);
        --     	 L is a list of atomic extensors of P; 
        --        each element of L is a list of indices.
        -- Output: {L', P'} where L' is the list of step d+1 extensors of P, 
        --         and P' is the result of factoring out elements of L' from P
        -- author: Josephine Yu
        -- date: August 8, 2010
-       exFactors := apply(#L, i ->
-	    if(#(L#i) == d+1) then (
-	    l := sort toList(L#i);
-	    sigma := l | sort(toList (set(0..n) - l) ); -- reorder so that indices in l comes first in the straightening order
-	    permP := sub(P , matrix{permutePoints(ring P,n,sigma)}); -- apply permutation with signs
-	    if(permP % (ring P)_0 == 0) then (
-	    	 P = sub(permP/ring(P)_0, matrix{permutePoints(ring P,n, inversePermutation sigma)});
-	    	 )
-	    )
-       );
-       {exFactors, P}
-  )
+       extensorFactors := apply( select(L, ll -> (#ll == d+1)), l -> ( indicesToRingElement(ring P, d, n, sort toList(l))) ); -- list all step d+1 extensors and convert them into variables in ring of P
+       productFactors := product extensorFactors;
+       if(P % productFactors == 0) then (
+    	 P = P/productFactors; 
+        {extensorFactors, P}
+       ) else (
+       	 print("error: the input polynomial is not divisible by the given bracket variables");
+       )
+      )
+  
+   ------------------- Step 3 ------------------------------------------------ 
+
+-- findPairFactor = (P, d, n, L) -->
+      -- INPUT: P is a polynomial in Grassmannian(d,n);
+      --     	 L is a list of atomic extensors of P; 
+  
+   -------------------- Auxiliary functions ---------------------------------
+
   
   permutePoints = (R, n, sigma) -> (
        -- INPUT: R is Grassmannian(*,n)
@@ -94,6 +102,7 @@ newPackage(
 	 )
        )
   
+ ------------------------------------------------------------------- 
 
   indicesToRingElement = (R, d, n, indexList) -> (
       -- INPUT:  R is the ring of Grassmannian(d,n), 
@@ -113,6 +122,8 @@ newPackage(
       )
  )
   
+   ------------------------------------------------------------------- 
+
   sign = sigma ->(
        -- Sign of a permutation
        product apply(subsets(#sigma,2), l -> (
@@ -121,6 +132,9 @@ newPackage(
 	    )
        )
 
+ ------------------------------------------------------------------- 
+
+
 ----- TEST
 
 ---- Josephie's tests
@@ -128,13 +142,17 @@ newPackage(
 end
 restart
 debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M2codes/Colorado-2010/CayleyFactorization.m2")
-Grassmannian(2,5)
-use((ring oo) / oo)
+Grassmannian(2,5);
+use((ring oo) / oo);
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
   P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4)
+ P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
 l = {1,2,5}
 n=5;
 d=2;
+L = {{0,1,2},{1,3},{3,4,5},{0,1,4,5},{1,3,5}};
+L = {{0,1,2},{1,3},{3,4,5},{0,1,4,5}};
+factorBrackets(P, d, n, L)
 
 ------ Jessica's tests
 
