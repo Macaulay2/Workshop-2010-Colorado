@@ -107,9 +107,7 @@ newPackage(
 	*}
    points:= toList (0..n);
    points = replace(a,b,points);
-   S = permutePoints(R,d,n,points);
-     	  f:=map(R,R, toList S);
-	  f(P)==0_R
+   permutePoints(P,d,n,points) == 0_R
 )	     
 
   -- Josephine's code:  Step 2 --
@@ -134,20 +132,20 @@ newPackage(
        )
       )
 
-   ------------------- Step 3 ------------------------------------------------ 
+   ------------------- Step 3 and 4 ------------------------------ 
 
  findPairFactor = (P, d, n, L) -> (
       -- INPUT: P is a polynomial in Grassmannian(d,n);
       --     	 L is a list of atomic extensors of P; 
       -- OUTPUT: A pair (E,F) such that E ^ F is a primitive factor of P
-      -- Method: Step 3 in Algorithm 3.5.6 of Sturmfels' Algorithmic Inv. Theory
+      -- Method: Step 3 & 4 in Algorithm 3.5.6 of Sturmfels' Algorithmic Inv. Theory
       atomicExt := select(L, ll-> (#ll =!= d+1));
       scan(subsets(#atomicExt,2), a -> (
-		E := atomicExt#(a#0);
-		F := atomicExt#(a#1);
+		E := toList atomicExt#(a#0);
+		F := toList atomicExt#(a#1);
 		if(#E + #F > d+1) then (
 		     newOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F)); 
-		     PermP := sub(P, matrix{permutePoints(ring P, d,n, newOrder)});
+		     PermP := permutePoints(P, d,n, newOrder);
 		     found := 1;
 		     scan(terms PermP, monomial -> (
 			  supp := (support(monomial))_{0,1};
@@ -160,28 +158,51 @@ newPackage(
 			  )
 		     );
 		     if(found == 1) then  (
-		     	  break({E,F});
-		     );
+			  newIndices := toList(0..(#E + #F - d -2));
+			  substitutions := select( apply(unique flatten ((terms P) / support), v -> (
+			       ind := toList (baseName v)#1;
+			       if(isSubset(ind, E|F)) then (
+				    if(ind == toList(0..d)) then (v => 1)
+				    else(v => 0) -- this kills all except the first representative (the one with p_(0..d)) in the dotted expression
+				    )
+			       else (
+				    dif := toList((set ind)-F);
+				    if(#dif < #ind) then (v => indicesToRingElement(ring P, d, n, newIndices|dif))
+		               	    )
+			       )
+		     	  ), a -> a =!= null);
+		     	  break({a, {E,F}, sub(P, substitutions)});			  
+		     )
 	  	)
       )
   )
 )
+
+
   
    -------------------- Auxiliary functions ---------------------------------
 
-  
-  permutePoints = (R,d, n, sigma) -> (
-       -- INPUT: R is Grassmannian(d,n)
+  permutePoints = method();
+  permutePoints(Ring, ZZ, ZZ, List) := List => (R,d, n, sigma) -> (
+       -- INPUT: R is coordinate ring of Grassmannian(d,n)
        --     	 sigma is a list of length of n, containing elements from {0,..,d}, with repetition allowed
        -- OUTPUT: list of "permuted variable"s, can be used to make a ring map
-       -- author: Josephine Yu
-       -- date: August 8, 2010
        apply(flatten entries vars R, v -> (
-	     newIndex := apply(toList (baseName v)#1, i -> sigma#i);
-     	     indicesToRingElement(R, d,n, newIndex)
+     	     indicesToRingElement(R, d,n, apply(toList (baseName v)#1, i -> sigma#i))
 	 ) 
 	 )
        )
+  permutePoints (RingElement, ZZ, ZZ, List) := RingElement => (P, d, n, sigma) -> (
+   	-- INPUT:  P is a polynomial in coordinate ring of Grassmannian(d,n), sigma as above
+	-- OUTPUT:  another polynomial in same variables, after substitution
+	-- This one does substitutions only for the variables appearing in the polynomial P
+      sub(P, apply(unique flatten ((terms P) / support), v -> (
+			     v => indicesToRingElement(R, d,n, apply(toList (baseName v)#1, i -> sigma#i))
+     	       	    	       )
+      			  )
+       )
+  )
+
   
  ------------------------------------------------------------------- 
 
@@ -191,16 +212,12 @@ newPackage(
       --     	  The list gets sorted and appropriate sign is assigned
       --     	  If there are repeated indices, 0 is assigned
       -- OUTPUT: the Plucker variable with indices indexList
-      if(#indexList == d+1 and isSubset(set indexList, set(0..n)) ) then (
-    	   if(#(unique indexList) == #indexList) then (
+    	   if(#(set indexList) == #indexList) then (
 	   	 sig := sign indexList;
        	    	 sig * sub(value ((baseName R_0)#0)_(toSequence(sort indexList)), R)
 	    ) else (
 	    	 sub(0, R)
     		 )
-      ) else (
-          print "error:  index set has wrong size or contains illegal elements";
-      )
  )
   
    ------------------------------------------------------------------- 
@@ -212,6 +229,25 @@ newPackage(
 		 )
 	    )
        )
+
+ ------------------------------------------------------------------- 
+-------------------  the main function -------------------------
+ ------------------------------------------------------------------- 
+
+cayleyFactor = method();
+cayleyFactor(RingElement, ZZ, ZZ) := List => (P,d,n) -> (
+     cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
+     )
+cayleyFactor(RingElement, ZZ, ZZ, List) := List => (P,d,n, partialAtomicExt) -> (
+     L := toList listAtoms(P,partialAtomicExt, d,n);
+     pureFactors := factorBrackets(P,d,n,toList L);
+     P = pureFactors#1;
+     pairFactor := findPairFactor(P,d,n,L);
+     newIndices := set(0..(#pairFactor#1#0+#pairFactor#1#1-d-2));
+     newPartialAtomicExt := append(drop(L, pairFactor#0), newIndices);    
+     cayleyFactor(pairFactor#2, newPartialAtomicExt, d,n)
+)
+
 
  ------------------------------------------------------------------- 
 
@@ -242,8 +278,10 @@ R = ring Grassmannian(2,8);
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8)
 L=listAtoms(P, 2, 8)
 L = apply((toList L),a->toList a)
+L = reverse L
 factorBrackets(P,d,n,toList L) 
 findPairFactor(P,d,n,L)
+sigma = {2,3,0,1,5,7,6,8,4}
 ------ Jessica's tests
 
 end
