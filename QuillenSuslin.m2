@@ -39,6 +39,7 @@ computeFreeBasis(Matrix) := Matrix => phi -> (
 
 -- Shortcuts from fabianska's PhD thesis
 -- 
+-- This is the one that works.
 applyRowShortcut = method()
 applyRowShortcut(Matrix) := g -> (
      R := ring g;
