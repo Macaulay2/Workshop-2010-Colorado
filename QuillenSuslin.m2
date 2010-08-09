@@ -50,17 +50,7 @@ applyRowShortcut(Matrix) := g -> (
      
      if s =!= null
      then (
-	  
 	  F := (matrix {{f_s*1_R}})^-1;
-	  
---     	  W := mutableIdentity(R,n);
---	  W_(s,s) = F_(0,0);
---	  V := mutableIdentity(R,n);
---	  scan(n, i -> ( V_(s,i) = -f_i ) );
---	  V_(0,s) = 0;
---	  V_(s,s) = 1;
---	  U1 := matrix W*matrix V;
-	  
 	  U1 := mutableIdentity(R,n);
 	  scan( n, i -> ( U1_(s,i) = -F_(0,0)*f_i ) );
 	  U1_(s,s) = F_(0,0);
@@ -69,37 +59,36 @@ applyRowShortcut(Matrix) := g -> (
      
      -- fabianska shortcut 2.2.1(2)
      S := subsets(f,2);
-     h := scan ( #S, i -> ( 
+     h := scan ( #S, i -> o( 
 	       if ideal S_i == R 
 	       then break S_i;
 	       )
 	  );
      if h =!= null
      then (
-	  s := position( f, i -> ( i == h_0 ) );
+	  ss := position( f, i -> ( i == h_0 ) );
 	  t := position( f, i -> ( i == h_1 ) );
 	  	  
 	  H := 1_R//gens ideal h;
 	  W := mutableIdentity(R,n);
-	  W_(s,0) = H_(0,0);
+	  W_(ss,0) = H_(0,0);
 	  W_(t,0) = H_(1,0);
-	  W_(s,1) = -h_1;
+	  W_(ss,1) = -h_1;
 	  W_(t,1) = h_0;
-	  if ( s>1 or t>1 )
+	  if ( ss>1 or t>1 )
 	  then (
 	       r := first rsort {s,t};
 	       W_(1,1) = 0;
 	       W_(1,r) = 1;
 	       W_(r,r) = 0;
 	       );
-	  (D,P,V) := smithNormalForm ( matrix {f}*matrix W );
-	  U2 := matrix W*V;
+	  G := delete( h_1, delete( h_0, f ) );
+	  V := mutableIdentity(R,n);
+	  scan(2..(n-1), i -> ( V_(0,i) = -G_(i-2) ) );
+	  U2 := matrix W*matrix V;
 	  return U2;
 	  );
 )
-
-	 
-     
 
 beginDocumentation()
 
