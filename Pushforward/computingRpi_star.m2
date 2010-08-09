@@ -129,7 +129,6 @@ RpistarLinPres(Module) := (M) -> (
      E := ring phi;
      FF := res( image phi, LengthLimit => regM);
      complete FF;
-     E := ring FF;
      FF = E^{-xm} ** FF[regM];
      FF0 := degreeD(0, FF);
      toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
