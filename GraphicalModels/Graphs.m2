@@ -4,7 +4,7 @@ newPackage("Graphs",
 	  {Name => "Amelia Taylor"},
 	  {Name => "Augustine O'Keefe"}
 	  },
-     ---- Also Doug Torrence.  Current role of Amelia and Tina?
+     ---- Also Doug Torrance.  Current role of Amelia and Tina?
      DebuggingMode => true,
      Headline => "Data types, visualization, and basic funcitons for graphs",
      Version => "0.1"
@@ -13,7 +13,7 @@ newPackage("Graphs",
 export {Graph, Digraph, LabeledGraph, graph, digraph, labeledGraph, Singletons, descendents, nondescendents, 
      parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
      simpleGraph, removeNodes, inducedSubgraph, completeGraph,
-     cycleGraph, writeDotFile}
+     cycleGraph, writeDotFile,SortedDigraph,topSort,DFS}
 exportMutable {dotBinary,jpgViewer}
 
 
@@ -373,9 +373,7 @@ DFS(Digraph) := G -> (
      H#f
      )
 
-DFSvisit = method()
-     -- subroutine for DFS
-DFSvisit(MutableHashTable,Thing) = (H,u) -> (
+DFSvisit = (H,u) -> (
      H#color#u = "gray";
      H#t = H#t+1;
      H#d#u = H#t;
