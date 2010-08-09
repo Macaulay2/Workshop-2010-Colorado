@@ -300,13 +300,13 @@ children = method()
 children(Digraph,Thing) := (G,v) -> G#v
 
 neighbors = method()
-     -- Input: A digraph and the key for the vertex of interest.
+     -- Input: A graph and the key for the vertex of interest.
      -- Output: The set of vertices that are neighbors of the vertex 
      --	    	of interest.
 neighbors(Graph,Thing) := (G,v) -> G#v  
 
 nonneighbors = method()
-     -- Input: A digraph and the key for the vertex of interest.
+     -- Input: A graph and the key for the vertex of interest.
      -- Output: The set of vertices that are not neighbors of the vertex 
      --	    	of interest.
 nonneighbors(Graph, Thing) := (G,v) -> keys G - neighbors(G,v)-set{v}
@@ -393,8 +393,10 @@ doc ///
       This package is used to construct digraphs and graphs and
       perform basic functions on them. The user should note that this
       package assumes that all digraphs are acyclic.  Also, graphs are 
-      assumed to have no loops or multiple edges. 
-      To view graphs and digraphs the software Graphviz 
+      assumed to have no loops or multiple edges. This package has
+      functions to view graphs and digraphs.  These functions call the program
+      Graphviz and is only set up to function on Macintosh computers, at
+      this time. 
   Caveat
     When asked to display a graph, this package converts the way M2 
     stores information for a graph into a format readable by the 
@@ -569,16 +571,14 @@ doc ///
        containing the names of the parents of the node
   Description
     Text
-      This function takes as input a @TO digraph@ and the name given
-      to the node of interest.  It returns the set of the names
-      for the vertices that are the parents of that node.
+      This function takes as input a @TO digraph@ and the name of
+      the node of interest.  It returns the set of the names
+      for the vertices that are the parents of the node given.
     Example
       D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
   	  {f, {}}, {g, {}}, {h, {}}})
       pA = parents(D,e)
 ///
-
-end
 
 doc ///
   Key
@@ -596,16 +596,29 @@ doc ///
        containing the names of the children of the node
   Description
     Text
-      lkjlkjlkj
+       This function takes as input a @TO digraph@ and the name of 
+       the node of interest.  This function returns the set of the names
+       for the vertices that are the children of the node given. 
+    Example
+      D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
+  	  {f, {}}, {g, {}}, {h, {}}})
+      cH = children(D,e)
 ///
+
 
 doc ///
   Key
     neighbors
   Headline
+    Returns the neighbors of a given node in a graph or digraph. 
+  Usage
+  Inputs
+  Outputs
   Description
     Text
 ///
+
+end
 
 doc ///
   Key
