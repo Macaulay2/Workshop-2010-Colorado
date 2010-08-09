@@ -84,7 +84,7 @@ localMarkovStmts Dint --executed, comparison against Markov.m2 OK
 --  pseudocode for DFSvisit(u):
 --color(u)=gray --vtx has just been discovered
 --time = time+1
---d(u) time
+--d(u)=time
 --for each v in Adjacent(u) do: --explore edge (u,v)
 --     if color(v)==white then parent(v)=u; DFSvisit(v);
 --color(u)=black --u is finished
@@ -94,13 +94,15 @@ localMarkovStmts Dint --executed, comparison against Markov.m2 OK
 
 
 -------------------------------------
--- testing function "markovRing":
+-- testing function "markovRing", "markovIdeal", "markovMatrices":
 -------------------------------------
 
 help markovRing --doc there. comments: needs update?
 R = markovRing(2,3,4,5) --ok
 numgens R
 R_0 --the first variable.
+
+help markovIdeal --no doc.
 
 -------------------------------------
 -- I have no idea what these do:
@@ -115,3 +117,5 @@ hideMap(1,R) --works but needs to be studied;
 help marginMap --no doc.
 marginMap(1,markovRing(2,3))-- this marginalizes the first variable, as expected :)
 --this is supposed to be used to marginalize hidden vars!!
+
+
