@@ -16,7 +16,7 @@ help GraphicalModels
 --y           * "markovMatrices"
 --y          * "markovRing" -- ring of probability distributions on several discrete random variables
 --y           * "pairMarkovStmts"
---           * "removeRedundants"
+--removed!           * "removeRedundants"
 
 -------------------------------------
 -- make a graph and a digraph 

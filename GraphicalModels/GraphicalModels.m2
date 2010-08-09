@@ -46,7 +46,7 @@ newPackage(
 
 
 export {localMarkovStmts, globalMarkovStmts, pairMarkovStmts,
-       markovRing, marginMap, hideMap, markovMatrices, markovIdeal, removeRedundants, 
+       markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
        gaussRing, gaussMinors, gaussIdeal, gaussTrekIdeal}
      
 needsPackage"Graphs"
@@ -274,9 +274,9 @@ under = (d) -> (
            e0 := subsets d0;
            e1 := subsets d1;
            z1 := flatten apply(e0, x -> apply(e1, y -> (
-      		    {set{d01_0 - set x, d01_1 - set y}, set x + set y +  d_1})));--added "set" to d_1 [9aug2010]
+      		    {set{d01_0 - set x, d01_1 - set y}, set x + set y +  d_1})));-- see comment at removeRedundants
            z2 := flatten apply(e0, x -> apply(e1, y -> (
-      		    {set{d01_0 - set x, d01_1 - set y},  d_1})));--added "set" to d_1 [9aug2010]
+      		    {set{d01_0 - set x, d01_1 - set y},  d_1})));-- see comment at removeRedundants
            z = join(z1,z2);
            z = select(z, z0 -> not member(set{}, z0_0));
            set z
@@ -320,7 +320,10 @@ removeRedundants = (Ds) -> (
      -- Ds is a list of triples of sets {A,B,C}
      -- test1: returns true if D1 can be removed
      -- Return a sublist of Ds which removes any 
-     --  that test1 declares not necessary.
+     -- that test1 declares not necessary.
+     --**CAVEAT: this works just fine when used internally, e.g. from localMarkovStmts. 
+     --  However, if we export it and try to use it, there is a problem: we seem to be 
+     --  attempting to add a List to a Set in 2 lines of "under".
      test1 := (D1,D2) -> (D1_2 === D2_2 and 
                           ((isSubset(D1_0, D2_0) and isSubset(D1_1, D2_1))
 	               or (isSubset(D1_1, D2_0) and isSubset(D1_0, D2_1))));
