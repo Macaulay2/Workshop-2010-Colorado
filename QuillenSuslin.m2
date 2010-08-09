@@ -93,6 +93,36 @@ applyRowShortcut(Matrix) := g -> (
 )
 
 
+-- Input: A module P over a Noetherian ring R.
+-- Output: 'true' if P is projective, 'false' if P is not projective.
+
+isProjective = method()
+isProjective(Module) := P -> (
+     local i; local R; local p;
+     R = ring(P);
+     p = presentation(P);
+     i = min({rank target p, rank source p});
+     while minors(i,p) == 0 and i > 0 do i=i-1;
+     if minors(i,p) == R then return true else return false;
+)
+
+
+-- This method takes a unimodular matrix phi over a PID and returns a unimodular matrix U such that phi*U = (I | 0).
+-- This works as long as Macaulay2 computes the Smith normal form like I think it does.
+
+qsAlgorithmPID = method()
+qsAlgorithmPID(Matrix) := Matrix => phi -> (
+     local D; local F; local G; local H1; local H2; local U';
+     (D,F,G) = smithNormalForm(phi);
+     H1 = submatrix(G,[0..(rank source phi - 1)],[0..(rank target phi - 1)]);
+     H2 = submatrix(G,[0..(rank source phi - 1)],[(rank target phi)..(rank source phi - 1)]);
+     U' = H1*F | H2;
+     V = submatrix(phi*U',[0..rank target phi-1],[0..rank target phi-1]);
+     B = prune image(V);
+     C = gens B // V;
+     U = U'*(C ++ map(R^(rank source phi - rank target phi)));
+     return U; 
+)
 
 
 beginDocumentation()
