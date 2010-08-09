@@ -11,8 +11,8 @@ needsPackage "NumericalSchubertCalculus"
 --- to a different flag
 --------------------------------------
 
-solveHomotopic = method(TypicalValue=>List)
-solveHomotopic(Sequence, Sequence, List, List) := (kn,cond,G,F) ->(
+trackSimpleSchubert = method(TypicalValue=>List)
+trackSimpleSchubert(Sequence, Sequence, List, List) := (kn,cond,G,F) ->(
    -- k and n are integers defining the Grassmannian G(k,n)
    (k,n) := kn;
    -- l and m are partitions of n
@@ -40,7 +40,7 @@ findGaloisElement(Sequence, List, List) :=(prblm, flgs, solns) ->(
      if #m < k then x = for i to k-#m-1 list 0;
      m = m | x; -- makes sure m have size k
      ---------------------------------------------------
-     --d := k*(n-k)-sum(l)-sum(m);
+     d := k*(n-k)-sum(l)-sum(m);
      -- create a random flag to start a loop
      -- We will work only from a short loop
      -- so we need only the first two rows
@@ -50,13 +50,12 @@ findGaloisElement(Sequence, List, List) :=(prblm, flgs, solns) ->(
      tmpMtrx := mutableMatrix(flgs#(d-1) || F);
      tempSlns := solns;
      apply(swaps, j->(
-	       M1 := submatrix'(matrix tmpMtrx, {n-k, n-k+1});
+	       M1 := submatrix'(matrix tmpMtrx, {n-k, n-k+1},);
 	       rowSwap(tmpMtrx, j, n-k+j);
-	       M2 := submatrix'(matrix tmpMtrx, {n-k,n-k+1});
-	       print(flgs,M1,M2);
-	       tempSlns = solveHomotopic((k,n), (l,m), drop(flgs, -1) | {M1}, drop(flgs, -1) | {M2});
+	       M2 := submatrix'(matrix tmpMtrx, {n-k,n-k+1},);
+	       tempSlns = trackSimpleSchubert((k,n), (l,m), drop(flgs, -1) | {M1}, drop(flgs, -1) | {M2});
 	       ));
-     position(solns, tempSlns, (i,j)-> i == j)
+     apply(solns, s->positions(tempSlns, j->areEqual(j,s))) / first
      )
 end
 
@@ -73,3 +72,16 @@ G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
 S = solveSimpleSchubert((k,n),l,m,G);
 
 findGaloisElement((l,m,k,n), G, S)
+
+	F = matrix apply(2, i->apply(n,j->random CC));
+   swaps = {0,1,0,1};
+   tmpMtrx = mutableMatrix(G#(d-1) || F);
+   tempSlns = S;
+   apply(swaps, j->(
+       M1 = submatrix'(matrix tmpMtrx, {n-k, n-k+1},);
+       rowSwap(tmpMtrx, j, n-k+j);
+       MN2 = submatrix'(matrix tmpMtrx, {n-k,n-k+1},);
+       tempSlns = solveHomotopic((k,n), (l,m), drop(G, -1) | {M1}, drop(G, -1) | {MN2});
+       ));
+   apply(S, s->positions(tempSlns, j-> areEqual(j,s)))   
+

@@ -23,6 +23,8 @@ export {
 --          Abraham Martin del Campo
 --
 -- Date:  October 29, 2009
+--
+-- Last Update: August 9, 2010
 -----------------------
 
 needsPackage "NumericalAlgebraicGeometry"
@@ -226,6 +228,63 @@ solveEasy(RingElement) := (p)->(
    {{toCC sub((-b)/a, coefficientRing R)}}
 )
 
+
+	--------------------------------------
+	--- trackSimpleSchubert will be a function
+	--- to find solution from a specific instance 
+	--- of a Schubert problem using homotopy 
+	--- continuation starting from solving
+	--- another instance (hopefully easier) of
+	--- the Schubert problem, but with respect 
+	--- to a different flag
+	--------------------------------------
+
+	trackSimpleSchubert = method(TypicalValue=>List)
+	trackSimpleSchubert(Sequence, Sequence, List, List) := (kn,cond,G,F) ->(
+	   -- k and n are integers defining the Grassmannian G(k,n)
+	   (k,n) := kn;
+	   -- l and m are partitions of n
+	   (l,m) := cond;
+	   -- G is the start flag and F the target flag
+
+	   Sols:=solveSimpleSchubert(kn,l,m,G);
+	   E := skewSchubertVariety(kn,l,m);
+	   Start:=apply(G, g->det( matrix E || sub(g, ring E),Strategy=>Cofactor));
+	   Target:=apply(F,f->det( matrix E || sub(f, ring E),Strategy=>Cofactor));
+		 track(Start,Target,Sols,gamma=>exp(2*pi*ii*random RR)) / first
+	)
+
+	findGaloisElement = method()
+	findGaloisElement(Sequence, List, List) :=(prblm, flgs, solns) ->(
+	     -- prblm is a List that contains
+	     -- partitions l and m, and integers k,n 
+	     -- that define the 
+	     -- simple Schubert problem in Gr(k,n)
+	     (l,m,k,n):=prblm;
+	     ----- make sure both partitions are of size k  ----
+	     x:={};
+	     if #l < k then x = for i to k-#l-1 list 0;
+	     l = l | x; -- makes sure l have size k
+	     if #m < k then x = for i to k-#m-1 list 0;
+	     m = m | x; -- makes sure m have size k
+	     ---------------------------------------------------
+	     d := k*(n-k)-sum(l)-sum(m);
+	     -- create a random flag to start a loop
+	     -- We will work only from a short loop
+	     -- so we need only the first two rows
+	     -- of a random flag
+	     F := matrix apply(2, i->apply(n,j->random CC));
+	     swaps := {0,1,0,1};
+	     tmpMtrx := mutableMatrix(flgs#(d-1) || F);
+	     tempSlns := solns;
+	     apply(swaps, j->(
+		       M1 := submatrix'(matrix tmpMtrx, {n-k, n-k+1},);
+		       rowSwap(tmpMtrx, j, n-k+j);
+		       M2 := submatrix'(matrix tmpMtrx, {n-k,n-k+1},);
+		       tempSlns = trackSimpleSchubert((k,n), (l,m), drop(flgs, -1) | {M1}, drop(flgs, -1) | {M2});
+		       ));
+	     apply(solns, s->positions(tempSlns, j->areEqual(j,s))) / first
+	 )
 
 -------------------
 -- Documentation --
