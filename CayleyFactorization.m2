@@ -125,6 +125,7 @@ newPackage(
 
 ---- Josephie's tests
  
+end
 restart
 debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M2codes/Colorado-2010/CayleyFactorization.m2")
 Grassmannian(2,5)
