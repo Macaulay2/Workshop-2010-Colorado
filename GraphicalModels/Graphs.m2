@@ -332,6 +332,60 @@ inducedSubgraph(Digraph, List) := (G,v) -> (
      new Digraph from G
      )
 
+----------------------
+-- Topological Sort --
+----------------------
+
+SortedDigraph = new Type of HashTable
+     -- 3 keys:
+     -- digraph: original digraph
+     -- newDigraph: digraph with vertices labeled as integers obtained from sorting
+     -- map: gives sorted order
+     
+-- functions adapted from pseudocode given in Cormen, Introduction to algorithms --
+
+topSort = method()
+     -- Input: A digraph
+     -- A sorted digraph, topologically sorted
+topSort(Digraph) := G -> (
+     L := reverse apply(sort apply(pairs DFS G,reverse),p->p_1);
+     H := hashTable{
+	  digraph => G,
+	  newDigraph => digraph hashTable apply(#L,i->i+1=>apply(G#(L_i),j->position(L,k->k==j)+1)),
+	  map => hashTable apply(#L,i->L_i => i+1)
+	  };
+     new SortedDigraph from H
+     )     
+
+DFS = method()
+     -- Input: A digraph
+     -- Output: the finishing times for each vertex after a depth-first search
+DFS(Digraph) := G -> (
+     H := new MutableHashTable;
+     H#graph = G;
+     H#color = new MutableHashTable;
+     H#p = new MutableHashTable;
+     H#d = new MutableHashTable;
+     H#f = new MutableHashTable;
+     H#t = 0;
+     scan(keys(G),u->(H#color#u="white";H#p#u=nil));
+     scan(keys(G),u->if H#color#u == "white" then H = DFSvisit(H,u));
+     H#f
+     )
+
+DFSvisit = method()
+     -- subroutine for DFS
+DFSvisit(MutableHashTable,Thing) = (H,u) -> (
+     H#color#u = "gray";
+     H#t = H#t+1;
+     H#d#u = H#t;
+     scan(children(H#graph,u),v->if H#color#v == "white" then (H#p#v = u;H = DFSvisit(H,v)));
+     H#color#u = "black";
+     H#t = H#t+1;
+     H#f#u = H#t;
+     H
+     )
+
 -------------------
 -- Common Graphs --
 -------------------
