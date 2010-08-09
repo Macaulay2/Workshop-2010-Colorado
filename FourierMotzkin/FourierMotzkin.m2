@@ -648,23 +648,30 @@ putMatrix (File, Matrix) := (F,A) ->(
 	  );
 	
 	F << "end" << endl;
-	
-	
 )
+apply(10, l -> <<l+1<<" ")<<endl
+putMatrix (File, Matrix, Matrix) := (F,C,B) -> (
+     	F << "polytope" << endl;
+	F << "H-representation" << endl;
+	F << "linearity " << numColumns B << " " << apply(numColumns B, l-> << l+1 << " ") <<endl;
+	F << "begin" << endl;
+	A := B|C;
+	m := numColumns A;
+	n := numRows A;
+	A = matrix({toList(m:0)})||A;
+	F << m << " " << n+1 << " rational" << endl;
+	L := entries transpose A;
+        for i from 0 to m-1 do (
+	  for j from 0 to n do (
+	       F << L#i#j << " ";
+	       );
+	  F << endl;
+	  );
+	
+	F << "end" << endl;
+	)
 
-transpose {toList(4:0)}
-A = transpose matrix {
-{1,1,0,0},
-{-1,-1,0,0},
-{1,0,1,0},
-{1,0,0,1},
-{0,0,0,0},
-{0,0,0,0},
-{1,-1,0,0},
-{1,0,-1,0},
-{1,0,0,-1}}
-B := -A;
-lrs B
+
 loadPackage "FourierMotzkin"
 f = fourierMotzkin B
 sort f#0
@@ -672,49 +679,83 @@ lrs B
 cdd B
 viewHelp FourierMotzkin
 
-l = get "in7.ine"
-l = separateRegexp("begin|end",l)
-l = separateRegexp("begin",l)
-l =l#1
-l = separateRegexp("end",l)
-l = l#0
-C = getMatrix "in5.ine"
-cdd C
-lrs C
 
+
+-- Good examples
 compare "in2.ine"
 compare "in3.ine"
+compare "cyc.ine"
+compare "cube.ine"
+compare "cube2.ine"
+compare "cross4.ine"
+compare "cubetop.ine"
+
+-- Bad examples
 compare "in4.ine"
 compare "in5.ine"
 compare "in6.ine"
 compare "in7.ine"
-compare "cyc.ine"
-compare "cube.ine"
-compare "cube2.ine"
+compare "mit31_20.ine"
 
-
+A=time sort (fourierMotzkin getMatrix "in5.ine")#0
+lrs getMatrix "in5.ine"
+C=time sort submatrix((cdd getMatrix "in5.ine"),{1..10},{0..91})
+C = transpose matrix apply(transpose entries C,l->primitive toZZ l);
+C
+A-C
+B=sort submatrix((cdd getMatrix "in4.ine"),{1..8},{0..53})
+B = transpose matrix apply(transpose entries B,l->primitive toZZ l);
+ B
+A-B
 getMatrix "cyc.ine"
+
+C = transpose matrix{{1,1,0}, {0,1,1}}
+H = transpose matrix{{1,0,-1}}
+C|H
+fourierMotzkin (C,H)
+lrs(C,H)
+P = fourierMotzkin fourierMotzkin (C,H)
+assert(P#0 == transpose matrix{{0,1,1}})
+assert(P#1 == H)
+
+
+-- divides a list of integers by their gcd.
+primitive = method();
+primitive List := List => L -> (
+     -- finding greatest common divisor
+     n := #L-1;
+     g := abs(L#n);
+     while (n > 0) do (
+	  n = n-1;
+	  g = gcd(g, L#n);
+	  if g === 1 then n = 0);
+     if g === 1 then L 
+     else apply(L, i -> i // g))
+
+-- Converts a list of 'QQ' to 'ZZ' by multiplying by a common denominator
+toZZ = method();
+toZZ List := List => L -> (
+     -- finding common denominator
+     d := apply(L, e -> denominator e);
+     l := lcm d;
+     apply(L, e -> (numerator(l*e))))
+
 
 compare = method()
 compare String := filename ->(
      D := getMatrix(filename);
      A := cdd D;
      B := lrs D;
-     A = matrix select(transpose entries A, a->a#0==0);
-     B = matrix select(transpose entries B, b->b#0==0);
+     << numRows A << "  "<< numColumns A << endl;
+     A = matrix apply(select(transpose entries A, a->a#0==0),l-> l);
+     << numRows A << "  "<< numColumns A << endl;
+     << numRows B << "  "<< numColumns B << endl;
+     B = matrix apply(select(transpose entries B, b->b#0==0),l-> l);
+     << numRows B << "  " << numColumns B << endl;
      -- << class A << endl;
      -- << A << endl << B << endl;
      norm(promote(A-B,RR))
      )
-
-getMatrix2 = method()
-getMatrix2 String := (filename) -> (
-     L := value \ replace("E","e",select("-?[0-9]+(E[-0-9]+)?", get filename));
-     << L << endl;
-     m := L#1;
-     << m << endl;
-     matrix pack_m drop(L,3)	
-)
 
 
 getMatrix = method()
@@ -734,9 +775,19 @@ lrs Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".out" ;
+     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
-     getMatrix (filename | ".out")
+     getMatrix (filename | ".ext")
+     )
+lrs (Matrix,Matrix) := Matrix => (A,B) ->(
+      filename := getFilename();
+     << "using temporary file name " << filename << endl;
+     F := openOut(filename|".ine");
+     putMatrix(F,-A,B);
+     close F;
+     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     run execstr;
+     getMatrix (filename | ".ext")
      )
 
 cdd = method()
@@ -746,10 +797,11 @@ cdd Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".out" ;
+     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
-     getMatrix (filename | ".out")
+     getMatrix (filename | ".ext")
      )
+
 
 
 
