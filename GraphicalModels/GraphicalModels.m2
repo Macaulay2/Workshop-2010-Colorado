@@ -117,15 +117,22 @@ bayesBall = (A,C,G) -> (
      -- The algorithm is the Bayes Ball algorithm,
      -- as implemented by Luis Garcia, after
      -- the paper of Ross Schlacter
-     n := #G;
-     zeros := toList((n+1):false);
-     visited := new MutableList from zeros;
-     blocked := new MutableList from zeros;
-     up := new MutableList from zeros;
-     down := new MutableList from zeros;
-     top := new MutableList from zeros;
-     bottom := new MutableList from zeros;
-     vqueue := sort toList A;
+     n := #keys G; -- n := #G;
+     --zeros := toList((n+1):false);
+     --visited := new MutableList from zeros;
+     --blocked := new MutableList from zeros;
+     --up := new MutableList from zeros;
+     --down := new MutableList from zeros;
+     --top := new MutableList from zeros;
+     --bottom := new MutableList from zeros;
+     visited := new MutableHashTable; 
+     scan(keys G,k-> visited#k = false);
+     blocked := visited;
+     up := visited;
+     down := visited;
+     top := visited;
+     bottom := visited;
+     vqueue := sort toList A; -- What is the point of 'sort'?
      -- Now initialize vqueue, set blocked
      scan(vqueue, a -> up#a = true);
      scan(toList C, c -> blocked#c = true);
@@ -166,7 +173,8 @@ bayesBall = (A,C,G) -> (
 		    );
 	       );
 	  ); -- while loop
-     set toList select(1..n, i -> not blocked#i and not bottom#i)
+     --set toList select(1..n, i -> not blocked#i and not bottom#i)
+     set toList select(keys G, i -> not blocked#i and not bottom#i)     
      )
 
 --------------------------
@@ -187,9 +195,8 @@ localMarkovStmts = method()
 localMarkovStmts Digraph := (G) -> (
      -- Given a graph G, return a list of triples {A,B,C}
      -- of the form {v, nondescendents - parents, parents}
-     G = convertToIntegers(G);
      result := {};
-     scan(1..#G, v -> (
+     scan(keys G, v -> (
 	       ND := nondescendents(G,v);
 	       P := parents(G,v);
 	       if #(ND - P) > 0 then
