@@ -274,9 +274,9 @@ under = (d) -> (
            e0 := subsets d0;
            e1 := subsets d1;
            z1 := flatten apply(e0, x -> apply(e1, y -> (
-      		    {set{d01_0 - set x, d01_1 - set y}, set x + set y + set d_1})));--added "set" to d_1 [9aug2010]
+      		    {set{d01_0 - set x, d01_1 - set y}, set x + set y +  d_1})));--added "set" to d_1 [9aug2010]
            z2 := flatten apply(e0, x -> apply(e1, y -> (
-      		    {set{d01_0 - set x, d01_1 - set y}, set d_1})));--added "set" to d_1 [9aug2010]
+      		    {set{d01_0 - set x, d01_1 - set y},  d_1})));--added "set" to d_1 [9aug2010]
            z = join(z1,z2);
            z = select(z, z0 -> not member(set{}, z0_0));
            set z
