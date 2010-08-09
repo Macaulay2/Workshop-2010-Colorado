@@ -102,6 +102,11 @@ R = markovRing(2,3,4,5) --ok
 numgens R
 R_0 --the first variable.
 
+help markovMatrices --no doc.
+S=localMarkovStmts(D)
+markovMatrices(R,S)
+break
+
 help markovIdeal --no doc.
 
 -------------------------------------

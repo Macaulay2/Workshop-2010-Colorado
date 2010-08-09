@@ -83,7 +83,7 @@ needsPackage"Graphs"
 ---- an element of ZZ, QQ, RR, etc.
 
 ---- NOTE ALL basic graph functionality has been moved to Graphs.m2
----- Should removeNodes also be moved?
+---- Should removeNodes also be moved? --it's already there!
 
 -------------------------
 -- Digraph can now have any labels for the nodes, not just integers.
@@ -310,10 +310,10 @@ globalMarkovStmts Digraph := (G) -> (
      -- so that A and B are d-separated by C (in the graph G).
      -- If G is large, this should maybe be rewritten so that
      -- one huge list of subsets is not made all at once
-     G = convertToIntegers;
+     G = convertToIntegers(G);  -- <<<<<< ---------
      n := #G;
      vertices := toList(1..n);
---     vertices := keys G;
+     --     vertices := keys G;
      result := {};
      AX := subsets vertices;
      AX = drop(AX,1); -- drop the empty set
