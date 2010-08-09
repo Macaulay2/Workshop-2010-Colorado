@@ -163,14 +163,14 @@ writeDotFile(String, Graph) := (filename, G) -> (
      q := pairs G;
      for i from 0 to #q-1 do (
 	  e := q#i;
-	  fil << "  " << toString e#0; -- number of spaces added before the node is arbitrary
+	  fil << "  \"" << toString e#0 << "\""; -- number of spaces added before the node is arbitrary
 	  if #e#1 === 0 or all(q, j->member(e#0,j#1)) then
 	    fil << ";" << endl
 	  else (
 	    fil << " -- {";
 	    links := toList e#1;
 	    for j from 0 to #links-1 do
-		 fil << toString links#j << ";";
+		 fil << "\"" << toString links#j << "\";";
      	    fil << "};" << endl;
 	    )
 	  );
@@ -188,14 +188,14 @@ writeDotFile(String, Digraph) := (filename, G) -> (
      q := pairs G;
      for i from 0 to #q-1 do (
 	  e := q#i;
-	  fil << "  " << toString e#0;
+	  fil << "  \"" << toString e#0 << "\"";
 	  if #e#1 === 0 then
 	    fil << ";" << endl
 	  else (
 	    fil << " -> {";
 	    links := toList e#1;
 	    for j from 0 to #links-1 do
-		 fil << toString links#j << ";";
+		 fil << "\"" << toString links#j << "\";";
      	    fil << "};" << endl;
 	    )
 	  );
