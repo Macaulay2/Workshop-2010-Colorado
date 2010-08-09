@@ -10,27 +10,41 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{isAtom}
+   export{isAtom, listAtoms}
    -- Jessica's code:  Step 1 --
    ----------------------------------------------------
- {*  
-   listAtoms := (P, d, n) ->(
+  
+   listAtoms = (P, d, n) ->(
 	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, d, n
 	--OUTPUT: AtomicExt = list of equivalence classes of points.  Each equivalence class is an atomic extensor.
+       	
+	R:= ring P;
 	
-	--points = list of the n+1 points
-	points:= toList(0..n);
+      	--points = list of the n+1 points
+	points:= new MutableList from (0..n);
 	
-	--AtomicExt
-	AtomicExt := {};
+	--AtomicExt 
+	AtomicExt := new MutableList from {};
 	
-	 
-	--while points is nonempty
+	numPoints :=0;
+	atomicClass :=set{};
 	
-	--call isAtom(points_0, points_1, P, d, n)
-	
-	)
-   *}
+	while (#points) > 0 do(
+	     currentPoint := points#0;
+	     --create a temporary set containing the current element of points
+	     atomicClass= set{currentPoint};
+	     points = drop(points, {0,0});
+	     numPoints = #points;
+	     
+	     for i from 0 to (#points-1) do(
+		  if isAtom(currentPoint, points#i, P, d,n) then atomicClass=atomicClass+set{points#i}
+		  );
+	     points = new MutableList from toList ((set toList points) -atomicClass);
+	     AtomicExt = append(AtomicExt, atomicClass);
+	     );
+	AtomicExt
+		)
+
 
    rep = (a,b,L)-> (for x in L list (if x==a then b else x))
    
@@ -40,7 +54,7 @@ newPackage(
 	--OUTPUT: 1 if a join b is an atomic extensor, 0 otherwise	
 	R := ring P;	
 	--list the subcripts of all of the variables in order
-	S:=new MutableList from apply(flatten entries vars R , p ->(baseName p)#1);
+{*	S:=new MutableList from apply(flatten entries vars R , p ->(baseName p)#1);
 	SLength:=#S;
 	for i from 0 to (SLength-1) do (
 	     --replace S_i by 0_R if a and b are in
@@ -48,9 +62,13 @@ newPackage(
 	     --replace b by a in S_i and then replace S_i by sign of permutation* p_(S_i)
 	     else if isSubset({b}, S#i) then 
 	       ( tempR := rep(a,b,S#i);
-	      	S#i= sign(tempR)*((baseName R_0)#0)_(toSequence sort(tempR)))
-	     else S#i=((baseName R_0)#0)_(S#i);
+	      	S#i= sign(tempR)*sub(value (((baseName R_0)#0)_(toSequence sort(tempR))), R))
+	     else S#i=sub(value ((baseName R_0)#0)_(S#i), R) ;
 	     );
+	*}
+   points:= toList (0..n);
+   points = replace(a,b,points);
+   S = permutePoints(R,d,n,points);
      	  f:=map(R,R, toList S);
 	  f(P)==0_R
 )	     
@@ -80,16 +98,7 @@ newPackage(
        )
       )
   
-   ------------------- Step 3 ------------------------------------------------ 
-
--- findPairFactor = (P, d, n, L) -->
-      -- INPUT: P is a polynomial in Grassmannian(d,n);
-      --     	 L is a list of atomic extensors of P; 
-  
-   -------------------- Auxiliary functions ---------------------------------
-
-  
-  permutePoints = (R, n, sigma) -> (
+  permutePoints = (R, d, n, sigma) -> (
        -- INPUT: R is Grassmannian(*,n)
        --     	 sigma is a list of length of n, containing elements from {0,..,*}, with repetition allowed
        -- OUTPUT: list of "permuted variable"s, can be used to make a ring map
@@ -138,8 +147,8 @@ newPackage(
 ----- TEST
 
 ---- Josephie's tests
- 
 end
+
 restart
 debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M2codes/Colorado-2010/CayleyFactorization.m2")
 Grassmannian(2,5);
@@ -159,7 +168,25 @@ factorBrackets(P, d, n, L)
 end
 restart
 debug loadPackage "CayleyFactorization"
-R = ring Grassmannian(2,4)
-L =isAtom(1,2,p_(1,2,3)*p_(2,3,4),2,4)
+R = ring Grassmannian(2,5)
+
+L = listAtoms(p_(0,1,2)*p_(3,4,5)+p_(0,1,3)*p_(2,4,5),2,5)
+toList L
+#L
+toList L#0
+toList L#1
+toList L#2
+toList L#3
+toList L#4
+R = ring Grassmannian(2,8)
+
+L=listAtoms(p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8), 2, 8)
+toList L
+
+isAtom(2,3,p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8), 2, 8)
+
+isAtom(4,5,p_(0,1,2)*p_(3,4,5)+p_(0,1,3)*p_(2,4,5),2,5)
+
+L =isAtom(0,0,p_(1,2,3)*p_(2,3,4),2,4)
 
 
