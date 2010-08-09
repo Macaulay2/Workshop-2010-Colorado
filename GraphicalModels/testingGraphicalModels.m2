@@ -36,21 +36,16 @@ D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
 
 -------------------------------------
 -- checking various markov statements:
+-- note: all fixed to accept any type of graph, not just w/ integer nodes. 
 -------------------------------------
 
 -- testing function "globalMarkovStmts"
 help globalMarkovStmts --no documentation
-globalMarkovStmts D --broken: error at line 314;
-convertToIntegers --this is line 313 and it makes no sense.  the fn itself is line 96:
---Now, with line 313 commented out, and the equivalent graph given with integer labels, let's run it:
+globalMarkovStmts D --fixed
 load "GraphicalModels.m2"
 Dint = digraph({{8, {7,6}}, {7,{5,4}}, {6, {4,1}}, {5, {3}}, {4, {3,2}}, 
 	  {3, {}}, {2, {}}, {1, {}}}) 
 globalMarkovStmts Dint --works for integer labels.
-glo=oo;
---let's put line 313 back and run it:
-globalMarkovStmts D --executed. 
-globalMarkovStmts Dint --executed, comparison against Markov.m2 OK
 
 -- testing function "pairMarkovStmts"
 pairMarkovStmts D --executed
@@ -61,9 +56,7 @@ localMarkovStmts D --executed
 localMarkovStmts Dint --executed, comparison against Markov.m2 OK
 
 --printWidth=200
-removeRedundants glo
-break
---see below at the end of file!! 
+--removeRedundants glo ----no longer exported!!!
 
 -------------------------------------
 -- TO DO:
@@ -112,8 +105,7 @@ R_0 --the first variable.
 
 help markovMatrices --no doc.
 L=localMarkovStmts(Dint)
-d=();
-apply(#Dint,j-> d=append(d,2));
+d=toList(8:2)
 R = markovRing(d)
 M=markovMatrices(R,L);--it runs but it is huge! do not display
 
