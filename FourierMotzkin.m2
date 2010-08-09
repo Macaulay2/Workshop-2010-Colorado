@@ -702,7 +702,7 @@ getMatrix String := (filename) -> (
      << M << endl;
      m := value( M#1);
      << apply(drop(M,3), k-> value replace("e-0+?","e",replace("E\\+?","e",k))) << endl;
-     transpose matrix pack_m apply(drop(M,3), m-> value replace("e,","",replace("e-0+?","e",replace("E\\+?","e",m))))
+     transpose matrix pack_m apply(drop(M,3), m-> value replace("E\\+","e",m))
 )
 	
 
