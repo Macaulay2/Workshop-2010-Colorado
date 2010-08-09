@@ -98,7 +98,6 @@ getMatrixFromFile String := (filename) -> (
 
 getMatrix = method()
 getMatrix String := (filename) -> (
-     << get filename << endl;
      L := separateRegexp("linearity|begin|end", get filename);
      local m, M;
      if #L==3 then (
@@ -148,7 +147,7 @@ cdd Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      getMatrix (filename | ".ext")
      )
@@ -192,7 +191,7 @@ B=sort submatrix((cdd getMatrix "in4.ine"),{1..8},{0..53})
 B = transpose matrix apply(transpose entries B,l->primitive toZZ l);
  B
 A-B
-lrs getMatrixFromFile "cyc.ine"
+cdd getMatrixFromFile "in5.ine"
 fourierMotzkin getMatrixFromFile "cyc.ine"
 
 restart
@@ -201,6 +200,8 @@ C = transpose matrix{{1,1,0}, {0,1,1}}
 H = transpose matrix{{1,0,-1}}
 C|H
 fourierMotzkin (C,H)
+
+
 
 lrs(C,H)
 P = fourierMotzkin fourierMotzkin (C,H)
