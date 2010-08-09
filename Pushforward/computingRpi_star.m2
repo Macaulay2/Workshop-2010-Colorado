@@ -122,15 +122,15 @@ RpistarLinPres = method()
 RpistarLinPres(Module) := (M) -> (
      -- assumption: M has x-linear resolution, with all generators
      -- in the same x-degree, in a ring A[x0,x1,...]
-     regM := first degree M_0;
+     regM = first degree M_0;
      S := ring M;
-     xm := regM * degree(S_0);
-     phi := symmetricToExteriorOverA(M ** S^{xm});
+     xm = regM * degree(S_0);
+     phi = symmetricToExteriorOverA(M ** S^{xm});
      E := ring phi;
-     FF := res( image phi, LengthLimit => regM);
+     FF = res( image phi, LengthLimit => max(1,regM));
      complete FF;
      FF = E^{-xm} ** FF[regM];
-     FF0 := degreeD(0, FF);
+     FF0 = degreeD(0, FF);
      toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
      toA FF0
      )
