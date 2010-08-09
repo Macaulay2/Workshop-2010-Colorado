@@ -39,7 +39,8 @@ computeFreeBasis(Matrix) := Matrix => phi -> (
 
 -- Shortcuts from fabianska's PhD thesis
 -- 
--- This is the one that works.
+-- I hope this works.
+
 applyRowShortcut = method()
 applyRowShortcut(Matrix) := g -> (
      R := ring g;
@@ -60,7 +61,7 @@ applyRowShortcut(Matrix) := g -> (
      
      -- fabianska shortcut 2.2.1(2)
      S := subsets(f,2);
-     h := scan ( #S, i -> o( 
+     h := scan ( #S, i -> ( 
 	       if ideal S_i == R 
 	       then break S_i;
 	       )
@@ -90,6 +91,9 @@ applyRowShortcut(Matrix) := g -> (
 	  return U2;
 	  );
 )
+
+
+
 
 beginDocumentation()
 
