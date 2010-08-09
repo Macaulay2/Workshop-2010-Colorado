@@ -98,7 +98,6 @@ newPackage(
        )
       )
   
-<<<<<<< .mine
    ------------------- Step 3 ------------------------------------------------ 
 
  findPairFactor = (P, d, n, L) -> (
@@ -107,29 +106,30 @@ newPackage(
       -- OUTPUT: A pair (E,F) such that E ^ F is a primitive factor of P
       -- Method: Step 3 in Algorithm 3.5.6 of Sturmfels' Algorithmic Inv. Theory
       atomicExt := select(L, ll-> (#ll =!= d+1));
-      scan(legalPairs, a -> (
+      scan(subsets(#atomicExt,2), a -> (
 		E := atomicExt#(a#0);
 		F := atomicExt#(a#1);
 		if(#E + #F > d+1) then (
 		     newOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F)); 
-		     PermP := sub(P, matrix{permutePoints(ring P, n, newOrder)});
+		     PermP := sub(P, matrix{permutePoints(ring P, d,n, newOrder)});
 		     found := 1;
 		     scan(terms PermP, monomial -> (
 			  supp := (support(monomial))_{0,1};
 			  firstRow := set (baseName(supp#0))#1; --first row of tableau
 			  secondRow := set (baseName(supp#1))#1; -- second row of tableau
-			  if((not isSubset(E,firstRow)) or (isSubset(F, firstRow+secondRow))) then (
+			  if((not isSubset(E,firstRow)) or (not isSubset(F, firstRow+secondRow))) then (
      	       	    	      found = 0;
 			      break;
 			       )
 			  )
 		     );
-		     if(found == 1) then     
+		     if(found == 1) then  (
 		     	  break({E,F});
-		     )
-		)
+		     );
+	  	)
       )
- )
+  )
+)
   
    -------------------- Auxiliary functions ---------------------------------
 
@@ -201,7 +201,13 @@ L = subsets(n+1,d-1)| subsets(n+1,d) | {{0,1,2},{3,4,5}}
 factorBrackets(P, d, n, L)
 E = {0,2}; F = {1,4};
 
-
+d=2;n=8;
+R = ring Grassmannian(2,8);
+P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8)
+L=listAtoms(P, 2, 8)
+L = apply((toList L),a->toList a)
+factorBrackets(P,d,n,toList L) 
+findPairFactor(P,d,n,L)
 ------ Jessica's tests
 
 end
