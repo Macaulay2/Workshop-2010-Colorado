@@ -1,0 +1,90 @@
+-- Everyone is invited to enter their proposed code for doing conversions from
+-- one type to another, use "new ... from ..." methods.
+
+-- Here are the previously existing methods:
+
+    -- i1 : methods NewFromMethod 
+
+    -- o1 = {(NewFromMethod, Command, Function)           }
+    --      {(NewFromMethod, Command, String)             }
+    --      {(NewFromMethod, DocumentTag, List)           }
+    --      {(NewFromMethod, Eliminate, ZZ)               }
+    --      {(NewFromMethod, EngineRing, RawRing)         }
+    --      {(NewFromMethod, HashTable, List)             }
+    --      {(NewFromMethod, IndexedVariableTable, Symbol)}
+    --      {(NewFromMethod, Manipulator, Function)       }
+    --      {(NewFromMethod, Matrix, MutableMatrix)       }
+    --      {(NewFromMethod, Matrix, Vector)              }
+    --      {(NewFromMethod, Module, List)                }
+    --      {(NewFromMethod, Module, Sequence)            }
+    --      {(NewFromMethod, MonoidElement, RawMonomial)  }
+    --      {(NewFromMethod, MutableMatrix, Matrix)       }
+    --      {(NewFromMethod, Set, List)                   }
+    --      {(NewFromMethod, URL, String)                 }
+    --      {(NewFromMethod, Vector, Matrix)              }
+
+    -- o1 : VerticalList
+
+-- Feel free to install others that don't conflict with these.
+-- Give examples of use.
+
+new List from Matrix := (List,m) -> entries m				    -- proposed by Charley Crissman
+{*
+R = QQ[x..z];
+new List from vars R
+*}
+
+new List from Set := (List,x) -> elements x				    -- proposed by Charley Crissman
+{*
+new List from set {a,b,c}
+*}
+
+new List from Tally := (List, x) -> splice apply(pairs x,(k,v) -> v:k)
+{*
+tally {1,1,2,a,a,a,b,c,c,d}
+new List from oo
+assert( tally oo === ooo )
+*}
+
+new Matrix from List := (Matrix,v) -> matrix v
+-- This one will not work, because:
+--     (1) Matrix is a type of HashTable
+--     (2) there is already a (built-in) method for new HashTable from List
+--     (3) the internal code uses the method for new HashTable from List
+-- Perhaps we should introduce new syntax 
+
+
+new String from Number := (String,x) -> toString x
+{*
+new String from 1234.56
+ascii oo
+*}
+
+new RingElement from Number := (R,x) -> try promote(x,R) else error("conversion to type ",toString R," not possible")
+{*
+R = QQ[x]
+new R from 3
+*}
+
+new Number from Number := 
+new RingElement from RingElement := (R,x) -> try promote(x,R) else try lift(x,R) else error("conversion to type ",toString R," not possible")
+{*
+R = QQ[x]
+S = R[y]
+x
+new S from x
+new R from oo
+new S from 3
+new R from oo
+new QQ from 3
+new ZZ from oo
+new ZZ from 3/2
+*}
+
+new Number from RingElement := (R,x) -> try lift(x,R) else error("conversion to type ",toString R," not possible")
+{*
+R = QQ[x]
+new R from 1/2
+new QQ from oo
+new ZZ from ooo
+*}
