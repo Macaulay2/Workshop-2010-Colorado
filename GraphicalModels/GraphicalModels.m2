@@ -244,6 +244,7 @@ globalMarkovStmts Digraph := (G) -> (
 
 ------------------------------------------------------------------
 -- Removing redundant statements:
+-- this is called from local, global, and pairwise Markov methods.
 ------------------------------------------------------------------
 
 -- A dependency is a list {A,B,C}

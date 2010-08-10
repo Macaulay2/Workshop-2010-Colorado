@@ -154,3 +154,9 @@ under setit s
 load "GraphicalModels.m2"
 removeRedundants glo; ----NEED TO RUN THIS W/ UNDER CHANGED!!
 break
+
+
+--- documentation notes:
+help pairMarkovStmts
+help localMarkovStmts
+help globalMarkovStmts
