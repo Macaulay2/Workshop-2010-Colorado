@@ -2,7 +2,15 @@
 -- one type to another, use "new ... from ..." methods.  Find your name below
 -- and add it there, to avoid conflicts.
 
--- Here are the previously existing methods:
+-- Try your test first, to see if your proposed functionality doesn't yet exist, like this:
+
+	-- i20 : R = QQ[x..z];
+
+	-- i21 : new List from vars R
+	-- stdio:21:1:(3): error: expected a list (in absence of a 'new' method)
+
+
+-- Here are the previously existing (non-built-in) methods:
 
     -- i1 : methods NewFromMethod 
 
