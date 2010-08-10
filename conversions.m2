@@ -1,5 +1,6 @@
 -- Everyone is invited to enter their proposed code for doing conversions from
--- one type to another, use "new ... from ..." methods.
+-- one type to another, use "new ... from ..." methods.  Find your name below
+-- and add it there, to avoid conflicts.
 
 -- Here are the previously existing methods:
 
@@ -88,3 +89,65 @@ new R from 1/2
 new QQ from oo
 new ZZ from ooo
 *}
+
+-- Hirotachi Abo
+
+-- Beth Arnold
+
+-- Brett Barwick
+
+-- Charley Crissman
+
+-- Alex Diaz
+
+-- Bill Gary Furnish
+
+-- Luis Garcia-Puente
+
+-- Courtney Gibbons
+
+-- Dan Grayson
+
+-- David Eisenbud
+
+-- Franziska Hinkelmann
+
+-- Lars Kastner
+
+-- Anton Leykin
+
+-- Shaowei Lin
+
+-- Samuel Lundqvist
+
+-- Abraham Martin del Campo
+
+-- Jason McCullough
+
+-- Dennis Moore
+
+-- Matt Niemerg
+
+-- Sonja Petrovic
+
+-- Claudiu Raicu
+
+-- Eduardo Sáenz-de-Cabezón
+
+-- Jessica Sidman
+
+-- Greg Smith
+
+-- Michael Stillman
+
+-- Branden Stone
+
+-- David Swarinski
+
+-- Amelia Taylor
+
+-- Doug Torrance
+
+-- Josephine Yu
+
+
