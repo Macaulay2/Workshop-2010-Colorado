@@ -208,13 +208,6 @@ localMarkovStmts Digraph := (G) -> (
 	         result = append(result,{set{v}, ND - P, P})));
      removeRedundants result)
 
-///
-restart 
-loadPackage"GraphicalModels"
-G = digraph({{a,{b,c}},{b,{c,d}},{c,{}},{d,{}}})
-convertToIntegers(G)
- ///   
-
 
 globalMarkovStmts = method()
 globalMarkovStmts Digraph := (G) -> (
@@ -695,6 +688,10 @@ doc ///
 ///
 
 end
+
+
+
+
 restart
 loadPackage "Markov"
 installPackage "Markov"
@@ -739,6 +736,14 @@ R = gaussRing 4
 I = gaussTrekIdeal(R,G)
 J = gaussIdeal(R,G)
 I == J
+
+
+///
+restart 
+loadPackage"GraphicalModels"
+G = digraph({{a,{b,c}},{b,{c,d}},{c,{}},{d,{}}})
+convertToIntegers(G)
+ ///   
 
 load "/Users/mike/local/src/M2-mike/markov/dags5.m2"
 D5s
