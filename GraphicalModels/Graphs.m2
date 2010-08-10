@@ -350,6 +350,21 @@ inducedSubgraph(Digraph, List) := (G,v) -> (
      new Digraph from G
      )
 
+adjacencyMatrix = method()
+     -- Input:  A graph
+     -- Output:  A matrix M, such that M_(i,j)=1 iff vertices i and j are adjacent
+adjacencyMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(keys(G),j->(if G#i#?j then 1 else 0))))
+
+edgeSet = method()
+     -- Input: A graph
+     -- Output: A list of sets of order 2, each corresponding to an edge
+edgeSet(Graph) := G -> unique flatten apply(keys(G),i->apply(#G#i,j->set{i,(elements G#i)_j}))
+
+incidenceMatrix = method()
+     -- Input: A graph
+     -- Output: A matrix M, such that M_(i,j)=1 iff vertex i is incident to edge j     
+incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edgeSet G,j->(if j#?i then 1 else 0))))
+
 ----------------------
 -- Topological Sort --
 ----------------------
