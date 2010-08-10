@@ -48,11 +48,11 @@ assert( tally oo === ooo )
 *}
 
 new Matrix from List := (Matrix,v) -> matrix v
--- This one will not work, because:
+-- This one will not work currently, because:
 --     (1) Matrix is a type of HashTable
 --     (2) there is already a (built-in) method for new HashTable from List
 --     (3) the internal code uses the method for new HashTable from List
--- Perhaps we should introduce new syntax 
+-- I'll fix that in the engine eventually.
 
 
 new String from Number := (String,x) -> toString x
