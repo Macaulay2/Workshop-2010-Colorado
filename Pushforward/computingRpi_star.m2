@@ -127,39 +127,70 @@ RpistarLinPres(Module) := (M) -> (
      xm = regM * degree(S_0);
      phi = symmetricToExteriorOverA(M ** S^{xm});
      E := ring phi;
-     FF = res( image phi, LengthLimit => max(1,regM));
+     FF = res( image phi, LengthLimit => max(1,1+regM));
      complete FF;
      FF = E^{-xm} ** FF[regM];
      FF0 = degreeD(0, FF);
      toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
+     --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
      toA FF0
      )
 
+
 Rpistar = method()
-Rpistar Module := (M) -> (
+Rpistar Module := (M) -> (F = RpistarLinPres truncateMultiGraded(regularity M, M);
+     --now just show the relevant part of F
+     G:=new ChainComplex;
+     n := numgens ring M;
+     for i from -n+1 to 1 do(
+	  G.dd_i = F.dd_i);
+     G
+     )
      -- M is a graded A[x0,...xn] module, of x-regularity m.
      -- returns an A-complex representing R pi_* (M~), where pi
      -- is the map Spec A x P^n --> Spec A.
-     m := regularity M; -- we think this is the x-regularity.
-     m = max(m, 0);
+
+     --m := regularity M; -- we think this is the x-regularity.
+     
      -- (1) truncate M in degrees = m in x variables
      -- (2) then apply Rpistar0regular to M(m), 
      --     obtaining a complex FF over A.
      -- (3) return FF[-m]
-     )
-end	      
-restart
 
+
+
+--this doesn't seem to work: module (M_0) does NOT return a proper submodule of M 
+--for example when M = module ideal(x^2,y^4)
+truncateMultiGraded = method()
+truncateMultiGraded (ZZ, Module) := (d,M) -> (
+     --Assumes that M is a module over a polynomial ring S=A[x0..xn]
+     --where the x_i have first-degree 1.
+     --forms the submodule generated in x-degrees >= d.
+     S := ring M;
+     kk := ultimate (coefficientRing, S);
+     S0 := kk[Variables => numgens S];
+     f := map(S,S0, vars S);
+     L = drop(flatten degrees gens M, 1)/first;
+     Md := image M_{};
+     scan(#L, i-> 
+	  if L#i >= d then Md = Md + image M_{i} 
+	  else Md = (ideal f(basis(d-L#i, S0^1)))*(image M_{i}));
+     Md
+     )
+
+end	      
 --------------------------------
 restart
---path = append(path, "/Users/david/src/Colorado-2010/PushForward")
+path = append(path, "/Users/david/src/Colorado-2010/PushForward")
 load "computingRpi_star.m2"
+
 kk=ZZ/101
-S = kk[x,y]
-I = ideal"x2,xy2"
-regularity I
-I3 = (prune module truncate(3,I)) ** S^{3}
-symmetricToExteriorOverA I3
+A = kk[t]
+S = A[x,y]
+I = module ideal (x^2, y^4, t^2,t)
+truncateMultiGraded (4,I)
+GG=Rpistar I
+for d from -3 to 1 do print Rpistar (S^{d}**I)
 ---------------------------------
 
 restart
