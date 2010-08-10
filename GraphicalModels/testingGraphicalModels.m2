@@ -151,12 +151,21 @@ under = (d) -> (
            )
 s=glo_0
 under setit s
-load "GraphicalModels.m2"
 removeRedundants glo; ----NEED TO RUN THIS W/ UNDER CHANGED!!
 break
 
 
+loadPackage "GraphicalModels"
+load "GraphicalModels.m2"
 --- documentation notes:
 help pairMarkovStmts
+D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}}, 	  {f, {}}, {g, {}}, {h, {}}}) 
+pairMarkovStmts D
+D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+L = pairMarkovStmts D
+
 help localMarkovStmts
 help globalMarkovStmts
+help markovRing
+help marginMap
+help hideMap

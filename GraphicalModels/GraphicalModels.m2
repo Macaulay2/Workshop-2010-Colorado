@@ -505,6 +505,7 @@ gaussTrekIdeal(Ring, Digraph) := (R,G) -> (
 ---- We need this for both directed and undirected graphs. 
 
 
+
 --------------------
 -- Documentation  --
 --------------------
@@ -547,8 +548,96 @@ doc ///
       time netList primaryDecomposition J
   Caveat
     The parts of the package involving graphs might eventually be changed to use a package dealing
-    specifically with graphs.  This might change the interface to this package.  
+    specifically with graphs.  This might change the interface to this package.  ****THIS WAS ALREADY DONE;
+    SEE GRAPHS.M2. IT SHOULD BE STATED THAT THIS PACKAGE IS CALLED FOR.****
 ///
+
+
+doc ///
+  Key
+    markovRing
+  Headline
+    ring of probability distributions on several discrete random variables
+  Usage
+    markovRing(d1,d2,...,dr)
+  Inputs
+    di:ZZ
+      Each d_i should be a positive integer
+  Outputs
+    R:Ring
+      A polynomial ring with d1*d2*...*dr variables $p_{(i1,...,ir)}$,
+      with each i_j satisfying 1 <= i_j <= d_j.
+  Consequences
+    Information about this sequence of integers is placed into the ring, and is used 
+    by other functions in this package.  Also, at most one ring for each such sequence
+    is created: the results are cached.
+  Description
+   Example
+     R = markovRing(2,3,4,5);
+     numgens R
+     R_0, R_1, R_119
+     coefficientRing R
+  Caveat
+    Currently, the user has no choice about the names of the variables.  
+    Also, the base field is set to be QQ, without option of changing it.
+    These will hopefully change in a later version.  
+  SeeAlso
+///
+
+doc ///
+  Key
+    pairMarkovStmts
+  Headline
+    pairwise Markov statements for a directed graph
+  Usage
+    pairMarkovStmts G
+  Inputs
+    G:Digraph 
+  Outputs
+    L:List
+      whose entries are triples {A,B,C} representing  conditional independence statements ''A is independent of B given C'' that is true for G.
+  Description
+    Text
+      Given a directed graph G, pairwise Markov statements are conditional independence statements 
+      of the following form: \break
+      
+      for every vertex $v$ of G and all non-descendents $w$ of $v$, 
+      $v$ is independent of $w$ given all other non-descendents. In symbols, the statements are 
+      ${v,w,nondescendents(G,v)-w} $. \break
+      
+      For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      we get the following pairwise Markov statements:
+    Example
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+      L = pairMarkovStmts D
+    Text
+      Note that the method displays only non-redundant statements.
+  SeeAlso
+///
+end
+
+doc ///
+  Key
+  Headline
+
+  Usage
+
+  Inputs
+
+  Outputs
+
+  Consequences
+
+  Description
+   Text
+   Text
+   Example
+   Text
+   Example
+  Caveat
+  SeeAlso
+///
+
 
 document { 
      Key => {gaussRing, (gaussRing,ZZ)},
@@ -609,84 +698,6 @@ document {
           ///,
      SeeAlso => {"makeGraph", "globalMarkovStmts", "localMarkovStmts", "gaussRing", "gaussMinors", "gaussTrekIdeal"}
      }
-
-doc ///
-  Key
-    markovRing
-  Headline
-    ring of probability distributions on several discrete random variables
-  Usage
-    markovRing(d1,d2,...,dr)
-  Inputs
-    di:ZZ
-      Each d_i should be a positive integer
-  Outputs
-    R:Ring
-      A polynomial ring with d1*d2*...*dr variables $p_{(i1,...,ir)}$,
-      with each i_j satisfying 1 <= i_j <= d_j.
-  Consequences
-    Information about this sequence of integers is placed into the ring, and is used 
-    by other functions in this package.  Also, at most one ring for each such sequence
-    is created: the results are cached.
-  Description
-   Example
-     R = markovRing(2,3,4,5);
-     numgens R
-     R_0, R_1, R_119
-     coefficientRing R
-  Caveat
-    Currently, the user has no choice about the names of the variables.  
-    Also, the base field is set to be QQ, without option of changing it.
-    These will hopefully change in a later version.  
-  SeeAlso
-///
-
-
-end
-doc ///
-  Key
-  Headline
-
-  Usage
-
-  Inputs
-
-  Outputs
-
-  Consequences
-
-  Description
-   Text
-   Text
-   Example
-   Text
-   Example
-  Caveat
-  SeeAlso
-///
-
-
-doc ///
-  Key
-  Headline
-
-  Usage
-
-  Inputs
-
-  Outputs
-
-  Consequences
-
-  Description
-   Text
-   Text
-   Example
-   Text
-   Example
-  Caveat
-  SeeAlso
-///
 
 end
 
