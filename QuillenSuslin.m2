@@ -124,6 +124,33 @@ qsAlgorithmPID(Matrix) := Matrix => phi -> (
      return U; 
 )
 
+-- For a given unimodular matrix U, qsAlgorithm computes a matrix N such that 
+-- U*N is the matrix of the form (I | 0).  This however needs qsAlgorithmRow.
+
+qsAlgorithm = method() 
+qsAlgorithm(Matrix) := Matrix => phi -> (
+     R := ring phi;
+     nrow := rank target phi;
+     ncol := rank source phi;
+     r := ncol - nrow;
+     Ai := phi;
+     ai := Ai^{0};
+     Ui := qsAlgorithmRow(ai);
+     Ai = Ai*Ui;
+     for i from 1 to nrow-1 do (
+	  Bi := submatrix(Ai,{i..nrow-1},{i..ncol-1});
+	  bi := Bi^{0};
+	  Ui' := qsAlgorithmRow(bi);
+	  idi := map(R^i);
+	  Ui'' := idi++Ui';
+	  Ui = Ui*Ui'';
+	  Ai = Ai*Ui'';
+	  );
+     Vi := prune image Ai;
+     V := (gens Vi // map(R^nrow,R^ncol,Ai))|(map(R^(nrow-r),R^r,0_R)||map(R^r));
+     Ui*V
+     )
+
 
 beginDocumentation()
 
