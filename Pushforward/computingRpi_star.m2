@@ -138,7 +138,7 @@ RpistarLinPres(Module) := (M) -> (
 
 
 Rpistar = method()
-Rpistar Module := (M) -> (F = RpistarLinPres truncateMultiGraded(regularity M, M);
+Rpistar Module := (M) -> (F = RpistarLinPres truncateMultiGraded(regularityMultiGraded M, M);
      --now just show the relevant part of F
      G:=new ChainComplex;
      n := numgens ring M;
@@ -157,10 +157,6 @@ Rpistar Module := (M) -> (F = RpistarLinPres truncateMultiGraded(regularity M, M
      --     obtaining a complex FF over A.
      -- (3) return FF[-m]
 
-
-
---this doesn't seem to work: module (M_0) does NOT return a proper submodule of M 
---for example when M = module ideal(x^2,y^4)
 truncateMultiGraded = method()
 truncateMultiGraded (ZZ, Module) := (d,M) -> (
      --Assumes that M is a module over a polynomial ring S=A[x0..xn]
@@ -178,6 +174,14 @@ truncateMultiGraded (ZZ, Module) := (d,M) -> (
      Md
      )
 
+regularityMultiGraded = method()
+regularityMultiGraded (Module) := (M) -> (
+     S := ring M;
+     (R,f) := flattenRing S;
+     deglen := #degree R_0;
+     w := flatten {1,toList(deglen-1:0)};
+     regularity (coker f presentation M, Weights=>w)
+     )
 end	      
 --------------------------------
 restart
@@ -188,9 +192,9 @@ kk=ZZ/101
 A = kk[t]
 S = A[x,y]
 I = module ideal (x^2, y^4, t^2,t)
-truncateMultiGraded (4,I)
-GG=Rpistar I
-for d from -3 to 1 do print Rpistar (S^{d}**I)
+
+for d from -3 to 1 do print regularityMultiGraded (S^{{d,0}}**I)
+for d from -3 to 1 do print Rpistar (S^{{d,0}}**I)
 ---------------------------------
 
 restart
