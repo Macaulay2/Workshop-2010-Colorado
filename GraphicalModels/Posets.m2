@@ -2149,7 +2149,7 @@ L = lcmLattice I;
 meetIrreducibles L
 assert( (try meetIrreducibles P1  else oops) === oops )
 assert( (meetIrreducibles P2) == {e,f,g,b,d} )
-assert( (set meetIrreducibles L) === set {x^2, y^3*z, x*y^3*z, x^2*y*z, x^2*y^3, x^2*y^3*z} ) -- meet irred is broken!
+assert( (set meetIrreducibles L) === set {x^2, y^3*z, x*y^3*z, x^2*y*z, x^2*y^3, x^2*y^3*z} )
 ///
 
 -- TEST 12
@@ -2157,11 +2157,11 @@ TEST ///
 P1 = poset ({h,i,j,k},{(h,i), (i,j), (i,k)});
 P2 = poset({a,b,c,d,e,f,g}, {(a,b), (a,c), (a,d), (b,e), (c,e), (c,f), (d,f), (e,g), (f,g)});
 R = QQ[x,y,z,w];
-I = ideal(x^2, x*y, y^3, y*z);
+I = ideal(x^2, y^2, z^2);
 L = lcmLattice I;
-assert( (coveringRelations P1) == {(a,c),(a,d),(b,c),(b,d),(c,e),(d,e)} )
-assert( (coveringRelations P2) === {(h,a),(h,b),(h,c),(h,d),(a,e),(b,e),(e,f),(c,f),(f,g),(d,g)} )
-assert( (coveringRelations L) === {(1,z^2),(1,y^2),(1,x^2),(z^2,y^2*z^2),(z^2,x^2*z^2),(y^2,y^2*z^2),(y^2,x^2*y^2),(y^2*z^2,x^2*y^2*z^2),(x^2,x^2*z^2),(x^2,x^2*y^2),(x^2*z^2,x^2*y^2*z^2),(x^2*y^2,x^2*y^2*z^2)} )
+assert( (coveringRelations P1) === {(h,i),(i,j),(i,k)} )
+assert( (coveringRelations P2) === {(a,b), (a,c), (a,d), (b,e), (c,e), (c,f), (d,f), (e,g), (f,g)});
+assert( (coveringRelations L) == {(1,z^2),(1,y^2),(1,x^2),(z^2,y^2*z^2),(z^2,x^2*z^2),(y^2,y^2*z^2),(y^2,x^2*y^2),(y^2*z^2,x^2*y^2*z^2),(x^2,x^2*z^2),(x^2,x^2*y^2),(x^2*z^2,x^2*y^2*z^2),(x^2*y^2,x^2*y^2*z^2)} )
 ///
 
 -- TEST 13
