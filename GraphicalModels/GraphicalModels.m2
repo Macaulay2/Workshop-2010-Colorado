@@ -93,16 +93,16 @@ needsPackage"Graphs"
 -- code. 
 -------------------------
 
-convertToIntegers := (G) -> (
-     n := #G;
-     h := new MutableHashTable;
-     scan(n, i -> h#(i+1) = (values G)#i);
-     mid := new MutableHashTable;
-     vertices := keys G;
-     scan(n, i -> mid#(vertices#i) = (keys h)#i);
-     scan(n, i -> h#(i+1) = set apply(toList h#(i+1), j -> mid#j));
-     new Digraph from h
-     )
+-- convertToIntegers := (G) -> (
+--     n := #G;
+--     h := new MutableHashTable;
+--     scan(n, i -> h#(i+1) = (values G)#i);
+--     mid := new MutableHashTable;
+--     vertices := keys G;
+--     scan(n, i -> mid#(vertices#i) = (keys h)#i);
+--     scan(n, i -> h#(i+1) = set apply(toList h#(i+1), j -> mid#j));
+--     new Digraph from h
+--     )
 
 
 --------------------------
@@ -127,12 +127,17 @@ bayesBall = (A,C,G) -> (
      --bottom := new MutableList from zeros;
      visited := new MutableHashTable; 
      scan(keys G,k-> visited#k = false);
-     blocked := visited;
-     up := visited;
-     down := visited;
-     top := visited;
-     bottom := visited;
-     vqueue := sort toList A; -- What is the point of 'sort'?
+     blocked :=  new MutableHashTable; 
+     scan(keys G,k-> blocked#k = false);
+     up :=  new MutableHashTable; 
+     scan(keys G,k-> up#k = false);
+     down := new MutableHashTable; 
+     scan(keys G,k-> down#k = false);
+     top :=  new MutableHashTable; 
+     scan(keys G,k-> top#k = false);
+     bottom :=  new MutableHashTable; 
+     scan(keys G,k-> bottom#k = false);
+     vqueue := toList A; -- sort toList A
      -- Now initialize vqueue, set blocked
      scan(vqueue, a -> up#a = true);
      scan(toList C, c -> blocked#c = true);
@@ -211,23 +216,15 @@ convertToIntegers(G)
  ///   
 
 
- 
-     ---- do a loop applying to the values first if g#blah is a member
-     ---- of the set that is the value then convert to the appropriate
-     ---- number. Not totally clear to me how to do this, or do we fix
-     ---- bayes - ball.  Hmmm...
-
-
 globalMarkovStmts = method()
 globalMarkovStmts Digraph := (G) -> (
      -- Given a graph G, return a complete list of triples {A,B,C}
      -- so that A and B are d-separated by C (in the graph G).
      -- If G is large, this should maybe be rewritten so that
      -- one huge list of subsets is not made all at once
-     G = convertToIntegers(G);  -- <<<<<< ---------
-     n := #G;
-     vertices := toList(1..n);
-     --     vertices := keys G;
+     n := #keys G;
+     -- vertices := toList(1..n);
+     vertices := keys G;
      result := {};
      AX := subsets vertices;
      AX = drop(AX,1); -- drop the empty set
@@ -307,6 +304,7 @@ normalizeStmt = (D) -> (
      D1 := toList(D#1);
      {D0#0, D0#1, D1}
      )
+
 minimize = (Ds) -> (
      -- each element of Ds should be a list {A,B,C}
      answer := {};
@@ -464,6 +462,8 @@ gaussRing ZZ := opts -> (n) -> (
      R
      )
 
+--- Luis Garcia: August 2010. UP TO THIS POINT, CODE IS ORDER FREE
+
 gaussMinors = method()
 gaussMinors(Matrix,List) := (M,D) -> (
      -- M should be an n by n symmetric matrix, D mentions variables 1..n (at most)
@@ -486,9 +486,10 @@ gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,globalMarkovStmts G)
 
 gaussTrekIdeal = method()
 gaussTrekIdeal(Ring, Digraph) := (R,G) -> (
-     G = convertToIntegers(G);
-     n := max keys G;
-     P := toList apply(1..n, i -> toList parents(G,i));
+ --    G = convertToIntegers(G);
+ --    n := max keys G;
+     n := #keys G; 
+     P := toList apply(keys G, i -> toList parents(G,i));
      nv := max(P/(p -> #p));
      t := local t;
      S := (coefficientRing R)[generators R, t_1 .. t_nv];
