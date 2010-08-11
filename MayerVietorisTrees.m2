@@ -250,7 +250,7 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
      Y := applyValues (W, tally);
      B :={};
      for i from 0 to #Y-1 do {
-     	  for j from 0 to #(Y#i)-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
+     	  for j from 0 to #(Y#((keys Y)#i))-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
      	  };
      t= new BettiTally from B;
      return t
@@ -259,15 +259,14 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
 upperBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
 upperBettiMVT(MonomialIdeal) := o -> I -> {
      L := ((splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#1);
-     if L != {} then {
-     	  M := apply(L, i->{i#1,i#0});
+     M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
      for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
      W := new HashTable from T;
      Y := applyValues (W, tally);
      B :={};
      for i from 0 to #Y-1 do {
-     	  for j from 0 to #(Y#i)-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
+     	  for j from 0 to #(Y#((keys Y)#i))-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
      	  };
      t= new BettiTally from B;
      return t
@@ -275,10 +274,7 @@ upperBettiMVT(MonomialIdeal) := o -> I -> {
 
 pseudoBettiMVT = method(Options => {PivotStrategy => 1}); -- outputs a VirtualTally similar to a BettiTally that gives bounds on the dimension
 pseudoBettiMVT(MonomialIdeal) := o -> I -> {
-     return pseudoBettiHelper(
-	  lowerBettiMVT(I, PivotStrategy => o.PivotStrategy),
-	  upperBettiMVT(I, PivotStrategy => o.PivotStrategy)
-	  );
+     return pseudoBettiHelper(lowerBettiMVT(I, PivotStrategy => o.PivotStrategy),upperBettiMVT(I, PivotStrategy => o.PivotStrategy));
      }
 
 
