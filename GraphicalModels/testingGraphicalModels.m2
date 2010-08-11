@@ -158,7 +158,8 @@ break
 
 restart
 installPackage ("GraphicalModels", RemakeAllDocumentation => true, UserMode=>true)
-installPackage "GraphicalModels"
+viewHelp GraphicalModels
+viewHelp globalMarkovStmts 
 
 loadPackage "GraphicalModels"
 load "GraphicalModels.m2"
@@ -204,10 +205,17 @@ position(keys G, k-> k===1) --returns "null" if not found.
 
 gaussIdeal(R,G,D)
 gaussIdeal(R,G)
+--gaussMatrices(G,M,Stmts)
+sta=Stmts_0
+gaussMatrices(G,M,sta)
+apply(Stmts, sta-> gaussMatrices(G,M,sta))
 
 --**************
 
-new MutableHashTable from apply(keys G, k->??????????
+G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+copyG = new MutableHashTable from apply(keys G,k-> k=>false);
+peek copyG
+peek G
 
 help localMarkovStmts
 help globalMarkovStmts

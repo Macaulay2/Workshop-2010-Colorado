@@ -4,17 +4,21 @@ needsPackage"Graphs"
 
 newPackage(
      "GraphicalModels",
-     Version => "1.2",
+     Version => "1.3",
      Authors => {
 	  {Name => "Luis Garcia"},
-	  {Name => "Mike Stillman"}
+	  {Name => "Mike Stillman"},
+       	  {Name => "others"}
 	  },
      Headline => "Markov ideals, arising from Bayesian networks in
      statistics",
      DebuggingMode => true
      )
 
--- 9aug2010: updates, changes, bugs, typos, organization, documentation -- the algstats grp at colorado!
+-------
+-- 7-12 Aug 2010: updates, changes, bugs, typos, organization, documentation -- by the algstats grp at colorado!
+-------
+
 ---- 28.10.09 ---- 
 ---- Version by the Working group at Aim  and MSRI
 ---- Amelia Taylor and Augustine O'Keefe
@@ -105,88 +109,12 @@ needsPackage"Graphs"
 --     )
 
 
---------------------------
--- Bayes ball algorithm --
---------------------------
-bayesBall = (A,C,G) -> (
-     -- A is a set in 1..n (n = #G)
-     -- C is a set in 1..n (the "blocking set")
-     -- G is a DAG
-     -- Returns the subset B of 1..n which is
-     --   independent of A given C.
-     -- The algorithm is the Bayes Ball algorithm,
-     -- as implemented by Luis Garcia, after
-     -- the paper of Ross Schlacter
-     n := #keys G; -- n := #G;
-     --zeros := toList((n+1):false);
-     --visited := new MutableList from zeros;
-     --blocked := new MutableList from zeros;
-     --up := new MutableList from zeros;
-     --down := new MutableList from zeros;
-     --top := new MutableList from zeros;
-     --bottom := new MutableList from zeros;
-     visited := new MutableHashTable; 
-     scan(keys G,k-> visited#k = false);
-     blocked :=  new MutableHashTable; 
-     scan(keys G,k-> blocked#k = false);
-     up :=  new MutableHashTable; 
-     scan(keys G,k-> up#k = false);
-     down := new MutableHashTable; 
-     scan(keys G,k-> down#k = false);
-     top :=  new MutableHashTable; 
-     scan(keys G,k-> top#k = false);
-     bottom :=  new MutableHashTable; 
-     scan(keys G,k-> bottom#k = false);
-     vqueue := toList A; -- sort toList A
-     -- Now initialize vqueue, set blocked
-     scan(vqueue, a -> up#a = true);
-     scan(toList C, c -> blocked#c = true);
-     local pa;
-     local ch;
-     while #vqueue > 0 do (
-	  v := vqueue#-1;
-	  vqueue = drop(vqueue,-1);
-	  visited#v = true;
-	  if not blocked#v and up#v
-	  then (
-	       if not top#v then (
-		    top#v = true;
-		    pa = toList parents(G,v);
-		    scan(pa, i -> up#i = true);
-		    vqueue = join(vqueue,pa);
-		    );
-	       if not bottom#v then (
-		    bottom#v = true;
-		    ch = toList children(G,v);
-		    scan(ch, i -> down#i = true);
-		    vqueue = join(vqueue,ch);
-		    );
-	       );
-	  if down#v
-	  then (
-	       if blocked#v and not top#v then (
-		    top#v = true;
-		    pa = toList parents(G,v);
-		    scan(pa, i -> up#i = true);
-		    vqueue = join(vqueue,pa);
-		    );
-	       if not blocked#v and not bottom#v then (
-		    bottom#v = true;
-		    ch = toList children(G,v);
-		    scan(ch, i -> down#i = true);
-		    vqueue = join(vqueue,ch);
-		    );
-	       );
-	  ); -- while loop
-     --set toList select(1..n, i -> not blocked#i and not bottom#i)
-     set toList select(keys G, i -> not blocked#i and not bottom#i)     
-     )
 
 --------------------------
 -- Markov relationships --
 --------------------------
 pairMarkovStmts = method()
-pairMarkovStmts Digraph := (G) -> (
+pairMarkovStmts Digraph := List => (G) -> (
      -- given a graph G, returns a list of triples {A,B,C}
      -- where A,B,C are disjoint sets, and for every vertex v
      -- and non-descendent w of v,
@@ -197,7 +125,7 @@ pairMarkovStmts Digraph := (G) -> (
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
 
 localMarkovStmts = method()			 
-localMarkovStmts Digraph := (G) -> (
+localMarkovStmts Digraph := List =>  (G) -> (
      -- Given a graph G, return a list of triples {A,B,C}
      -- of the form {v, nondescendents - parents, parents}
      result := {};
@@ -210,7 +138,7 @@ localMarkovStmts Digraph := (G) -> (
 
 
 globalMarkovStmts = method()
-globalMarkovStmts Digraph := (G) -> (
+globalMarkovStmts Digraph := List => (G) -> (
      -- Given a graph G, return a complete list of triples {A,B,C}
      -- so that A and B are d-separated by C (in the graph G).
      -- If G is large, this should maybe be rewritten so that
@@ -238,8 +166,6 @@ globalMarkovStmts Digraph := (G) -> (
 	       )))));
      removeRedundants result
      )
---- The function above gives output as they describe it,  the first
---- set is independent of the second set, given the third set.  
 
 
 ------------------------------------------------------------------
@@ -338,24 +264,82 @@ removeRedundants = (Ds) -> (
 -- END of removing redundant statements.
 ------------------------------------------------------------------
 
+--------------------------
+-- Bayes ball algorithm --
+--------------------------
+bayesBall = (A,C,G) -> (
+     -- A is a set in 1..n (n = #G)
+     -- C is a set in 1..n (the "blocking set")
+     -- G is a DAG
+     -- Returns the subset B of 1..n which is
+     --   independent of A given C.
+     -- The algorithm is the Bayes Ball algorithm,
+     -- as implemented by Luis Garcia, after
+     -- the paper of Ross Schlacter
+     n := #keys G; -- n := #G;
+     --zeros := toList((n+1):false);
+     --visited := new MutableList from zeros;
+     --blocked := new MutableList from zeros;
+     --up := new MutableList from zeros;
+     --down := new MutableList from zeros;
+     --top := new MutableList from zeros;
+     --bottom := new MutableList from zeros;
+     --now make new hashtables with same keys as G, but all entries false:
+     visited := new MutableHashTable from apply(keys G,k-> k=>false);
+     blocked :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     up :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     down := new MutableHashTable from apply(keys G,k-> k=>false);
+     top :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     bottom := new MutableHashTable from apply(keys G,k-> k=>false);
+     vqueue := toList A; -- sort toList A
+     -- Now initialize vqueue, set blocked
+     scan(vqueue, a -> up#a = true);
+     scan(toList C, c -> blocked#c = true);
+     local pa;
+     local ch;
+     while #vqueue > 0 do (
+	  v := vqueue#-1;
+	  vqueue = drop(vqueue,-1);
+	  visited#v = true;
+	  if not blocked#v and up#v
+	  then (
+	       if not top#v then (
+		    top#v = true;
+		    pa = toList parents(G,v);
+		    scan(pa, i -> up#i = true);
+		    vqueue = join(vqueue,pa);
+		    );
+	       if not bottom#v then (
+		    bottom#v = true;
+		    ch = toList children(G,v);
+		    scan(ch, i -> down#i = true);
+		    vqueue = join(vqueue,ch);
+		    );
+	       );
+	  if down#v
+	  then (
+	       if blocked#v and not top#v then (
+		    top#v = true;
+		    pa = toList parents(G,v);
+		    scan(pa, i -> up#i = true);
+		    vqueue = join(vqueue,pa);
+		    );
+	       if not blocked#v and not bottom#v then (
+		    bottom#v = true;
+		    ch = toList children(G,v);
+		    scan(ch, i -> down#i = true);
+		    vqueue = join(vqueue,ch);
+		    );
+	       );
+	  ); -- while loop
+     set toList select(keys G, i -> not blocked#i and not bottom#i)     
+     )
+
 
 
 -------------------
 -- Markov rings ---
 -------------------
---markovRingList = new MutableHashTable;
---markovRing = d -> (
---     -- d should be a sequence of integers di >= 1
---     if any(d, di -> not instance(di,ZZ) or di <= 0)
---     then error "useMarkovRing expected positive integers";
---     p = value "symbol p";
---     if not markovRingList#?d then (
---     	  start := (#d):1;
---     	  markovRingList#d = QQ[p_start .. p_d];
---	  markovRingList#d.markov = d;
---	  );
---     markovRingList#d
---     )
 markovRingList := new MutableHashTable;
 markovRing = method(Dispatch=>Thing);
 markovRing Sequence := d -> (
@@ -623,7 +607,7 @@ doc ///
     GraphicalModels. ideals arising from Bayesian networks in statistics
   Description
     Text
-      ****NEEDS UPDATING!****
+      ****NEEDS UPDATING!**** two parts of the package: markov statements, and gaussRing/markovRing and matrices and minors. 
       
       This package is used to construct ideals corresponding to discrete graphical models,
       as described in several places, including the paper: Garcia, Stillman and Sturmfels,
@@ -701,17 +685,15 @@ doc ///
     G:Digraph 
   Outputs
     L:List
-      whose entries are triples {A,B,C} representing  conditional independence statements ''A is independent of B given C'' that is true for G.
+      whose entries are triples {A,B,C} representing pairwise Markov  conditional independence statements of the form
+      ''A is independent of B given C'' that hold for G.
   Description
     Text
-      Given a directed graph G, pairwise Markov statements are conditional independence statements 
-      of the following form: \break
+      Given a directed graph G, pairwise Markov statements are statements of the form \{v,w,nondescendents(G,v)-w\} 
+      for each vertex v of G. In other words, for every vertex v of G and all non-descendents w of v, 
+      v is independent of w given all other non-descendents. 
       
-      for every vertex $v$ of G and all non-descendents $w$ of $v$, 
-      $v$ is independent of $w$ given all other non-descendents. In symbols, the statements are 
-      ${v,w,nondescendents(G,v)-w} $. \break
-      
-      For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      For example, for the digraph D on $4$ vertices with edges a-->b, a-->c, b-->c, and b-->d, 
       we get the following pairwise Markov statements:
     Example
       D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
@@ -719,6 +701,79 @@ doc ///
     Text
       Note that the method displays only non-redundant statements.
   SeeAlso
+    localMarkovStmts 
+    globalMarkovStmts
+///
+
+
+doc ///
+  Key
+    localMarkovStmts
+    (localMarkovStmts,Digraph)
+  Headline
+    local Markov statements for a directed graph
+  Usage
+    localMarkovStmts G
+  Inputs
+    G:Digraph 
+  Outputs
+    L:List
+      whose entries are triples {A,B,C} representing local Markov  conditional independence statements of the form
+      ''A is independent of B given C'' that hold for G.
+  Description
+    Text
+      Given a directed graph G, local Markov statements are of the form
+      \{$v$, nondescendents($v$) - parents($v$), parents($v$)\} .
+      That is, 
+      every vertex $v$ of G is independent of its nondescendents (excluding parents) given the parents. 
+      
+      For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      we get the following local Markov statements:
+    Example
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+      L = localMarkovStmts D
+    Text
+      Note that the method displays only non-redundant statements.
+  SeeAlso
+    pairMarkovStmts
+    globalMarkovStmts
+///
+
+doc ///
+  Key
+    globalMarkovStmts
+    (globalMarkovStmts,Digraph)
+  Headline
+    global Markov statements for a directed graph
+  Usage
+    globalMarkovStmts G
+  Inputs
+    G:Digraph 
+  Outputs
+    L:List
+      whose entries are triples {A,B,C} representing global Markov  conditional independence statements of the form
+      ''A is independent of B given C'' that hold for G.
+  Description
+    Text
+      Given a directed graph G, global Markov states that      
+      A is independent of B given C for every triple of sets of vertices A, B, and C, 
+      such that A and B are $d$-separated by C (in the graph G).\break
+
+      {\bf add definition of d-separation criterion, and a reference!}\break
+      
+      For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      we get the following global Markov statements:
+    Example
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+      L = globalMarkovStmts D
+    Text
+      Note that the method displays only non-redundant statements.
+  Caveat
+    -- If G is large, this should maybe be rewritten so that
+    -- one huge list of subsets is not made all at once
+  SeeAlso
+    localMarkovStmts
+    pairMarkovStmts
 ///
 end
 
@@ -809,11 +864,11 @@ document {
 end
 
 
-
+uninstallPackage "GraphicalModels"
 restart
 installPackage ("GraphicalModels", RemakeAllDocumentation => true, UserMode=>true)
+viewHelp GraphicalModels
 installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
-viewHelp FourTiTwo
 
 
 
@@ -871,6 +926,8 @@ loadPackage"GraphicalModels"
 G = digraph({{a,{b,c}},{b,{c,d}},{c,{}},{d,{}}})
 convertToIntegers(G)
  ///   
+
+
 
 load "/Users/mike/local/src/M2-mike/markov/dags5.m2"
 D5s
