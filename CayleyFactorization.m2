@@ -122,12 +122,12 @@ newPackage(
        --         and P' is the result of factoring out elements of L' from P
        topExtensors := select(L, ll -> (#ll == d+1)); -- list all step d+1 extensors 
        productFactors := product apply(topExtensors , l -> ( indicesToRingElement(ring P, d, n, sort toList(l))) ); -- convert them into variables in ring of P and take product
-       if(P % productFactors == 0) then (
+ --      if(P % productFactors == 0) then ( -- it takes too long to check
         {topExtensors, P/productFactors}
-       ) else (
-         print("error: the input polynomial is not divisible by the given bracket variables");
-       	 null
-       )
+ --      ) else (
+ --        print("error: the input polynomial is not divisible by the given bracket variables");
+ --      	 null
+ --      )
       )
 
    ------------------- Step 3 and 4 ------------------------------ 
@@ -150,7 +150,6 @@ newPackage(
 			  firstRow := set (baseName(supp#0))#1; --first row of tableau
 			  secondRow := set (baseName(supp#1))#1; -- second row of tableau
 			  if((not isSubset(set(0..#E-1),firstRow)) or (not isSubset(set(0..#F-1), firstRow+secondRow)) or (not isSubset(firstRow, set(0..#E+#F-1) ))) then (
-			      print(firstRow, secondRow);
      	       	    	      found = 0;
 			      break;
 			       )
@@ -173,7 +172,7 @@ newPackage(
 			       )
 		     	  ), a -> a =!= null);
 		     	  inverseNewOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F));
-		     	  break({{E,F}, permutePoints(sub(P, substitutions), d, n, inverseNewOrder), apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
+		     	  break({{E,F}, permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder), apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
 		     )
 	  	)
       )
@@ -245,8 +244,8 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
      knownFactors := null;
      atoms := toList listAtoms(P, partialAtoms, d, n); -- Step 1
      if(#select(atoms, a -> #a >= d+1) <= 0 and (max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
-	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
-	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
+--	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
+--	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  ); 
      pureFactors := factorBrackets(P,d,n,atoms); -- Step 2
@@ -255,13 +254,13 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
        	  P = pureFactors#1;
        	  atoms = toList((set atoms) - (set pureFactors#0));
 	  if(#atoms == 0 or (degree P)#0 <= 0)then (
-	       print( "after step 2: ", knownFactors);
+--	       print( "after step 2: ", knownFactors);
 	       return(knownFactors);
 	       )
        	  );
      pairFactor := findPairFactor(P,d,n,atoms); -- Steps 3 and 4
      if(pairFactor === null) then (
-	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
+--	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  );
      if(knownFactors === null) then (
@@ -272,15 +271,16 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
      newIndices := pairFactor#2;
      newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {set newIndices};
      expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
-     print("trying to factor ", toString pairFactor#1);
-     print("new partial atoms: ", newPartialAtoms);
+ --    print("trying to factor ", toString pairFactor#1);
+ --    print("new partial atoms: ", newPartialAtoms);
+ --    print("expansionKey: ", expansionKey);
      smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms);
      if(smallerFactors === null) then (
-	 print("not factorable, recursive step. P = ", P, "atoms = ", atoms);
+--	 print("not factorable, recursive step. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  ) else (
-	  print("smaller Factors: ", smallerFactors);
-	  print("after substitution: ", replace(expansionKey#0, expansionKey#1, toString smallerFactors));
+--	  print("smaller Factors: ", smallerFactors);
+--	  print("after substitution: ", replace(expansionKey#0, expansionKey#1, toString smallerFactors));
      	  return(value replace(expansionKey#0, expansionKey#1, toString smallerFactors));
 	  );
      )
@@ -328,7 +328,7 @@ Grassmannian(d,n);
 use((ring oo) / oo);
 partialAtoms = toList apply(0..n, i->set {i})
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
-  P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4)
+  P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
 cayleyFactor(P,d,n)
  
@@ -346,9 +346,16 @@ Grassmannian(d,n);
 use((ring oo) / oo);
 partialAtoms = toList apply(0..n, i->set {i})
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
-P = -p_(0,4,6)*p_(5,7,8)+p_(0,4,5)*p_(6,7,8);
 P =  -p_(2,7,8);
+P =  -p_(0,7,8);
+P = -p_(0,4,6)*p_(5,7,8)+p_(0,4,5)*p_(6,7,8);
+P = permutePoints(P, d, n, {5, 6, 7, 8, 0, 1, 2, 3, 4}); -- -p_(0,2,4)*p_(1,3,5)+p_(0,1,4)*p_(2,3,5)+p_(0,2,3)*p_(1,4,5)-p_(0,1,3)*p_(2,4,5)+2*p_(0,1,2)*p_(3,4,5);
 cayleyFactor(P,d,n)
+
+P = p_(0,2,4)*p_(1,3,5)-2*p_(0,1,4)*p_(2,3,5)-p_(0,2,3)*p_(1,4,5)+p_(0,1,3)*p_(2,4,5)-2*p_(0,1,2)*p_(3,4,5)+2*p_(0,1,2);
+partialAtoms = {set {7}, set {6}, set {8}, set {1, 2}, set {0}};
+
+
 L=listAtoms(P, 2, 8);
 L = apply((toList L),a->toList a)
 L = reverse L
