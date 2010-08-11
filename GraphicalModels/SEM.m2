@@ -148,7 +148,27 @@ trekSeparation MixedGraph := (G) -> (
 ) 
 	
 	
-	
-	
+
+trekIdeal = method()
+trekIdeal(ZZ, List) := (n, c) -> (
+	M := mutableMatrix(ZZ,n,n);
+	I := Ideal;
+    k = 1;
+	for i from 1 to n do (
+		for j from i to n do (
+			M_(i-1,j-1) = k;
+			M_(j-1,i-1) = k;
+			k = k+1;
+		)
+	);
+	for i from 1 to #c do (
+		s = 1;
+		if c#(i-1)#2 != 0 then s = s + #c#(i-1)#2;
+		if c#(i-1)#3 != 0 then s = s + #c#(i-1)#3;
+		m = submatrix(M, c#(i-1)#0, c#(i-1)#1);
+		I = I + minor(s, m);
+	);
+	gb I
+)
 	
 	
