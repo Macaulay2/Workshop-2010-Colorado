@@ -343,8 +343,22 @@ removeRedundants = (Ds) -> (
 -------------------
 -- Markov rings ---
 -------------------
-markovRingList = new MutableHashTable;
-markovRing = d -> (
+--markovRingList = new MutableHashTable;
+--markovRing = d -> (
+--     -- d should be a sequence of integers di >= 1
+--     if any(d, di -> not instance(di,ZZ) or di <= 0)
+--     then error "useMarkovRing expected positive integers";
+--     p = value "symbol p";
+--     if not markovRingList#?d then (
+--     	  start := (#d):1;
+--     	  markovRingList#d = QQ[p_start .. p_d];
+--	  markovRingList#d.markov = d;
+--	  );
+--     markovRingList#d
+--     )
+markovRingList := new MutableHashTable;
+markovRing = method(Dispatch=>Thing);
+markovRing Sequence := d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
@@ -516,9 +530,11 @@ doc ///
   Key
     GraphicalModels
   Headline
-    GraphicalModels ideals, arising from Bayesian networks in statistics
+    GraphicalModels. ideals arising from Bayesian networks in statistics
   Description
     Text
+      ****NEEDS UPDATING!****
+      
       This package is used to construct ideals corresponding to discrete graphical models,
       as described in several places, including the paper: Garcia, Stillman and Sturmfels,
       "The algebraic geometry of Bayesian networks", J. Symbolic Comput., 39(3-4):331–355, 2005.
@@ -529,23 +545,20 @@ doc ///
       Here is a typical use of this package.  We create the ideal in 16 variables whose zero set 
       represents the probability distributions on four binary random variables which satisfy the
       conditional independence statements coming from the "diamond" graph 4 --> 2,3 --> 1.
-    Example
       R = markovRing(2,2,2,2)
-      G = makeGraph{{},{1},{1},{2,3}}
-      S = globalMarkovStmts G
-      I = markovIdeal(R,S)
+      --G = makeGraph{{},{1},{1},{2,3}}
+      --S = globalMarkovStmts G
+      --I = markovIdeal(R,S)
     Text
       Sometime an ideal can be simplified by changing variables.  Very often, by using @TO marginMap@, 
       such ideals can be transformed to binomial ideals.  This is the case here.
-    Example
       F = marginMap(1,R)
-      J = F I;
-      netList pack(2,J_*)
+      --J = F I;
+      --netList pack(2,J_*)
     Text
       This ideal has 5 primary components.  The first is the one that has statistical significance.
       The significance of the other components is still poorly understood.
-    Example
-      time netList primaryDecomposition J
+      --time netList primaryDecomposition J
   Caveat
     The parts of the package involving graphs might eventually be changed to use a package dealing
     specifically with graphs.  This might change the interface to this package.  ****THIS WAS ALREADY DONE;
@@ -556,13 +569,14 @@ doc ///
 doc ///
   Key
     markovRing
+    (markovRing,Sequence)
   Headline
     ring of probability distributions on several discrete random variables
   Usage
-    markovRing(d1,d2,...,dr)
+    markovRing(d)
   Inputs
-    di:ZZ
-      Each d_i should be a positive integer
+    d:Sequence
+      with positive integer entries (d1,...,dr)
   Outputs
     R:Ring
       A polynomial ring with d1*d2*...*dr variables $p_{(i1,...,ir)}$,
@@ -572,11 +586,12 @@ doc ///
     by other functions in this package.  Also, at most one ring for each such sequence
     is created: the results are cached.
   Description
-   Example
-     R = markovRing(2,3,4,5);
-     numgens R
-     R_0, R_1, R_119
-     coefficientRing R
+    Example
+      d=(2,3,4,5);
+      R = markovRing d;
+      numgens R
+      R_0, R_1, R_119 --here are some of the variables in the ring
+      coefficientRing R
   Caveat
     Currently, the user has no choice about the names of the variables.  
     Also, the base field is set to be QQ, without option of changing it.
@@ -587,6 +602,7 @@ doc ///
 doc ///
   Key
     pairMarkovStmts
+    (pairMarkovStmts,Digraph)
   Headline
     pairwise Markov statements for a directed graph
   Usage
@@ -616,6 +632,7 @@ doc ///
 ///
 end
 
+--------------------------------------
 doc ///
   Key
   Headline
@@ -700,6 +717,14 @@ document {
      }
 
 end
+
+
+
+restart
+installPackage ("GraphicalModels", RemakeAllDocumentation => true, UserMode=>true)
+installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
+viewHelp FourTiTwo
+
 
 
 

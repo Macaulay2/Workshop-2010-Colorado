@@ -152,8 +152,12 @@ under = (d) -> (
 s=glo_0
 under setit s
 removeRedundants glo; ----NEED TO RUN THIS W/ UNDER CHANGED!!
+
+
 break
 
+restart
+installPackage "GraphicalModels"
 
 loadPackage "GraphicalModels"
 load "GraphicalModels.m2"
@@ -164,8 +168,30 @@ pairMarkovStmts D
 D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
 L = pairMarkovStmts D
 
+new MutableHashTable from apply(keys G, k->
+
 help localMarkovStmts
 help globalMarkovStmts
 help markovRing
+d=2:2
+markovRing()
+markovRing(d)
+markovRing(2,3)
+
 help marginMap
 help hideMap
+
+--OLD CODE: 
+markovRingList = new MutableHashTable;
+markovRing = d -> (
+     -- d should be a sequence of integers di >= 1
+     if any(d, di -> not instance(di,ZZ) or di <= 0)
+     then error "useMarkovRing expected positive integers";
+     p = value "symbol p";
+     if not markovRingList#?d then (
+     	  start := (#d):1;
+     	  markovRingList#d = QQ[p_start .. p_d];
+	  markovRingList#d.markov = d;
+	  );
+     markovRingList#d
+     )
