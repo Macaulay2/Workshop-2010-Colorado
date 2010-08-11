@@ -21,7 +21,7 @@ export {
 	poset,
 --	DirectedGraph,
 --	directedGraph,
-	adjacencyMatrix,
+--	adjacencyMatrix,
 	allPairsShortestPath,
 	transitiveClosure,
 --     FullRelationMatrix,
@@ -106,7 +106,7 @@ directedGraph(List, List) := (V,E) ->
 --caveat: diagonal entries are 0
 -- uses:  transitive closure 
 
-adjacencyMatrix = method()
+--adjacencyMatrix = method()  (in Graphs.m2)
 adjacencyMatrix(List,List) := Matrix => (I, C) -> (
      M := mutableMatrix table(#I, #I, (i,j)->1/0.);
      ind := hashTable( apply(I, i-> i=> position(I,j-> j==i) )  ); --indices 

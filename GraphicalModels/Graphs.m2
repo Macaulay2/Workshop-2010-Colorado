@@ -13,7 +13,7 @@ newPackage("Graphs",
 export {Graph, Digraph, MixedGraph, LabeledGraph, graph, digraph, mixedGraph, labeledGraph, Singletons, descendents, nondescendents, 
      parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
      simpleGraph, removeNodes, inducedSubgraph, completeGraph,
-     cycleGraph, writeDotFile,SortedDigraph,topSort,DFS}
+     cycleGraph, writeDotFile,SortedDigraph,topSort,DFS,adjacencyMatrix,edgeSet,incidenceMatrix}
 exportMutable {dotBinary,jpgViewer}
 
 
@@ -352,7 +352,7 @@ inducedSubgraph(Digraph, List) := (G,v) -> (
 adjacencyMatrix = method()
      -- Input:  A graph
      -- Output:  A matrix M, such that M_(i,j)=1 iff vertices i and j are adjacent
-adjacencyMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(keys(G),j->(if G#i#?j then 1 else 0))))
+adjacencyMatrix(Digraph) := G -> matrix apply(keys(G),i->(apply(keys(G),j->(if G#i#?j then 1 else 0))))
 
 edgeSet = method()
      -- Input: A graph
