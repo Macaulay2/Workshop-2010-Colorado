@@ -312,18 +312,24 @@ doc ///
 doc ///
   Key
        cayleyFactor
+       (cayleyFactor, RingElement, ZZ, ZZ)
+       (cayleyFactor, RingElement, ZZ, ZZ, List)
   Headline
        Factors a multilinear bracket polynomial as a simple expression in the Grassmann-Cayley algebra
   Usage
        C = cayleyFactor(P,d,n)
+       C = cayleyFactor(P,d,n,partialAtoms)
+       
   Inputs
      P: RingElement
-     	  a multilinear polynomial in the coordinate ring of Grassmannian(d,n)
+           a multilinear polynomial in the coordinate ring of Grassmannian(d,n)
      d: ZZ
      n: ZZ
+     partialAtoms:List 
+                 an optional list containing disjoint sets of points known to be in the same equivalence class
   Outputs
      C: Expression
-     	  {,} denotes join, and (,) denotes meet
+     	  \{,\} denotes join, and (,) denotes meet
   Consequences
 
   Description
@@ -359,7 +365,7 @@ end
 restart
 path = path|{"/Users/bb/Documents/math/M2codes/Colorado-2010"}
 uninstallPackage("CayleyFactorization")
-installPackage("CayleyFactorization", RemakeAllDocumentation => true, AbsoluteLinks=>false )
+installPackage("CayleyFactorization", RemakeAllDocumentation => true )
 viewHelp CayleyFactorization
 d = 2; n=5;
 Grassmannian(d,n);
@@ -419,12 +425,19 @@ sigma = {2,3,0,1,5,7,6,8,4}
 end
 restart
 debug loadPackage "CayleyFactorization"
-R = ring Grassmannian(2,5)
-
+Grassmannian(2,5)
+use((ring oo)/ oo);
+P = p_(0,1,4)*p_(2,3,5)-p_(1,3,4)*p_(0,2,5);
+F = cayleyFactor(P, 2,5)
+peek F
 L = listAtoms(p_(0,1,2)*p_(3,4,5)+p_(0,1,3)*p_(2,4,5),2,5)
 
-R = ring Grassmannian(2,8)
+R = ring Grassmannian(2,8);
+use((ring oo)/ oo);
+P = (p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
 
+
+F= cayleyFactor(P, 2,8)
 L=listAtoms(p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8), 2, 8)
 toList L
 
