@@ -21,7 +21,7 @@ computeFreeBasis(Matrix) := Matrix => phi -> (
      R := ring phi;
      fphi := res coker phi;
      p := length fphi;
-     Ai := fphi.dd_p
+     Ai := fphi.dd_p;
      for i from 0 to p-2 do (
 	  tAi := transpose Ai;
 	  idi := map(target tAi,target tAi,1_R);
