@@ -119,13 +119,6 @@ getMatrix String := (filename) -> (
 	  (rays, linearity)
 	  )
 )
-
-gmpValue = method()
-gmpValue String := gmp ->(
-     L=separate("/",gmp);
-     if #L==1 then promote(value L#0,QQ)
-     else (value L#0)/(value L#1)
-     )
      
 
 ggetMatrix = method()
@@ -138,12 +131,12 @@ ggetMatrix String := (filename) -> (
 	  L = L#1;
      	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
      	  m = value( M#1);
-     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> gmpValue o),i-> i#0==0),l->primitive toZZ drop(l,1)),matrix {{0}})
+     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> promote(value o,QQ)),i-> i#0==0),l->primitive toZZ drop(l,1)),matrix {{0}})
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
      	  m = value( M#1);
-     	  mat :=  pack_m apply(drop(M,3), o-> gmpValue o);
+     	  mat :=  pack_m apply(drop(M,3), o-> promote(value o,QQ));
 	  linearity := sort transpose matrix apply(mat_lin, l-> primitive toZZ drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
 	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->primitive toZZ drop(l,1));
