@@ -11,11 +11,11 @@ newPackage(
 	--PastDevelopers => { };
 	--Contributors => { };
 	--Acknowledgments => { };
-        Headline => "A package for computing Mayer-Vietoris Trees for monomial ideals",
+        Headline => "A package for computing Betti numbers and bounds on homological invariants for monomial ideals",
         DebuggingMode => true
         )
 
-export {fullMVT,relMVT,relevantNodes,lowerBettiMVT,upperBettiMVT}
+export {fullMVT,relMVT,relevantNodes,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT}
 
 --TO DO:
 -- v0: document methods
