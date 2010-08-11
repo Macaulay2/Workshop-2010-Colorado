@@ -111,7 +111,39 @@ getMatrix String := (filename) -> (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
      	  m = value( M#1);
+	  << "entered" << endl;
      	  mat :=  pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ));
+	  linearity := sort transpose matrix apply(mat_lin, l-> primitive toZZ drop(l,1));
+	  r := select(toList(0..#mat-1), n-> not member(n,lin));
+	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->primitive toZZ drop(l,1));
+	  (rays, linearity)
+	  )
+)
+
+gmpValue = method()
+gmpValue String := gmp ->(
+     L=separate("/",gmp);
+     if #L==1 then promote(value L#0,QQ)
+     else (value L#0)/(value L#1)
+     )
+     
+
+ggetMatrix = method()
+ggetMatrix String := (filename) -> (
+     -- << get filename << endl;
+     L := separateRegexp("linearity|begin|end", get filename);
+     if #L<3 then error "-- lrs or cdd failed to compute the dual cone."; 
+     local m, M;
+     if #L==3 then (
+	  L = L#1;
+     	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
+     	  m = value( M#1);
+     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> gmpValue o),i-> i#0==0),l->primitive toZZ drop(l,1)),matrix {{0}})
+     ) else (
+     	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
+	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
+     	  m = value( M#1);
+     	  mat :=  pack_m apply(drop(M,3), o-> gmpValue o);
 	  linearity := sort transpose matrix apply(mat_lin, l-> primitive toZZ drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
 	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->primitive toZZ drop(l,1));
@@ -128,7 +160,7 @@ glrs Matrix := Matrix => A ->(
      close F;
      execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
-     getMatrix (filename | ".ext")
+     ggetMatrix (filename | ".ext")
      )
 glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return glrs A else(
@@ -139,7 +171,7 @@ glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      close F;
      execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
-     getMatrix (filename | ".ext")
+     ggetMatrix (filename | ".ext")
      ))
 	 
 lrs = method()
@@ -187,7 +219,29 @@ cdd (Matrix, Matrix) := Matrix => (A,B) ->(
      run execstr;
      getMatrix (filename | ".ext")
      ))
-     
+ 
+gcdd = method()
+gcdd Matrix := Matrix => A ->(
+     filename := getFilename();
+     << "using temporary file name " << filename << endl;
+     F := openOut(filename|".ine");
+     putMatrix(F,-A);
+     close F;
+     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     run execstr;
+     ggetMatrix (filename | ".ext")
+     )
+gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
+     if B==0 then return gcdd A else(
+       filename := getFilename();
+     << "using temporary file name " << filename << endl;
+     F := openOut(filename|".ine");
+     putMatrix(F,-A,B);
+     close F;
+     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     run execstr;
+     ggetMatrix (filename | ".ext")
+     ))    
 
 end
 
@@ -252,9 +306,9 @@ lrs fourierMotzkin fourierMotzkin C
 lrs (sort C,matrix{{0}})
 lrs C
 
-C = transpose random(ZZ^100, ZZ^300, Density=>.8, Height=> 100)
-f = glrs glrs time fourierMotzkin C;
-l = time glrs C;
+C = transpose random(ZZ^30, ZZ^70, Density=>.8, Height=> 100)
+f = gcdd gcdd time fourierMotzkin C;
+l = time gcdd C;
 (f#0-l#0)==0
 (f#1-l#1)==0
 
