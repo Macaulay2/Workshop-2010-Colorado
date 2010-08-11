@@ -109,10 +109,9 @@ maxMinors(Matrix) := M -> (
 
 isProjective = method()
 isProjective(Module) := P -> (
-     local R; local p;
+     local R;
      R = ring(P);
-     p = presentation(P);
-     if maxMinors(p) == R then return true else return false;
+     return isUnimodular(presentation(P))
 )
 
 
