@@ -15,7 +15,7 @@ newPackage(
         DebuggingMode => true
         )
 
-export {fullMVT,relMVT,relevantNodes,projDimMVT,regMVT,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT}
+export {fullMVT,relMVT,relevantNodes,projDimMVT,regMVT,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT,PivotStrategy}
 
 --TO DO:
 -- v0: document methods
@@ -258,8 +258,9 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
 
 upperBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
 upperBettiMVT(MonomialIdeal) := o -> I -> {
-     L := (splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#1;
-     M := apply(L, i->{i#1,i#0});
+     L := ((splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#1);
+     if L != {} then {
+     	  M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
      for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
      W := new HashTable from T;
@@ -274,7 +275,10 @@ upperBettiMVT(MonomialIdeal) := o -> I -> {
 
 pseudoBettiMVT = method(Options => {PivotStrategy => 1}); -- outputs a VirtualTally similar to a BettiTally that gives bounds on the dimension
 pseudoBettiMVT(MonomialIdeal) := o -> I -> {
-     return pseudoBettiHelper(lowerBetti(I, PivotStrategy => o.PivotStrategy),upperBetti(I, PivotStrategy => o.PivotStrategy));
+     return pseudoBettiHelper(
+	  lowerBettiMVT(I, PivotStrategy => o.PivotStrategy),
+	  upperBettiMVT(I, PivotStrategy => o.PivotStrategy)
+	  );
      }
 
 
@@ -323,9 +327,17 @@ TEST ///
     time relMVT(J);
     
 restart
+installPackage "MayerVietorisTrees"
 R = QQ[x,y,z]
 I = monomialIdeal "x2,x3y,xyz,z2"
 J = monomialIdeal "x2,y2,xy,xz,yz"
+upperBettiMVT(I)
+lowerBettiMVT(I)
+upperBettiMVT(J)
+lowerBettiMVT(J)
+pseudoBettiMVT(I)
+pseudoBettiMVT(J)
+
 fullMVT(I)
 M = relMVT(I)
 splitNodes M
@@ -361,6 +373,9 @@ relNodesGens(relMVT(I,PivotStrategy => 2))
 L = (splitNodes(oo))#0
 projDim(I)
 reg I
+upperBettiMVT(I)
+lowerBettiMVT(I)
+pseudoBettiMVT(I)
 
 restart
 collectGarbage;
@@ -368,7 +383,7 @@ load "MayerVietorisTrees.m2"
 installPackage "MayerVietorisTrees"
 
 R = QQ[x,y,z]
-I = monomialIdeal "x2,y2,xy,xz"
+I = monomialIdeal "x2,y2,xy,xz,yz"
 relMVT(I)
 (splitNodes(relNodesGens(relMVT(I))))#1
 --relNodesGens(relMVT(I))
