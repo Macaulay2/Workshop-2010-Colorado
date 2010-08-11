@@ -15,7 +15,7 @@ newPackage(
         DebuggingMode => true
         )
 
-export {fullMVT,relMVT,relevantNodes,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT}
+export {fullMVT,relMVT,relevantNodes,projDimMVT,regMVT,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT}
 
 --TO DO:
 -- v0: document methods
@@ -31,8 +31,14 @@ export {fullMVT,relMVT,relevantNodes,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT}
 pivot = method(Options => {PivotStrategy => 1});  --Chooses the pivot generator for creating a MVT from a monomial ideal
 pivot(Matrix) := o -> (I) -> {
      if o.PivotStrategy == 1 then {
-     return first first entries I;}
-     else return last first entries I;
+     	  return first first entries I;
+	  }
+     else {
+	  if o.PivotStrategy == 2 then {
+	       return last first entries I;
+	       }
+	  else error "You have not picked a valid strategy"
+	  }
      }
 
 idealRight = method(Options => {PivotStrategy => 1});  --Creates the right child of node in an MVT
@@ -127,7 +133,7 @@ splitNodes(List) := (myList) -> {
    nonUniqueList  := apply(select(pairs myTally, p -> p#1 > 1), first);
    repList := select(myList, p -> member(p#0,uniqueList));
    nonRepList := select(myList, p -> member(p#0,nonUniqueList));
-   return (repList,nonRepList)
+   return {repList,nonRepList}
  }
 
 maxDim = method(); 
@@ -216,8 +222,8 @@ relevantNodes(List) := (L) -> {
      return K;
      }
 
-projDim = method(Options => {PivotStrategy => 1});
-projDim(MonomialIdeal) := o -> (I) -> {
+projDimMVT = method(Options => {PivotStrategy => 1});
+projDimMVT(MonomialIdeal) := o -> (I) -> {
      myNodes := relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy));
      nonRep := first splitNodes(myNodes);
      rep := last splitNodes(myNodes);
@@ -225,8 +231,8 @@ projDim(MonomialIdeal) := o -> (I) -> {
      else return (maxDim(nonRep),maxDim(rep));
      }
 
-reg = method(Options => {PivotStrategy => 1});
-reg(MonomialIdeal) := o -> (I) -> {
+regMVT = method(Options => {PivotStrategy => 1});
+regMVT(MonomialIdeal) := o -> (I) -> {
      myNodes := relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy));
      nonRep := first splitNodes(myNodes);
      rep := last splitNodes(myNodes);
@@ -236,7 +242,7 @@ reg(MonomialIdeal) := o -> (I) -> {
 
 lowerBettiMVT = method(Options => {PivotStrategy => 1}); --returns lower bounds on the Betti numbers of a monomial ideal I
 lowerBettiMVT(MonomialIdeal) := o -> I -> {
-     L := (splitNodes(relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy))))#0;
+     L := (splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#0;
      M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
      for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
@@ -252,7 +258,7 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
 
 upperBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
 upperBettiMVT(MonomialIdeal) := o -> I -> {
-     L := (splitNodes(relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy))))#1;
+     L := (splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#1;
      M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
      for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
@@ -351,20 +357,26 @@ reg(J)
 S = QQ[x,y,z]
 I = monomialIdeal "x2,y2,xy"
 relMVT(I,PivotStrategy => 2)
-relNodesGens(relMVT(I,PivotStrateg => 2))
+relNodesGens(relMVT(I,PivotStrategy => 2))
 L = (splitNodes(oo))#0
 projDim(I)
 reg I
 
 restart
+collectGarbage;
 load "MayerVietorisTrees.m2"
 installPackage "MayerVietorisTrees"
 
 R = QQ[x,y,z]
 I = monomialIdeal "x2,y2,xy,xz"
 relMVT(I)
+(splitNodes(relNodesGens(relMVT(I))))#1
 --relNodesGens(relMVT(I))
 upperBettiMVT(I)
 betti res I
 lowerBettiMVT(I) --Notice compatibility (repeated nodes don't matter here)
 
+---pseudoBettiMVT:
+R = QQ[x,y,z]
+I = monomialIdeal "x2,y2,xy,xz,yz"
+P = pseudoBettiMVT(I)
