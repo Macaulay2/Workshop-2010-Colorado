@@ -2347,18 +2347,22 @@ conditionNumber (List,List) := o -> (F,x) -> (
      1 / min first SVD(DMforPN*J) --  norm( Moore-Penrose pseudoinverse(J) * diagonalMatrix(sqrts of degrees) )     
      )
 
-beginDocumentation()
-load "./NumericalAlgebraicGeometry/doc.m2"
+if end =!= beginDocumentation()
+then (
+     load "./NumericalAlgebraicGeometry/doc.m2";
 
-TEST ///
-     --assert(multistepPredictor(2_QQ,{0,0,0}) === {-3/8, 37/24, -59/24, 55/24}) -- Wikipedia: Adams-Bashforth
-     --assert(multistepPredictor(2_QQ,{-1}) === {-1/8, 5/8}) -- computed by hand
-     --assert(flatten entries (coefficients first multistepPredictorLooseEnd(2_QQ,{0,0,0}))#1=={1/120, 1/16, 11/72, 1/8})
-     load concatenate(NumericalAlgebraicGeometry#"source directory","./NumericalAlgebraicGeometry/TST/SoftwareM2.tst.m2")
-     load concatenate(NumericalAlgebraicGeometry#"source directory","./NumericalAlgebraicGeometry/TST/SoftwareM2engine.tst.m2")
-     load concatenate(NumericalAlgebraicGeometry#"source directory","./NumericalAlgebraicGeometry/TST/SoftwareM2enginePrecookedSLPs.tst.m2")
-///
+     TEST ///
+	  --assert(multistepPredictor(2_QQ,{0,0,0}) === {-3/8, 37/24, -59/24, 55/24}) -- Wikipedia: Adams-Bashforth
+	  --assert(multistepPredictor(2_QQ,{-1}) === {-1/8, 5/8}) -- computed by hand
+	  --assert(flatten entries (coefficients first multistepPredictorLooseEnd(2_QQ,{0,0,0}))#1=={1/120, 1/16, 11/72, 1/8})
+	  load concatenate(NumericalAlgebraicGeometry#"source directory","./NumericalAlgebraicGeometry/TST/SoftwareM2.tst.m2")
+	  load concatenate(NumericalAlgebraicGeometry#"source directory","./NumericalAlgebraicGeometry/TST/SoftwareM2engine.tst.m2")
+	  load concatenate(NumericalAlgebraicGeometry#"source directory","./NumericalAlgebraicGeometry/TST/SoftwareM2enginePrecookedSLPs.tst.m2")
+     ///
+     )
 
+endPackage "NumericalAlgebraicGeometry" 
+needsPackage "PHCpackInterface"
 end
 
 -- Here place M2 code that you find useful while developing this

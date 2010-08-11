@@ -1,6 +1,8 @@
 restart
 loadPackage "NumericalAlgebraicGeometry"
 -- debug NumericalAlgebraicGeometry; DBG = 1; printingPrecision = 20; 
+PHCpackInterface#"exported symbols"
+NumericalAlgebraicGeometry#"exported symbols"
 
 R = CC[x,y];
 S = {x*(x-1)*y,x*(x-1),(x-y)*(x+y+1)};

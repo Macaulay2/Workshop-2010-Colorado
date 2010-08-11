@@ -29,12 +29,13 @@ refinePHCpack (List,List,HashTable) := List => (T,sols,o) -> (
 
 /// -- examples
 restart
+notify = true
 needsPackage "NumericalAlgebraicGeometry"
 --debug PHCpackInterface
 --debug NumericalAlgebraicGeometry
 --peek loadedFiles
---PHCpackInterface#"exported symbols"
---NumericalAlgebraicGeometry#"exported symbols"
+PHCpackInterface#"exported symbols"
+NumericalAlgebraicGeometry#"exported symbols"
 
 R = CC[x]
 L = {x^2-2}

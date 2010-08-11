@@ -612,7 +612,8 @@ peek oo
 -----------------------------------
 ----- Documenting main package ----
 -----------------------------------
-beginDocumentation()
+if end =!= beginDocumentation()
+then (
 doc ///
      Key 
           PHCpackInterface 
@@ -890,7 +891,7 @@ TEST///
      S2={x^2+x*y+y^2+x+y+1,x^5+x^4*y+x^3*y^2+x^2*y^3+x*y^4+y^5} --another example
      M=mixedVolume(S2)
      assert(M==10)--testing output against by-hand calculation 
-///
+///;
 
 -----------------------------------
 -- Testing blackBox
@@ -912,15 +913,19 @@ TEST///
      (abs((sol1-L_1_0)_0)<.00000000001 and abs((sol1-L_1_0)_1)<.00000000001 and abs((sol1-L_1_0)_2)<.00000000001))
      --should I include second test with more difficult system that compares phc output with solution obtained through Macaulay 2 (if possible)
      --or another package of Macaulay 2? (eg)
-///
+///;
 
 -----------------------------------
 -- Testing nameOfFunction....INSERT meaningful tests for *each* function in the package!
 -----------------------------------
 
+)
+
 
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
+endPackage "PHCpackInterface" 
+needsPackage "NumericalAlgebraicGeometry"
 end   	   --********************************************************
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
