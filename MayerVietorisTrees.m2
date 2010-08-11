@@ -119,19 +119,8 @@ relNodesGens(List) := L -> {
      return sort flatten for i from 0 to length(L)-1 list 
      for j from 0 to numcols (L#i#0)-1 list (entries L#i#0_j,L#i#1,L#i#2); --(monomial,dimension,position)
      }
-
---splitNodes = method();     	  
---splitNodes(List) := L -> {
---     l = length L - 1;
---     L0 := (for i from 0 to l list L#i#0);
---     T := tally apply(L, i -> i#0);
---     uniqueList := apply(select(pairs T,p -> p#1 == 1), first);
---     NonRep := select(L, p -> member(p#0,uniqueList));
---     Rep := select(L, p -> not member(p#0,uniqueList));
---     (NonRep, Rep)
---     }
-
-splitNodes = method();
+ 
+splitNodes = method();  --returns a list of "good" and "bad" generators that affect homological invariants
 splitNodes(List) := (myList) -> {
    myTally := tally apply(myList, i -> i#0);
    uniqueList := apply(select(pairs myTally, p -> p#1 == 1), first);
@@ -141,7 +130,7 @@ splitNodes(List) := (myList) -> {
    return (repList,nonRepList)
  }
 
-maxDim = method();
+maxDim = method(); 
 maxDim(List) := L -> {
      l = length L - 1;
      if L != {} then
@@ -157,7 +146,7 @@ maxReg(List) := L -> {
      else return 0;
      }
 
-pseudoBettiHelper = method();
+pseudoBettiHelper = method();  -- returns a visual tally and a mutable hash table that mimic the information found in a Betti tally and the total betti numbers (but this method returns bounds on Betti numbers)
 pseudoBettiHelper(BettiTally,BettiTally) := (lowBetti,highBetti) -> {
 	P := new List from sort (pairs (lowBetti) | pairs (highBetti));
 	P = unique P;
