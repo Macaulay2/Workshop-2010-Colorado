@@ -362,7 +362,7 @@ adjacencyHashTable (Digraph) := (G) -> (
     --         matrix of G,where M#a#b is true if a->b, and false otherwise.
 
     vertices := keys G;
-    hashTable apply(vertices, i->{i,new MutableHashTable from apply(vertices,j->{j,#positions(toList G#i,k->k===j)})})
+    hashTable apply(vertices, i->{i,hashTable apply(vertices,j->{j,#positions(toList G#i,k->k===j)})})
 )
 
 edgeSet = method()

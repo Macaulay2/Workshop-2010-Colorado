@@ -125,22 +125,39 @@ trekSeparation MixedGraph := (G) -> (
         apply(toList parents(u,i),j->(a,j)),
         {(b,i)}, apply(toList v#i,j->(b,j)))}),
       apply(vertices,i->{(b,i),apply(toList u#i,j->(b,j))}));
+    print cdG;
     aVertices := apply(vertices, i->(a,i));
+    print aVertices;
     bVertices := apply(vertices, i->(b,i));
+    print bVertices;
+    allVertices := aVertices|bVertices;
     M := adjacencyHashTable(cdG);
-
+    print M;
+    
     statements := {};
-    for A in (subsets aVertices) do (
-      MC := M;
+    myList := subsets aVertices;
+    print myList;
+    for A in myList do (
+      print MC;
+      print A;
       for CA in (subsets A) do (
+	print CA;
         for CB in (subsets bVertices) do (
-          C := CA+CB;
-          scan(toList CA, i->scan(vertices, j->(MC#i#j=false;MC#j#i=false;)));
-          scan(toList CB, i->scan(vertices, j->(MC#i#j=false;MC#j#i=false;)));
-          B := vertices - pathConnected(set A,MC);
-          statements = append(statements,{
-            apply(A,i->i#1),apply(B,i->i#1),
-            apply(CA,i->i#1),apply(CB,i->i#1)});
+          MC := M;
+	  print CB;
+          C := CA|CB;
+	  print C;
+          scan(C, i->scan(allVertices, j->(MC#i#j=0;MC#j#i=0;)));
+          print 1;
+	  B := toList (set bVertices - pathConnected(set A,MC));
+	  print pathConnected(set A, MC);
+	  print 2;
+	  if #CA+#CB < min{#A,#B} then (
+	    print {A,B,CA,CB};
+            statements = append(statements,{
+              apply(A,i->i#1),apply(B,i->i#1),
+              apply(CA,i->i#1),apply(CB,i->i#1)});
+          );
         );
       );
     );
