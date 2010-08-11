@@ -10,7 +10,7 @@ newPackage("SEM",
 
 
 
-export {msize, shift, nonzerosize, pList, lList, directedEdges, bigraph, bidirectedEdges, identify}
+export {msize, shift, nonzerosize, pList, lList, directedEdges, bigraph, bidirectedEdges, identify, trekSeparation}
 
 needsPackage "Graphs"
 
@@ -24,12 +24,12 @@ bigraph Graph := g -> (
 
 pList = method()
 pList(ZZ, MixedGraph) := (n, g) -> (
-	join(toList(apply(1..n, i->p_(i,i))),delete(null,flatten(apply(keys(g#((keys(g))_1)), x-> apply(g#((keys(g))_1)#x, y->if x<y then p_(x,y))))))	
+	join(toList(apply(1..n, i->p_(i,i))),delete(null,flatten(apply(keys(bidirectedEdges(g)), x-> apply((bidirectedEdges(g))#x, y->if x<y then p_(x,y))))))	
 )	
 
 lList = method()
 lList(ZZ, MixedGraph) := (n, g) -> (
-    delete(null,flatten(apply(keys(g#0), x-> apply(g#0#x, y->l_(x,y) ))))
+    delete(null,flatten(apply(keys(directedEdges(g)), x-> apply((directedEdges(g))#x, y->l_(x,y) ))))
 )	
 
 directedEdges = method()
@@ -48,7 +48,7 @@ identify = method()
 identify(MixedGraph) := (g) -> (
 	u := directedEdges(g);
 	v := bidirectedEdges(g);
-	n := #g#((keys(g))_0);
+	n := #u;
 	--changed v to vertices
 	vertices := join(pList(n,g),lList(n,g));
 	m := #vertices;
@@ -58,7 +58,7 @@ identify(MixedGraph) := (g) -> (
 	
 	PM := mutableMatrix(SLP,n,n);
 	scan(1..n,i->PM_(i-1,i-1)=p_(i,i));
-	scan(keys(g#1),i->scan(g#1#i, j->   
+	scan(keys(v),i->scan(v#i, j->   
 	    if i < j then
 	      PM_(i-1,j-1) = p_(i,j)
 	    else 
@@ -67,7 +67,7 @@ identify(MixedGraph) := (g) -> (
 	print(PM);
 
 	LM := mutableMatrix(SLP,n,n);
-    scan(keys(g#0),i->scan(g#0#i, j->
+    scan(keys(u),i->scan(u#i, j->
         LM_(i-1,j-1) = l_(i,j)
     ));
 	print(LM);
@@ -100,12 +100,12 @@ identify(MixedGraph) := (g) -> (
 	
 )
 
---trek_separation = method()
---trek_separation(MixedGraph) := (g) ->(
---	n = #g#((keys(g))_0);
---	h = g#((keys(g))_1);
-	
---)
+trekSeparation = method()
+trekSeparation(MixedGraph) := (g) ->(
+	u = directedEdges(mg);
+	v = bidirectedEdges(mg);
+	n = #u;
+)
 	
 	
 	
