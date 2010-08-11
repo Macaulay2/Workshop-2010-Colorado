@@ -203,7 +203,6 @@ solveBlackBox = method(TypicalValue => List)
 solveBlackBox  List := List => system -> (
      -- IN:  system = list of polynomials in the system 
      -- OUT: solutions to the system = a list (?sequence?) of hashtables with keys being the solutions, and entries info on those solns (such as multiplicity, etc.)
-     -- old anton's notes:
      -- !!! problem with temporaryFileName: cygwin's /tmp is different from Windows' /tmp  ~~anton
      -- check the "path" discussion in FourTiTwo.m2 !! ~~sonja
      filename:=getFilename();
@@ -558,6 +557,52 @@ cascadePHC Ideal := (I) -> (
 	  ))
      )
 
+
+///
+-- WitnessSet and monodromyBreakupPHC
+restart
+debug loadPackage "NumericalAlgebraicGeometry"
+
+R = QQ[x,y,z]
+I = ideal"x+y-2,y-z+3"
+J = ideal"x2+y2+z2-1,xy-z2"
+L = trim intersect(I,J)
+RC = CC[gens R]
+L = sub(L,RC)
+W = witnessSet L
+--W1 = generalEquations W
+--W2 = addSlackVariables W1
+W3s = monodromyBreakupPHC W
+apply(W3s, points)
+W3s/degree
+peek W2
+netList (ideal W2)_*
+peek oo
+///
+
+///
+-- cascade interface
+restart
+debug loadPackage "NumericalAlgebraicGeometry"
+
+R = QQ[x,y,z,w]
+I = ideal"x+y-2,y2-z+3"
+J = ideal"x2+y2+z2-1,xy-z2,x2+w2"
+L = trim intersect(I,J)
+RC = CC[gens R]
+L = sub(L,RC)
+cascadePHC L
+
+W = witnessSet L
+--W1 = generalEquations W
+--W2 = addSlackVariables W1
+W3s = monodromyBreakupPHC W
+apply(W3s, points)
+W3s/degree
+peek W2
+see ideal W2
+peek oo
+///
 
 ----------------------------------------------------------------------
 --**************************  DOCUMENTATION ************************--

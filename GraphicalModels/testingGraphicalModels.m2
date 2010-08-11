@@ -157,6 +157,7 @@ removeRedundants glo; ----NEED TO RUN THIS W/ UNDER CHANGED!!
 break
 
 restart
+installPackage ("GraphicalModels", RemakeAllDocumentation => true, UserMode=>true)
 installPackage "GraphicalModels"
 
 loadPackage "GraphicalModels"
