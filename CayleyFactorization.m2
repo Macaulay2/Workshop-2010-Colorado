@@ -244,7 +244,7 @@ newPackage(
 -- WARNING:  We assume is P is already an element of the coordinate ring of Gr(d,n)
 
 cayleyFactor = method();
-cayleyFactor(RingElement, ZZ, ZZ) := List => (P,d,n) -> (
+cayleyFactor(RingElement, ZZ, ZZ) := Expression => (P,d,n) -> (
      cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
      )
 cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) -> (
