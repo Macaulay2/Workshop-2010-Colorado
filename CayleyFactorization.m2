@@ -120,15 +120,13 @@ newPackage(
        --        each element of L is a list of indices.
        -- Output: {L', P'} where L' is the list of step d+1 extensors of P, 
        --         and P' is the result of factoring out elements of L' from P
-       -- author: Josephine Yu
-       -- date: August 8, 2010
-       extensorFactors := apply( select(L, ll -> (#ll == d+1)), l -> ( indicesToRingElement(ring P, d, n, sort toList(l))) ); -- list all step d+1 extensors and convert them into variables in ring of P
-       productFactors := product extensorFactors;
+       topExtensors := select(L, ll -> (#ll == d+1)); -- list all step d+1 extensors 
+       productFactors := product apply(topExtensors , l -> ( indicesToRingElement(ring P, d, n, sort toList(l))) ); -- convert them into variables in ring of P and take product
        if(P % productFactors == 0) then (
-    	 P = P/productFactors; 
-        {extensorFactors, P}
+        {topExtensors, P/productFactors}
        ) else (
-       	 print("error: the input polynomial is not divisible by the given bracket variables");
+         print("error: the input polynomial is not divisible by the given bracket variables");
+       	 null
        )
       )
 
@@ -171,7 +169,7 @@ newPackage(
 		               	    )
 			       )
 		     	  ), a -> a =!= null);
-		     	  break({a, {E,F}, sub(P, substitutions)});			  
+		     	  break({{E,F}, sub(P, substitutions)});			  
 		     )
 	  	)
       )
@@ -197,7 +195,7 @@ newPackage(
 	-- OUTPUT:  another polynomial in same variables, after substitution
 	-- This one does substitutions only for the variables appearing in the polynomial P
       sub(P, apply(unique flatten ((terms P) / support), v -> (
-			     v => indicesToRingElement(R, d,n, apply(toList (baseName v)#1, i -> sigma#i))
+			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))
      	       	    	       )
       			  )
        )
@@ -238,6 +236,41 @@ cayleyFactor = method();
 cayleyFactor(RingElement, ZZ, ZZ) := List => (P,d,n) -> (
      cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
      )
+cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) -> (
+     if((degree P)#0 <= 0) then (return(P));
+     knownFactors := null;
+     atoms := toList listAtoms(P, partialAtoms, d, n); -- Step 1
+     if((max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
+	  print "NOT FACTORABLE";
+	  return(null);
+	  ); 
+     pureFactors := factorBrackets(P,d,n,atoms); -- Step 2
+     if(#pureFactors#0 > 0) then (
+    	  knownFactors = flatten sequence pureFactors#0;
+       	  P = pureFactors#1;
+       	  atoms = toList((set atoms) - (set pureFactors#0));
+	  if(#atoms == 0)then (
+	       return(knownFactors);
+	       )
+       	  );
+     pairFactor := findPairFactor(P,d,n,atoms); -- Steps 3 and 4
+     if(pairFactor === null) then (
+     	  print "NOT FACTORABLE";
+	  return(null);
+	  );
+     if(knownFactors === null) then (
+	  knownFactors = flatten sequence pairFactor#0;
+       	  ) else (
+	  knownFactors = (knownFactors, flatten sequence pairFactor#0);
+	  );
+     newIndices := set(0..(#pairFactor#0#0+#pairFactor#0#1-d-2));
+     newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {newIndices};
+     expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
+     return(value replace(expansionKey#0, expansionKey#1, toString cayleyFactor(pairFactor#1, d,n, newPartialAtoms)));
+	  );
+           
+
+{*
 cayleyFactor(RingElement, ZZ, ZZ, List) := List => (P,d,n, partialAtomicExt) -> (
      L := toList listAtoms(P,partialAtomicExt, d,n);
      if(set(L) == set(partialAtomicExt) or max apply(subsets(L,2), S-> #S#0+#S#1) < d+1) then (
@@ -246,7 +279,7 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := List => (P,d,n, partialAtomicExt) -> 
 	  ) else (
         	  pureFactors := factorBrackets(P,d,n,toList L); -- Step 2
      	  	  P = pureFactors#1;
-     	  	  if(degree(P)#0 == 0) then ({P})
+     	  	  if(degree(P)#0 == 0) then (pureFactors#0|{1_R})
 	  	  else (
 	       	       pairFactor := findPairFactor(P,d,n,L); -- Step 3
 		       if(pairFactor == null) then (
@@ -255,13 +288,13 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := List => (P,d,n, partialAtomicExt) -> 
 			    ) else (
      		       	    newIndices := set(0..(#pairFactor#1#0+#pairFactor#1#1-d-2));
      		       	    newPartialAtomicExt := append(drop(L, pairFactor#0), newIndices);    
-			    cayleyFactor(pairFactor#2, newPartialAtomicExt, d,n)
+			    pairFactor#1 | cayleyFactor(pairFactor#2, newPartialAtomicExt, d,n)
 			    )
      	  	       )
      		  )
 )
 
-
+*}
 
 
  ------------------------------------------------------------------- 
@@ -274,11 +307,15 @@ end
 
 restart
 debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M2codes/Colorado-2010/CayleyFactorization.m2")
-Grassmannian(2,5);
+d = 2; n=5;
+Grassmannian(d,n);
 use((ring oo) / oo);
+cayleyFactor(P,d,n)
+partialAtoms = toList apply(0..n, i->set {i})
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
   P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4)
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
+ 
 l = {1,2,5}
 n=5;
 d=2;
@@ -289,9 +326,11 @@ factorBrackets(P, d, n, L)
 E = {0,2}; F = {1,4};
 
 d=2;n=8;
-R = ring Grassmannian(2,8);
-P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8)
-L=listAtoms(P, 2, 8)
+Grassmannian(d,n);
+use((ring oo) / oo);
+partialAtoms = toList apply(0..n, i->set {i})
+P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
+L=listAtoms(P, 2, 8);
 L = apply((toList L),a->toList a)
 L = reverse L
 factorBrackets(P,d,n,toList L) 
