@@ -169,6 +169,28 @@ qsAlgorithm(Matrix) := Matrix => phi -> (
      Ui*V
      )
 
+-- Find's a maximal ideal containing a given ideal
+-- Only works over QQ
+-- Quick and dirty method thanks to Jason
+findMaxIdeal = method()
+findMaxIdeal( Ideal ) := I -> (
+     m := I;
+     h := codim I;
+     d := dim R;
+     while h < d do(
+	  L = minimalPrimes m;
+	  ok = false;
+	  while not ok do(
+	       f = random(1,R);
+	       ok = all(L, p->f % p != 0);
+	       );
+	  m = m + ideal(f);
+	  h = codim m;
+	  print h;
+	  );
+     m
+)
+
 
 -- This computes a set of local solutions for a given unimodular row f.
 -- This still needs localSolution to be implemented.
