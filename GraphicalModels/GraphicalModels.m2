@@ -47,7 +47,7 @@ newPackage(
 
 export {localMarkovStmts, globalMarkovStmts, pairMarkovStmts,
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
-       gaussRing, gaussMinors, gaussIdeal, gaussTrekIdeal}
+       gaussRing, gaussMatrices, gaussIdeal, trekIdeal}
      
 needsPackage"Graphs"
 
@@ -440,7 +440,7 @@ prob = (d,s) -> (
 
 markovMatrices = method()
 markovMatrices(Ring,List) := (R, Stmts) -> (
-     -- R should be a Markov ring, and S is a list of
+     -- R should be a Markov ring, and Stmts is a list of
      -- independence statements
      d := R.markov;
      flatten apply(Stmts, stmt -> (
@@ -460,8 +460,13 @@ markovIdeal(Ring,List) := (R,Stmts) -> (
      sum apply(M, m -> minors(2,m))
      )
 
+
+
+
 gaussRing = method(Options=>{CoefficientRing=>QQ, Variable=>symbol s})
 gaussRing ZZ := opts -> (n) -> (
+     -- s_{1,2} is the (1,2) entry in the covariance matrix.
+     --this assumes r.v.'s are labeled by integers.
      x := opts.Variable;
      kk := opts.CoefficientRing;
      v := flatten apply(1..n, i -> apply(i..n, j -> x_(i,j)));
@@ -469,33 +474,117 @@ gaussRing ZZ := opts -> (n) -> (
      R#gaussRing = n;
      R
      )
+     -- we want to be able to do s_{a,b} for example:
+gaussRing Digraph := opts -> (G) -> (
+     --I want the input to be the Digraph G, 
+     --and I'm just gonna read off the list of labels from the keys.
+     -- This is done to avoid any ordering confusion. 
+     -- DO NOT make an option for inputting list of labels!
+     x := opts.Variable;
+     kk := opts.CoefficientRing;
+     v := flatten apply(keys G, i -> apply(keys G, j -> x_(i,j)));
+     R := kk[v, MonomialSize=>16];
+     R#gaussRing = #keys G;
+     R
+     )
 
---- Luis Garcia: August 2010. UP TO THIS POINT, CODE IS ORDER FREE
+--the following function retrieves the position of the keys in the graph G
+--for all keys that are contained in the ith entry of the list D 
+getPositionOfKeys:= (G,D,i)-> 
+     apply(D#i,oneLabel -> position(keys G, k-> k===oneLabel))
+
 
 gaussMinors = method()
-gaussMinors(Matrix,List) := (M,D) -> (
-     -- M should be an n by n symmetric matrix, D mentions variables 1..n (at most)
-     rows := join(D#0, D#2);
-     rows = rows/(i -> i-1);
-     cols := join(D#1, D#2);
-     cols = cols/(i -> i-1);
+--since this method is not exported, this is obsolete!
+--gaussMinors(Matrix,List) := (M,D) -> (
+--     -- DO WE LEAVE THIS? WHERE WE DO NOT FORCE THE USER TO PASS THE DIGRAPH G???
+--     -- M should be an n by n symmetric matrix, D mentions variables 1..n (at most)
+--     -- the list D is a statement A,B,C. 
+--     -- THIS CODE BELOW ASSUMES LABLES ARE 1..N, BUT NOW THEY CAN BE else
+--     rows := join(D#0, D#2); --a union c
+--     rows = rows/(i -> i-1); 
+--     cols := join(D#1, D#2); --b union c
+--     cols = cols/(i -> i-1);
+--     M1 = submatrix(M,rows,cols);
+--     minors(#D#2 + 1, M1)
+--     )
+gaussMinors(Digraph,Matrix,List) := (G,M,Stmt) -> (
+     -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
+     -- the list Stmts is one statement {A,B,C}.
+     rows := join(getPositionOfKeys(G,Stmt,0), getPositionOfKeys(G,Stmt,2));
+     cols := join(getPositionOfKeys(G,Stmt,1), getPositionOfKeys(G,Stmt,2)); 
      M1 = submatrix(M,rows,cols);
-     minors(#D#2 + 1, M1)
+     minors(#Stmt#2+1,M1)     
      )
+--this is NOT exported; it is called from gaussIdeal!
+///EXAMPLE:
+G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+R=gaussRing G
+R --is a Poly ring!!
+M = genericSymmetricMatrix(R, R#gaussRing);
+peek M
+submatrix(M,{0},{1})
+Stmts = pairMarkovStmts G
+D=Stmts_0
+gaussMinors(G,M,D)
+///
+
+
 
 gaussIdeal = method()
-gaussIdeal(Ring, List) := (R,Stmts) -> (
+gaussIdeal(Ring, Digraph, List) := (R,G,Stmts) -> (
      -- for each statement, we take a set of minors
+     -- Stmts = global markov statements of G
+     -- R = gaussRing of G
+     --NOTE we force the user to give us the digraph G due to flexibility in labeling!!
      if not R#?gaussRing then error "expected a ring created with gaussRing";
      M = genericSymmetricMatrix(R, R#gaussRing);
-     sum apply(Stmts, D -> gaussMinors(M,D))     
+     sum apply(Stmts, D -> gaussMinors(G,M,D))     
      )
-gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,globalMarkovStmts G)
+--in case the global sttmts are not computed already :
+gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
 
-gaussTrekIdeal = method()
-gaussTrekIdeal(Ring, Digraph) := (R,G) -> (
- --    G = convertToIntegers(G);
- --    n := max keys G;
+--gaussIdeal(Ring, List) := (R,Stmts) -> (
+--     -- for each statement, we take a set of minors
+--     if not R#?gaussRing then error "expected a ring created with gaussRing";
+--     M = genericSymmetricMatrix(R, R#gaussRing);
+--     sum apply(Stmts, D -> gaussMinors(M,D))     
+--     )
+--gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,globalMarkovStmts G)
+
+
+--in case user just wnats to see the mtces we are taking minors of, here they are:
+gaussMatrices = method()
+gaussMatrices(Digraph,Matrix,List) := (G,M,s) -> (
+     -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
+     -- the list s is a statement of the form {A,B,C}.
+     --flatten apply(Stmts, s-> (
+     	       rows := join(getPositionOfKeys(G,s,0), getPositionOfKeys(G,s,2));
+     	       cols := join(getPositionOfKeys(G,s,1), getPositionOfKeys(G,s,2)); 
+     	       submatrix(M,rows,cols)
+     --	       )
+     --	  )
+     )
+///--EXAMPLE: 
+gaussIdeal(R,G,D)
+gaussIdeal(R,G)
+--gaussMatrices(G,M,Stmts)
+sta=Stmts_0
+gaussMatrices(G,M,sta)
+apply(Stmts, sta-> gaussMatrices(G,M,sta))
+///
+
+--- Luis Garcia: August 2010. UP TO THIS POINT, CODE IS ORDER FREE
+--- SP day 4.
+
+-- THE FOLLOWING NEEDS TO BE COPIED TO THE GAUSSIAN STUFF:
+trekIdeal = method()
+trekIdeal(Ring, Digraph) := (R,G) -> (
+     --for a Digraph, the method is faster--so we just need to overload it for a DAG. 
+     --    G = convertToIntegers(G);
+     --    n := max keys G;
+     --G = a Digraph (assumed DAG)
+     --R = the gaussRing of G
      n := #keys G; 
      P := toList apply(keys G, i -> toList parents(G,i));
      nv := max(P/(p -> #p));
@@ -504,9 +593,10 @@ gaussTrekIdeal(Ring, Digraph) := (R,G) -> (
      newvars := toList apply(1..nv, i -> t_i);
      I := trim ideal(0_S);
      sp := (i,j) -> if i > j then s_(j,i) else s_(i,j);
+     --only the following loop does not work w/ general labels on the graph, and needs to be checked!
      for i from 1 to n-1 do (
-	  J := ideal apply(1..i, j -> s_(j,i+1) 
-	              - sum apply(#P#i, k -> S_(k + numgens R) * sp(j,P#i#k)));
+	  J := ideal apply(1..i, j -> s_(j,i+1)
+	     	              - sum apply(#P#i, k -> S_(k + numgens R) * sp(j,P#i#k))	       );
 	  I = eliminate(newvars, I + J);
 	  );
      substitute(I,R)

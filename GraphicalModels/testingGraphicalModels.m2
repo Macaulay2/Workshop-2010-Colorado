@@ -166,10 +166,48 @@ load "GraphicalModels.m2"
 help pairMarkovStmts
 D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}}, 	  {f, {}}, {g, {}}, {h, {}}}) 
 pairMarkovStmts D
-D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-L = pairMarkovStmts D
+G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+R=gaussRing G
+gens R
+R --is a Poly ring!!
+M = genericSymmetricMatrix(R, R#gaussRing);
+peek M
+submatrix(M,{0},{1})
+Stmts = pairMarkovStmts G
+D=Stmts_0
+gaussMinors(G,M,D)
+-- D is a statement e.g. {{c},{d},{a,b}}
+     rows := join(D#0, D#2) --a union c
+     rows = rows/(i -> i-1) 
+     cols := join(D#1, D#2) --b union c
+     cols = cols/(i -> i-1)
+     M1 = submatrix(M,rows,cols)
+     minors(#D#2 + 1, M1)
+      ---- i am going to force the user to pass the graph G as well!!
+--the following function retrieves the position of the keys in the graph G
+--for all keys that are contained in the ith entry of the list D 
+getPositionOfKeys:= (G,D,i)-> 
+     apply(D#i,oneLabel -> position(keys G, k-> k===oneLabel))
+getPositionOfKeys(G,D,0)--this replaces D#0
+getPositionOfKeys(G,D,1)--this replaces D#1
+getPositionOfKeys(G,D,2)--this replaces D#2
+     rows = join(getPositionOfKeys(G,D,0), getPositionOfKeys(G,D,2));
+     cols = join(getPositionOfKeys(G,D,1), getPositionOfKeys(G,D,2)); 
+     M1 = submatrix(M,rows,cols)
+     minors(#D#2+1,M1)
+---Re: positions of keys:
+position(keys G, k-> k===b) --returns b's position in the keys of G.
+position(keys G, k-> k===1) --returns "null" if not found.
+-- note: position is well-defined. in the hashtable, when created, they keys get assigned 
+-- a unique position, as this information does not change once the hashtable (in our case, the graph)
+-- is fixed.
 
-new MutableHashTable from apply(keys G, k->
+gaussIdeal(R,G,D)
+gaussIdeal(R,G)
+
+--**************
+
+new MutableHashTable from apply(keys G, k->??????????
 
 help localMarkovStmts
 help globalMarkovStmts
