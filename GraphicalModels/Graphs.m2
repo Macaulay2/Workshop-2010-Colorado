@@ -92,8 +92,7 @@ mixedGraph HashTable := (g) -> (
     --         which is the union of the vertex sets of the input digraphs.
 	scanKeys(g, i-> if not instance(g#i, Digraph) then error "expected HashTable of Digraphs");
 	vertices := toList sum(apply(keys(g),i->set keys(g#i)));
-	print(vertices);
-	applyValues(g, i->(
+	new MixedGraph from applyValues(g, i->(
 	  hh := new MutableHashTable;
 	  scan(vertices,j->if i#?j then hh#j=i#j else hh#j={});
 	  new class(i) from hh

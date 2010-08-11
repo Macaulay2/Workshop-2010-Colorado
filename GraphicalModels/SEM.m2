@@ -1,4 +1,4 @@
-newPackage("SEM1",
+newPackage("SEM",
      Authors => {
 	  {Name => "Luis Garcia"},
 	  {Name => "Alexander Diaz"}
@@ -8,63 +8,50 @@ newPackage("SEM1",
      Version => "1"
      )
 
---loadPackage "Gausianlib"
-
---this is a comment
---the main data type will be a graph
---it will consist of two hash tables
---the first hash table will have each node => list of its children
---the second hash will be for bidirected edges and will have each node => list of its children
---example of a list: x = {1, 2, 3, 4}
---example of a hash table: g1 = new HashTable from {1 => {2}, 2 => {3,4}, 3 => {}, 4 => {}}
-
---example of the data structure "graph":
---g1 = new HashTable from {1 => {2}, 2 => {3,4}, 3 => {}, 4 => {}}
---g2 = new HashTable from {1 => {2}, 2 => {1}, 3 => {}, 4 => {}}
---graph = {g1, g2}
 
 
-export {msize, shift, nonzerosize, pList, lList, identify}
+export {msize, shift, nonzerosize, pList, lList, directedEdges, bidirectedEdges, identify}
 
+needsPackage "Graphs"
 
---msize = method()
---msize(ZZ) := (n) -> (n*(n-1)/2);
+Bigraph = new Type of Graph
+-- labeled different to tell the difference between undirected and bidirected edges
 
---shift = method()
---shift(List) := (v) -> (
---	myv := new MutableList from v;
---	for i from 0 to (#v-1) do (myv#i = myv#i -1);
---	toList(myv))
-
---nonzerosize = method()
---nonzerosize(List) := (v) -> (
---	num:=0;
---	for i from 0 to (#v-1) do (
---		if(v#i != 0) then
---		(num = num + 1));
---	num)
-
---take this method out, eventually
---sList = method()
---sList(ZZ) := (n) -> (
---	toList(s_(1,1)..s_(n,n)))
+bigraph = method()
+bigraph Graph := g -> (
+	new Bigraph from g
+)
 
 pList = method()
-pList(ZZ, HashTable) := (n, g) -> (
+pList(ZZ, MixedGraph) := (n, g) -> (
 	join(toList(apply(1..n, i->p_(i,i))),delete(null,flatten(apply(keys(g#((keys(g))_1)), x-> apply(g#((keys(g))_1)#x, y->if x<y then p_(x,y) )))))	
 )	
 
 lList = method()
-lList(ZZ, List) := (n, g) -> (
+lList(ZZ, MixedGraph) := (n, g) -> (
     delete(null,flatten(apply(keys(g#0), x-> apply(g#0#x, y->l_(x,y) ))))
 )	
 
+directedEdges = method()
+directedEdges(HashTable) := (g) -> (
+	scanKeys(g, i-> if class g#i === Digraph then u=g#i);
+	u
+)
+
+bidirectedEdges = method()
+bidirectedEdges(MixedGraph) := (g) -> (
+	scanKeys(g, i-> if class g#i === Bigraph then v=g#i);
+	v
+)
+	
 identify = method()
 identify(MixedGraph) := (g) -> (
+	u := directedEdges(g);
+	v := bidirectedEdges(g);
 	n := #g#((keys(g))_0);
-	v := join(pList(n,g),lList(n,g));
-	print(v);
-	m := #v;
+	--changed v
+	vertices := join(pList(n,g),lList(n,g));
+	m := #vertices;
 
 	SLP := QQ[pList(n,g),lList(n,g),s_(1,1)..s_(n,n), MonomialOrder => Eliminate m];
 	SM := map(SLP^n,n,(i,j)->s_(i+1,j+1));
@@ -92,9 +79,9 @@ identify(MixedGraph) := (g) -> (
 	J := ideal(flatten(for i from 0 to n-1 list for j from i to n-1 list MPmLiPL_(i,j)));
 	print(J);
 	
-	for t in v do
+	for t in vertices do
 	(
-	  Jmt := eliminate(delete(t,v),J);
+	  Jmt := eliminate(delete(t,vertices),J);
 	  
 	  -- the parameter we are checking identifiability with
 	  print(t);
