@@ -22,6 +22,10 @@ bigraph Graph := g -> (
 	new Bigraph from g
 )
 
+bigraph List := g -> (
+        new Bigraph from graph g
+)
+
 directedEdges = method()
 directedEdges(MixedGraph) := (g) -> (
 	scanKeys(g, i-> if class g#i === Digraph then u=g#i);
@@ -54,9 +58,9 @@ identify(MixedGraph) := (g) -> (
 	-- m := numEdges(u)+numEdges(v); 
 	
 	SLP := QQ[vertices,s_(1,1)..s_(n,n), MonomialOrder => Eliminate m];
-	pL := join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply((v)#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
-	lL := delete(null,flatten(apply(keys(u), x-> apply((u)#x, y->l_(x,y) ))));	 
-	vertices := join(pL,lL);
+	pL = join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply((v)#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
+	lL = delete(null,flatten(apply(keys(u), x-> apply((u)#x, y->l_(x,y) ))));	 
+	vertices = join(pL,lL);
 
 	SM := map(SLP^n,n,(i,j)->s_(i+1,j+1));
 	
@@ -103,12 +107,45 @@ identify(MixedGraph) := (g) -> (
 )
 
 trekSeparation = method()
-trekSeparation(MixedGraph) := (g) ->(
-	u = directedEdges(mg);
-	v = bidirectedEdges(mg);
-	n = #u;
-	
-)
+trekSeparation MixedGraph := (G) -> (
+    -- Input: A mixed graph containing a directed graph and a bidirected graph.
+    -- Output: A list L of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B.
+
+    vertices := keys G#((keys G)#1);
+    print vertices;
+    u := directedEdges(G);
+    print u;
+    v := bidirectedEdges(G);
+    print v;
+    
+
+    -- Construct canonical double DAG cdG associated to mixed graph G
+    cdG:= digraph join(
+      apply(vertices,i->{(a,i),join(
+        apply(toList parents(u,i),j->(a,j)),
+        {(b,i)}, apply(toList v#i,j->(b,j)))}),
+      apply(vertices,i->{(b,i),apply(toList u#i,j->(b,j))}));
+    aVertices := apply(vertices, i->(a,i));
+    bVertices := apply(vertices, i->(b,i));
+    M := adjacencyHashTable(cdG);
+
+    statements := {};
+    for A in (subsets aVertices) do (
+      MC := M;
+      for CA in (subsets A) do (
+        for CB in (subsets bVertices) do (
+          C := CA+CB;
+          scan(toList CA, i->scan(vertices, j->(MC#i#j=false;MC#j#i=false;)));
+          scan(toList CB, i->scan(vertices, j->(MC#i#j=false;MC#j#i=false;)));
+          B := vertices - pathConnected(set A,MC);
+          statements = append(statements,{
+            apply(A,i->i#1),apply(B,i->i#1),
+            apply(CA,i->i#1),apply(CB,i->i#1)});
+        );
+      );
+    );
+    statements
+) 
 	
 	
 	

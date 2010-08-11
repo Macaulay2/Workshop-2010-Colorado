@@ -393,7 +393,6 @@ pathConnected (Set,HashTable) := (A,M) -> (
     set select(vertices,i->reachable#i)
 )
 
-pathConnected = method()
 pathConnected (Set,Digraph) := (A,G) -> pathConnected(A,adjacencyHashTable G)
 
 
