@@ -139,17 +139,18 @@ newPackage(
       -- Method: Step 3 & 4 in Algorithm 3.5.6 of Sturmfels' Algorithmic Inv. Theory
       atomicExt := select(L, ll-> (#ll =!= d+1));
       scan(subsets(#atomicExt,2), a -> (
-		E := toList atomicExt#(a#0);
-		F := toList atomicExt#(a#1);
+		E := sort toList atomicExt#(a#0);
+		F := sort toList atomicExt#(a#1);
 		if(#E + #F > d+1) then (
-		     newOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F)); 
-		     PermP := permutePoints(P, d,n, newOrder);
+		     newOrder := inversePermutation(sort(E) | sort(F) | sort toList(set(0..n) - (E|F))); 
+		     PermP := permutePoints(P, d,n, newOrder); -- permute the indices so that E and F comes first
 		     found := 1;
 		     scan(terms PermP, monomial -> (
 			  supp := (support(monomial))_{0,1};
 			  firstRow := set (baseName(supp#0))#1; --first row of tableau
 			  secondRow := set (baseName(supp#1))#1; -- second row of tableau
-			  if((not isSubset(E,firstRow)) or (not isSubset(F, firstRow+secondRow))) then (
+			  if((not isSubset(set(0..#E-1),firstRow)) or (not isSubset(set(0..#F-1), firstRow+secondRow)) or (not isSubset(firstRow, set(0..#E+#F-1) ))) then (
+			      print(firstRow, secondRow);
      	       	    	      found = 0;
 			      break;
 			       )
@@ -157,19 +158,22 @@ newPackage(
 		     );
 		     if(found == 1) then  (
 			  newIndices := toList(0..(#E + #F - d -2));
-			  substitutions := select( apply(unique flatten ((terms P) / support), v -> (
+			  substitutions := select( apply(unique flatten ((terms PermP) / support), v -> (
 			       ind := toList (baseName v)#1;
-			       if(isSubset(ind, E|F)) then (
+			       if(isSubset(ind, set(0..#E+#F-1))) then (
 				    if(ind == toList(0..d)) then (v => 1)
 				    else(v => 0) -- this kills all except the first representative (the one with p_(0..d)) in the dotted expression
 				    )
 			       else (
-				    dif := toList((set ind)-F);
-				    if(#dif < #ind) then (v => indicesToRingElement(ring P, d, n, newIndices|dif))
+				    dif := toList((set ind)-set(#E..#E+#F-1));
+				    if(#dif < #ind) then ( -- if the index intersects with F (after permutation)
+					 v => indicesToRingElement(ring P, d, n, newIndices|dif)
+					 )
 		               	    )
 			       )
 		     	  ), a -> a =!= null);
-		     	  break({{E,F}, sub(P, substitutions)});			  
+		     	  inverseNewOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F));
+		     	  break({{E,F}, permutePoints(sub(P, substitutions), d, n, inverseNewOrder), apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
 		     )
 	  	)
       )
@@ -240,22 +244,24 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
      if((degree P)#0 <= 0) then (return(P));
      knownFactors := null;
      atoms := toList listAtoms(P, partialAtoms, d, n); -- Step 1
-     if((max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
-	  print "NOT FACTORABLE";
+     if(#select(atoms, a -> #a >= d+1) <= 0 and (max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
+	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
+	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  ); 
      pureFactors := factorBrackets(P,d,n,atoms); -- Step 2
      if(#pureFactors#0 > 0) then (
-    	  knownFactors = flatten sequence pureFactors#0;
+    	  knownFactors = flatten sequence apply(pureFactors#0, a -> sort toList a);
        	  P = pureFactors#1;
        	  atoms = toList((set atoms) - (set pureFactors#0));
-	  if(#atoms == 0)then (
+	  if(#atoms == 0 or (degree P)#0 <= 0)then (
+	       print( "after step 2: ", knownFactors);
 	       return(knownFactors);
 	       )
        	  );
      pairFactor := findPairFactor(P,d,n,atoms); -- Steps 3 and 4
      if(pairFactor === null) then (
-     	  print "NOT FACTORABLE";
+	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  );
      if(knownFactors === null) then (
@@ -263,11 +269,21 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
        	  ) else (
 	  knownFactors = (knownFactors, flatten sequence pairFactor#0);
 	  );
-     newIndices := set(0..(#pairFactor#0#0+#pairFactor#0#1-d-2));
-     newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {newIndices};
+     newIndices := pairFactor#2;
+     newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {set newIndices};
      expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
-     return(value replace(expansionKey#0, expansionKey#1, toString cayleyFactor(pairFactor#1, d,n, newPartialAtoms)));
+     print("trying to factor ", toString pairFactor#1);
+     print("new partial atoms: ", newPartialAtoms);
+     smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms);
+     if(smallerFactors === null) then (
+	 print("not factorable, recursive step. P = ", P, "atoms = ", atoms);
+	  return(null);
+	  ) else (
+	  print("smaller Factors: ", smallerFactors);
+	  print("after substitution: ", replace(expansionKey#0, expansionKey#1, toString smallerFactors));
+     	  return(value replace(expansionKey#0, expansionKey#1, toString smallerFactors));
 	  );
+     )
            
 
 {*
@@ -310,11 +326,11 @@ debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M
 d = 2; n=5;
 Grassmannian(d,n);
 use((ring oo) / oo);
-cayleyFactor(P,d,n)
 partialAtoms = toList apply(0..n, i->set {i})
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
   P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4)
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
+cayleyFactor(P,d,n)
  
 l = {1,2,5}
 n=5;
@@ -330,11 +346,14 @@ Grassmannian(d,n);
 use((ring oo) / oo);
 partialAtoms = toList apply(0..n, i->set {i})
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
+P = -p_(0,4,6)*p_(5,7,8)+p_(0,4,5)*p_(6,7,8);
+P =  -p_(2,7,8);
+cayleyFactor(P,d,n)
 L=listAtoms(P, 2, 8);
 L = apply((toList L),a->toList a)
 L = reverse L
 factorBrackets(P,d,n,toList L) 
-findPairFactor(P,d,n,L)
+findPairFactor(P,d,n,toList L)
 sigma = {2,3,0,1,5,7,6,8,4}
 ------ Jessica's tests
 
