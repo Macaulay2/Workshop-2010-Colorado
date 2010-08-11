@@ -235,6 +235,12 @@ newPackage(
 -------------------  the main function -------------------------
  ------------------------------------------------------------------- 
 
+-- INPUT:  P, a multilinear bracket expression, i.e. an element of coord. ring of Gr(d,n)
+--     	      where each element of 0..n appears exactly once in each monomial
+-- OUTPUT:  null, if P is not Cayley-factorable.  Otherwise, output the Cayley factorization
+--     	    (,) denotes "meet" and {,} denotes "join"
+-- WARNING:  We assume is P is already an element of the coordinate ring of Gr(d,n)
+
 cayleyFactor = method();
 cayleyFactor(RingElement, ZZ, ZZ) := List => (P,d,n) -> (
      cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
@@ -285,32 +291,6 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
 	  );
      )
            
-
-{*
-cayleyFactor(RingElement, ZZ, ZZ, List) := List => (P,d,n, partialAtomicExt) -> (
-     L := toList listAtoms(P,partialAtomicExt, d,n);
-     if(set(L) == set(partialAtomicExt) or max apply(subsets(L,2), S-> #S#0+#S#1) < d+1) then (
-	  print "NOT FACTORABLE";
-	  null
-	  ) else (
-        	  pureFactors := factorBrackets(P,d,n,toList L); -- Step 2
-     	  	  P = pureFactors#1;
-     	  	  if(degree(P)#0 == 0) then (pureFactors#0|{1_R})
-	  	  else (
-	       	       pairFactor := findPairFactor(P,d,n,L); -- Step 3
-		       if(pairFactor == null) then (
-			    	  print "NOT FACTORABLE";
-	  			  null
-			    ) else (
-     		       	    newIndices := set(0..(#pairFactor#1#0+#pairFactor#1#1-d-2));
-     		       	    newPartialAtomicExt := append(drop(L, pairFactor#0), newIndices);    
-			    pairFactor#1 | cayleyFactor(pairFactor#2, newPartialAtomicExt, d,n)
-			    )
-     	  	       )
-     		  )
-)
-
-*}
 
 
  ------------------------------------------------------------------- 
