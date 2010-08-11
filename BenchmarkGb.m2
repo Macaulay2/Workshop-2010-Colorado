@@ -89,6 +89,12 @@ runBenchmark (Ideal,String) := Ideal => (I,ff) -> (
  print ("Quotient Ring Lex Order, Sugarless:\t\t" | toString tt | " seconds.");
  ff << "Quotient Ring Lex Order, Sugarless:\t\t" << toString tt << " seconds." << endl;
 
+ T = timing gens gb( sub( I, QRlex), Algorithm=>Test);
+ tt = first T;
+ G = last T;
+ print ("Quotient Ring Lex Order, Test:\t\t" | toString tt | " seconds.");
+ ff << "Quotient Ring Lex Order, Test:\t\t" << toString tt << " seconds." << endl;
+
  T = timing gens gb( sub( I, QRgRevLex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
@@ -254,7 +260,6 @@ TEST ///
 end
 
 restart
-
 loadPackage "BooleanGB"
 loadPackage "BenchmarkGb"
 installPackage "BenchmarkGb"
