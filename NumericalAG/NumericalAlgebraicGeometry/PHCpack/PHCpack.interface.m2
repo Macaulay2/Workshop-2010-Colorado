@@ -27,14 +27,14 @@ refinePHCpack (List,List,HashTable) := List => (T,sols,o) -> (
 -- service functions ------------------------------------------
 -- deleted, since duplicated in PHCpackInterface
 
-/// -- refine examples
+/// -- examples
 restart
 needsPackage "NumericalAlgebraicGeometry"
-debug PHCpackInterface
-debug NumericalAlgebraicGeometry
-peek loadedFiles
-PHCpackInterface#"exported symbols"
-NumericalAlgebraicGeometry#"exported symbols"
+--debug PHCpackInterface
+--debug NumericalAlgebraicGeometry
+--peek loadedFiles
+--PHCpackInterface#"exported symbols"
+--NumericalAlgebraicGeometry#"exported symbols"
 
 R = CC[x]
 L = {x^2-2}

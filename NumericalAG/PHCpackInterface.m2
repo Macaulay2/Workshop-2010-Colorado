@@ -227,7 +227,7 @@ solveBlackBox  List := List => system -> (
      -- writing data to the corresponding files:    
      systemToFile(system,infile);
      -- launching blackbox solver:
-     execstr = PHCexe|" -b "|infile|" "|outfile;
+     execstr := PHCexe|" -b "|infile|" "|outfile;
      --	    execstr = path'PHC|"phc -b" |infile|" "|rootPath |outfile;
      --     execstr = PHCexe|" -b" |rootPath |infile|" "|rootPath |outfile;
      ret := run(execstr);
