@@ -6,7 +6,8 @@ newPackage(
         Authors => {{Name => "Eduardo"},
 	     	    {Name => "Courtney"}},
 	--CurrentDevelopers => {{Name => "Eduardo"},
-	--    	                {Name => "Courtney"} };
+	--    	                {Name => "Courtney"},
+	--     	    	      	{Name => "Dennis"}};
 	--PastDevelopers => { };
 	--Contributors => { };
 	--Acknowledgments => { };
@@ -156,7 +157,44 @@ maxReg(List) := L -> {
      else return 0;
      }
 
-
+pseudoBettiHelper = method();
+pseudoBettiHelper(BettiTally,BettiTally) := (lowBetti,highBetti) -> {
+	P := new List from sort (pairs (lowBetti) | pairs (highBetti));
+	P = unique P;
+	myTally = tally apply(P, i -> i#0);
+	print myTally;
+	--to start, check if first entries of the hash table are the same
+	--uniqueList := unique P;
+        hasBoundsList := apply(select(pairs myTally, p -> p#1 > 1), first);
+	fullBoundsList := select(P, p -> member(p#0,hasBoundsList));
+   	boundsAgreeList := select(P, p -> not (member(p#0,hasBoundsList)));
+	agreeList := for i from 0 to (#boundsAgreeList-1) list (boundsAgreeList#i#0,{boundsAgreeList#i#1,boundsAgreeList#i#1}); 
+	printAgreeList := apply(agreeList,p -> (p#0,p#1#0));
+	disagreeList := for i from 0 to floor ((#fullBoundsList-1)/2) list (fullBoundsList#(2*i)#0,{fullBoundsList#(2*i)#1,fullBoundsList#(2*i+1)#1});
+	entireList := sort(agreeList | disagreeList);
+	printEntireList := sort(printAgreeList | disagreeList);
+	--grabbing the total bettis (summing up the bounds)
+	totals := new MutableHashTable;
+	V := new MutableHashTable;
+	homDegList := unique apply(entireList, p -> p#0#0);
+	for i from 0 to #homDegList-1 do {
+     	     V#i = select(entireList, p -> p#0#0 == homDegList#i);
+     	     };
+	for i from 0 to #V-1 do {
+     	     listVi = new List from V#i;
+      	     helperList= {};
+     	     for j from 0 to #listVi-1 do {
+	  	  helperList = helperList | {last listVi#j};
+	  	  totals#(homDegList#i) = sum(helperList);
+	  	  };
+	     };
+	for i from 0 to #homDegList-1 do {
+	     if totals#(homDegList#i)#0 == totals#(homDegList#i)#1 then {
+		  totals#(homDegList#i) = totals#(homDegList#i)#0
+		  };
+	     };
+ 	return {tally printEntireList, peek totals};
+};
 
  ----------------------
 -- Methods for Export --
@@ -239,8 +277,10 @@ upperBettiMVT(MonomialIdeal) := o -> I -> {
      return t
      }
 
---pseudoBettiMVT = method(); -- outputs a VirtualTally similar to a BettiTally that gives bounds on the dimension
-
+pseudoBettiMVT = method(Options => {PivotStrategy => 1}); -- outputs a VirtualTally similar to a BettiTally that gives bounds on the dimension
+pseudoBettiMVT(MonomialIdeal) := o -> I -> {
+     return pseudoBettiHelper(lowerBetti(I, PivotStrategy => o.PivotStrategy),upperBetti(I, PivotStrategy => o.PivotStrategy));
+     }
 
 
 
