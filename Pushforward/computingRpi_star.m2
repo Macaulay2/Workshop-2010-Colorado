@@ -166,7 +166,7 @@ truncateMultiGraded (ZZ, Module) := (d,M) -> (
      kk := ultimate (coefficientRing, S);
      S0 := kk[Variables => numgens S];
      f := map(S,S0, vars S);
-     L = drop(flatten degrees gens M, 1)/first;
+     L = ((degrees gens M)_1)/first;
      Md := image M_{};
      scan(#L, i-> 
 	  if L#i >= d then Md = Md + image M_{i} 
