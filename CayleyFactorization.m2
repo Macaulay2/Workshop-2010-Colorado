@@ -295,18 +295,39 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
            
  ------------------------------------------------------------------- 
  
- meet = (A,B) -> (
+ 
+ meet = (A,B, d, n) -> (
       termsA := terms A;
       termsB := terms B;
       if(#termsA > 1) then (
-	   return(meet(termsA#0, B) + meet(sum drop(termsA, {0,0}),B)); 
+	   return(meet(termsA#0, B,d,n) + meet(sum drop(termsA, {0,0}),B, d,n)); 
 	   );
-      if(#termsB > 1) then
-      	   return(meet(A, termsB#0) + meet(A, sum drop(termsB, {0,0}))); 
-      );
+      if(#termsB > 1) then (
+      	   return(meet(A, termsB#0,d,n) + meet(A, sum drop(termsB, {0,0}), d,n)); 
+	   );
       monoA := termsA#0;
       monoB := termsB#0;
+      degA := (degree(monoA))#0;
+      degB := (degree(monoB))#0;
+      if(degA + degB < d+1) then (return(0));
+      sum apply(subsets(degA , d+1 - degB), S -> (
+		coeffA := (first listForm(monoA))#1;
+		insideA := sort toList S;
+		outsideA := sort toList (set(0..degA-1) - S);
+     	        signOfShuffle := sign(insideA|outsideA);
+		insideMonoA := product apply(insideA, i -> (support monoA)#i); 
+		outsideMonoA := product(set(support monoA) - {insideMonoA});
+		bracket :=insideMonoA*monoB;
+		if(bracket == 0) then (0)
+		else (
+		     bracketCoeff :=  (first listForm(bracket))#1;
+		     bracket = product drop(support(bracket),{0,d});
+		     signOfShuffle*coeffA*bracketCoeff*bracket*outsideMonoA
+		     )
+		)	   
+	   )
  )
+
  
  
  
@@ -397,15 +418,17 @@ partialAtoms = toList apply(0..n, i->set {i})
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
 cayleyFactor(P,d,n)
 
-E = ZZ[x_0..x_n, SkewCommutative => true]
+d=2; n=5;
+Grassmannian(d,n);
+R = (ring oo) / oo;
+E = ZZ[a_0..a_n,e_0..e_d, SkewCommutative => true]
 GC = E ** R
-I = ideal apply(subsets(0..n,d+1),s-> p_(toSequence(sort toList s)) - product apply(s, i-> x_i))
+I = ideal apply(a_0..a_n, a-> a* product(toList(e_0..e_d))) + ideal apply(subsets(0..n,d+1),s-> p_(toSequence(sort toList s))*product(toList(e_0..e_d)) - product apply(s, i-> a_i))
 GC1 = GC / I;
- x_1*x_3*x_2*x_4
 
-A = x_0*x_1 + 2*x_3*x_4
-B = x_1*x_2 - x_0*x_4
-
+A = 2*p_(0,1,2)*a_3*a_4
+B = a_1*a_2 - a_0*a_4
+meet(A,B,d,n)
 
 eliminate(apply(gens R, v -> promote(v,GC1)), x_1*x_3*x_2)
 
