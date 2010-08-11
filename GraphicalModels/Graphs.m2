@@ -353,7 +353,17 @@ inducedSubgraph(Digraph, List) := (G,v) -> (
 adjacencyMatrix = method()
      -- Input:  A digraph
      -- Output:  A matrix M, such that M_(i,j)=1 iff there exists an arc from i to j
-adjacencyMatrix(Digraph) := G -> matrix apply(keys(G),i->apply(keys(G),j->#positions(G#i,k->k==j)))
+adjacencyMatrix(Digraph) := G -> matrix apply(keys(G),i->apply(keys(G),j->#positions(G#i,k->k===j)))
+
+adjacencyHashTable = method()
+adjacencyHashTable Digraph := (G) -> (
+    -- Input: A digraph G.
+    -- Output: The hash table M of mutable hash tables storing the adjacency 
+    --         matrix of G,where M#a#b is true if a->b, and false otherwise.
+
+    vertices := keys G;
+    hashTable apply(vertices, i->{i,new MutableHashTable from apply(vertices,j->{j,#positions(G#i,k->k===j)})})
+)
 
 edgeSet = method()
      -- Input: A graph
