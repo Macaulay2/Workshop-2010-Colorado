@@ -14,7 +14,7 @@ export {Graph, Digraph, MixedGraph, LabeledGraph, graph, digraph, mixedGraph, la
      parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
      simpleGraph, removeNodes, inducedSubgraph, completeGraph,
      cycleGraph, writeDotFile,SortedDigraph,topSort,DFS,adjacencyMatrix,
-     edgeSet,incidenceMatrix}
+     edgeSet,incidenceMatrix,pathConnected,adjacencyHashTable}
 exportMutable {dotBinary,jpgViewer}
 
 
@@ -353,16 +353,16 @@ inducedSubgraph(Digraph, List) := (G,v) -> (
 adjacencyMatrix = method()
      -- Input:  A digraph
      -- Output:  A matrix M, such that M_(i,j)=1 iff there exists an arc from i to j
-adjacencyMatrix(Digraph) := G -> matrix apply(keys(G),i->apply(keys(G),j->#positions(G#i,k->k===j)))
+adjacencyMatrix(Digraph) := G -> matrix apply(keys(G),i->apply(keys(G),j->#positions(toList G#i,k->k===j)))
 
 adjacencyHashTable = method()
-adjacencyHashTable Digraph := (G) -> (
+adjacencyHashTable (Digraph) := (G) -> (
     -- Input: A digraph G.
     -- Output: The hash table M of mutable hash tables storing the adjacency 
     --         matrix of G,where M#a#b is true if a->b, and false otherwise.
 
     vertices := keys G;
-    hashTable apply(vertices, i->{i,new MutableHashTable from apply(vertices,j->{j,#positions(G#i,k->k===j)})})
+    hashTable apply(vertices, i->{i,new MutableHashTable from apply(vertices,j->{j,#positions(toList G#i,k->k===j)})})
 )
 
 edgeSet = method()
@@ -374,6 +374,25 @@ incidenceMatrix = method()
      -- Input: A graph
      -- Output: A matrix M, such that M_(i,j)=1 iff vertex i is incident to edge j     
 incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edgeSet G,j->(if j#?i then 1 else 0))))
+
+pathConnected = method()
+pathConnected (Set,Digraph) := (A,G) -> (
+    -- Input: A directed graph G and subset A of vertices.
+    -- Output: Set of vertices of G which have a directed path from A.
+
+    vertices := keys G;
+    M := adjacencyHashTable(G);
+    reachable := new MutableHashTable from apply(vertices,i->{i,false});
+    queue := toList A;   
+    while #queue > 0 do (
+      topVertex := first queue;
+      if not reachable#topVertex then (
+        reachable#topVertex = true;
+        queue = join(drop(queue,1),select(vertices,i->M#topVertex#i>0));
+      );
+    );
+    set select(vertices,i->reachable#i)
+)
 
 ----------------------
 -- Topological Sort --
