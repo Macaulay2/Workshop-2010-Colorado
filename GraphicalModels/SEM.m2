@@ -66,7 +66,7 @@ identify(MixedGraph) := (g) -> (
 	
 	PM := mutableMatrix(SLP,n,n);
 	scan(keys(v),i->PM_(position(keys(v), x-> x===i),position(keys(v), x-> x===i))=p_(i,i));
-	scan(keys(v),i->scan(v#i, j->   
+	scan(keys(v),i->scan(toList v#i, j->   
 	    if position(keys(v), x-> x===i) < position(keys(v), x-> x===j) then
 	      PM_(position(keys(v), x-> x===i),position(keys(v), x-> x===j)) = p_(i,j)
 	    else 
@@ -75,7 +75,7 @@ identify(MixedGraph) := (g) -> (
 	print(PM);
 
 	LM := mutableMatrix(SLP,n,n);
-    scan(keys(u),i->scan(u#i, j->
+    scan(keys(u),i->scan(toList u#i, j->
         LM_(position(keys(u), x-> x===i),position(keys(u), x-> x===j)) = l_(i,j)
     ));
 	print(LM);
