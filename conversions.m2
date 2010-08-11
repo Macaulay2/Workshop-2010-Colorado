@@ -105,6 +105,18 @@ new ZZ from ooo
 -- Brett Barwick
 
 -- Charley Crissman
+-- Extend syntax to allow expressions like:
+-- make Matrix of S from X
+-- which will make a matrix of elements of S from X by applying the coercion "make S from e"
+-- for each entry e of X (while also dealing correctly with gradings)
+--
+-- Example of where this would be nice:
+-- R = ZZ/32003
+-- M = matrix(R,{{1,2},{3,4}})
+-- make Matrix of ZZ from X
+--
+-- This would also give a suitable replacement for the current nasty coercion behaviour of
+-- sub over QQ, which causes sub((1/2)*x, {x=>2}) to return 2, not 1
 
 -- Alex Diaz
 
