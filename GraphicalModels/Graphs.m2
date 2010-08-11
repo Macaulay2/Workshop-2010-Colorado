@@ -452,17 +452,19 @@ DFSvisit = (H,u) -> (
      )
 
 isCyclic = method()
-     -- Input:  A digraph
+     -- Input:  A digraph (not undirected)
      -- Output:  Whether the digraph contains a cycle
 isCyclic(Digraph) := G -> (
-     D := DFS G;
-     member(true,flatten unique apply(select(keys G,u->#children(G,u)>0),u->(
-	       	    apply(children(G,u),v->(
-		    	      L := {D#"discoveryTime"#v,D#"discoveryTime"#u,D#"finishingTime"#u,D#"finishingTime"#v};
-     	       	    	      L == sort L
-		    	      )
+     if class G === Graph then error ("must be a digraph") else (
+     	  D := DFS G;
+     	  member(true,flatten unique apply(select(keys G,u->#children(G,u)>0),u->(
+	       	    	 apply(children(G,u),v->(
+		    	      	   L := {D#"discoveryTime"#v,D#"discoveryTime"#u,D#"finishingTime"#u,D#"finishingTime"#v};
+     	       	    	      	   L == sort L
+		    	      	   )
+	       	    	      )
 	       	    	 )
-	       	    )
+     	       	    )
      	       )
      	  )
      )
