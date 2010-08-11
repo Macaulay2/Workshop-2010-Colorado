@@ -92,32 +92,6 @@ degreeZeroPart=(T,A)->(
 	       piT.dd#j=substitute(((T.dd_j)^co)_ro,A)));
      piT)
 
-degreeD = method()
-degreeD(ZZ,Module) := (d,F) -> (
-     -- assume, for now, that F is a free module
-     if not isFreeModule F then error "required a free module";
-     R := ring F;
-     R^(-select(degrees F, e -> e#0 == d))
-     )
-degreeD(ZZ,Matrix) := (d,m) -> (
-     tar := positions(degrees target m, e -> e#0 == d);
-     src := positions(degrees source m, e -> e#0 == d);
-     submatrix(m, tar, src)
-     )
-degreeD(ZZ,ChainComplex) := (d, F) -> (
-     -- takes the first degree d part of F
-     a := min F;
-     b := max F;
-     G := new ChainComplex;
-     G.ring = ring F;
-     for i from a to b do
-	  G#i = degreeD(d, F#i);
-     for i from a+1 to b do (
-	  G.dd#i = map(G#(i-1), G#i, degreeD(d, F.dd_i));
-	  );
-     G
-     )
-
 RpistarLinPres = method()
 RpistarLinPres(Module) := (M) -> (
      -- assumption: M has x-linear resolution, with all generators

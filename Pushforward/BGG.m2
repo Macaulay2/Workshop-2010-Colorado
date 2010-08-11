@@ -17,7 +17,10 @@ newPackage(
 needsPackage "BoijSoederberg"
 
 export {
-     symExt, bgg, tateResolution, beilinson, cohomologyTable
+     symExt, bgg, tateResolution, 
+     beilinson, cohomologyTable, 
+     directImageComplex, universalExtension, Regularity, 
+     truncateMultiGraded, regularityMultiGraded
      }
 
 symExt = method()
@@ -118,6 +121,212 @@ cohomologyTable(Matrix, PolynomialRing, ZZ, ZZ) := CohomologyTally => (m,E,lo,hi
      tateToCohomTable T
      )
 
+
+-------new 8/11/10 -- DE+MES
+--degreeD takes the part of a free module, matrix or chain complex where
+--all first components of the degrees of the generators of the
+--modules involved are d.
+
+degreeD = method()
+degreeD(ZZ,Module) := (d,F) -> (
+     -- assume, for now, that F is a free module
+     if not isFreeModule F then error "required a free module";
+     R := ring F;
+     R^(-select(degrees F, e -> e#0 == d))
+     )
+degreeD(ZZ,Matrix) := (d,m) -> (
+     tar := positions(degrees target m, e -> e#0 == d);
+     src := positions(degrees source m, e -> e#0 == d);
+     submatrix(m, tar, src)
+     )
+degreeD(ZZ,ChainComplex) := (d, F) -> (
+     -- takes the first degree d part of F
+     a := min F;
+     b := max F;
+     G := new ChainComplex;
+     G.ring = ring F;
+     for i from a to b do
+	  G#i = degreeD(d, F#i);
+     for i from a+1 to b do (
+	  G.dd#i = map(G#(i-1), G#i, degreeD(d, F.dd_i));
+	  );
+     G
+     )
+
+symmetricToExteriorOverA=method()
+symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) ->(
+--this function converts between a  presentation matrix m with 
+--entries m^i_j of degree deg_x m^i_j = 0 or 1 only 
+--of a module over a symmetric algebra A[x] and the linear part of the
+--presentation map for the module 
+--    P=ker (Hom_A(E,(coker m)_0) -> Hom_A(E,(coker m)_1))
+--over the  exterior algebra A<e>.
+--                                 Berkeley, 19/12/2004, Frank Schreyer.
+     S:= ring x; E:=ring e;
+     a:=rank source m;
+     La:=degrees source m;
+     co:=toList select(0..a-1,i->  (La_i)_0==0);
+     M0:=coker substitute(m_co,vars E);
+     M:=coker m;
+     m1:=presentation (ideal x * M);
+-- script uses the fact that the generators of ideal x* M are ordered
+---as follows
+-- x_0 generators of M,x_1*generators of M, ...
+     b:=rank source m1;
+     Lb:=degrees source m1;     
+     cob:=toList select(0..b-1,i->  (Lb_i)_0==1);
+     M1:=coker substitute(m1_cob,vars E);
+     F:=substitute(id_(target m),vars E);
+     G:=e_{0}**F;
+     n:=rank source e -1;
+     apply(n,j->G=G|(e_{j+1}**F)); -- (vars E)**F
+     phi:=map(M1,M0,transpose G)
+     --presentation prune ker phi
+     )
+
+symmetricToExteriorOverA(Module) := M -> (
+     --M is a module over S = A[x0...].  must be gen in x-degree 0,
+     --related in x-degree 1
+     S := ring M;
+     xvars := vars S;
+     A := coefficientRing S;
+     if not S.?Exterior then(
+	  --S.Exterior = exterior alg over A on dual vars to the vars of S (new vars have deg = {-1,0})
+	  S.Exterior = A[Variables => numgens S, SkewCommutative => true, Degrees=>{numgens S:-1}]
+	  );
+     E := S.Exterior;
+     symmetricToExteriorOverA(presentation M, vars E, vars S)
+     )
+
+
+directImageComplex = method(Options => {Regularity=>null})
+directImageComplex Module := opts -> (M) -> (
+     S := ring M;
+     regM := if opts.Regularity === null then regularityMultiGraded M
+          else opts.Regularity;
+     degsM := degrees M/first;
+     if max degsM > regM then error("regularity is higher than you think!");
+     N := if min degsM === regM then M else truncateMultiGraded(regM,M);
+
+     xm = regM * degree(S_0);
+     phi = symmetricToExteriorOverA(N ** S^{xm});
+     E := ring phi;
+     F = complete res( image phi, LengthLimit => max(1,1+regM));
+     F = E^{-xm} ** F[regM];
+     F0 = degreeD(0, F);
+     toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
+     --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
+     F0A := toA F0;
+     G:=new ChainComplex;
+     G.ring = ring F0A;
+     n := numgens ring M;
+     for i from -n+1 to 1 do(
+	  G.dd_i = F0A.dd_i);
+     G
+     )
+
+truncateMultiGraded = method()
+truncateMultiGraded (ZZ, Module) := (d,M) -> (
+     --Assumes that M is a module over a polynomial ring S=A[x0..xn]
+     --where the x_i have first-degree 1.
+     --forms the submodule generated in x-degrees >= d.
+     S := ring M;
+     kk := ultimate (coefficientRing, S);
+     S0 := kk[Variables => numgens S];
+     f := map(S,S0, vars S);
+     L := (degrees M)/first;
+     Md := image M_{};
+     scan(#L, i-> 
+	  if L#i >= d then Md = Md + image M_{i} 
+	  else Md = Md+((ideal f(basis(d-L#i, S0^1)))*(image M_{i})));
+     Md
+     )
+
+regularityMultiGraded = method()
+regularityMultiGraded (Module) := (M) -> (
+     S := ring M;
+     (R,f) := flattenRing S;
+     deglen := #degree R_0;
+     w := flatten {1,toList(deglen-1:0)};
+     regularity (coker f presentation M, Weights=>w)
+     )
+
+universalExtension = method()
+universalExtension(ZZ,ZZ,ZZ) := (a,b,c) -> (
+     --Let Fi be the direct sum of line bundles on P1
+     --F1 = O(a), F2 = O(b)
+     --The script makes a module E representing the bundle that is
+     --the universal extension of F2 by F1 on P^1; (so the extension is
+     --  0 --> F1 --> E --> F2 --> 0.
+     --The answer is defined over A[y_0,y_1] representing 
+     -- P^1 x Ext(Sheaf F2,Sheaf F1).
+     -- The matrix obtained has relations in total degree {c,-1}
+     --assumes the existence of
+--     kk := ZZ/101;
+--     A := kk[x_0..x_(2*d-2)];
+--     S := A[y_0,y_1];
+     map(S^{{a,0},(b-c):{c+1,0}}, S^{(b-c-1):{c,-1}}, (i,j)->(
+	       if i == 0 then
+	            (if j<= b-a-2 then (sub(A_j, S))*(S_1^(a-c)) else 0_S) 
+		         else
+	       if i == j+1 then S_0 else
+	       if i == j+2 then S_1 else
+	       0_S)
+     )
+)
+universalExtension(List,List) := (La,Lb) -> (
+     --Let Fi be the direct sum of line bundles on P1
+     --F1 = O(a), F2 = O(b)
+     --The script makes a module E representing the bundle that is
+     --the universal extension of F2 by F1 on P^1; (so the extension is
+     --  0 --> F1 --> E --> F2 --> 0.
+     --The answer is defined over A[y_0,y_1] representing 
+     -- P^1 x Ext(Sheaf F2,Sheaf F1).
+     -- The matrix obtained has relations in total degree {c,-1}
+     --assumes the existence of
+--     kk := ZZ/101;
+--     A := kk[x_0..x_(2*d-2)];
+--     S := A[y_0,y_1];
+     kk := ZZ/101;
+     la :=#La;
+     lb :=#Lb;
+     N = sum(la, i->sum(lb, j->Lb#j-La#i-1));
+     A = kk[x_0..x_(N-1)];
+     S = A[y_0,y_1];
+       c := min La;
+       offset := 0;
+       matrix(apply(la, p ->
+		 apply(lb, q -> (
+       		      --universalExtension(La#p,Lb#q,c)
+                 mpq :=map(S^{{La#p,0},(Lb#q-c):{c+1,0}}, S^{(Lb#q-c-1):{c,-1}}, 
+		    (i,j)->(
+	               if i == 0 then
+	                  (if j<= Lb#q-La#p-2 then (sub(A_(offset+j), S))*(S_1^(La#p-c)) else 0_S) 
+		         else
+	       if i == j+1 then S_0 else
+	       if i == j+2 then S_1 else
+	       0_S));
+	       offset = offset+Lb#q-La#p-1;
+	       print p;print q;print mpq;
+	       mpq)
+     	          )
+             )
+	)
+   )
+     
+bblock=(b,c) ->(
+     map(S^{(b-c)*{c+1,0}}, S^{(b-c-1)*{c,0}, 
+	       (i,j)->
+	       if i == j+1 then S_0 else
+	       if i == j+2 then S_1 else 0_S
+	       )))
+///
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
+m=universalExtension({-1},{1,1})
+
+///
 
 beginDocumentation()
 
