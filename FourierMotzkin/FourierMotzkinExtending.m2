@@ -18,7 +18,8 @@ putMatrix (File, Matrix) := (F,A) ->(
 	L := entries transpose A;
      for i from 0 to m-1 do (
 	  for j from 0 to n do (
-	       F << L#i#j << " ";
+	       if (class L#i#j)===QQ then F << numerator L#i#j << "/" << denominator L#i#j << " "
+	       else F << L#i#j << " ";	      
 	       );
 	  F << endl;
 	  );
@@ -41,7 +42,8 @@ putMatrix (File, Matrix, Matrix) := (F,C,B) -> (
 	L := entries transpose A;
         for i from 0 to m-1 do (
 	  for j from 0 to n do (
-	       F << L#i#j << " ";
+	       if (class L#i#j)===QQ then F << numerator L#i#j << "/" << denominator L#i#j << " "
+	       else F << L#i#j << " ";
 	       );
 	  F << endl;
 	  );
@@ -74,18 +76,37 @@ toZZ List := List => L -> (
 
 compare = method()
 compare String := filename ->(
-     D := getMatrix(filename);
-     A := cdd D;
-     B := lrs D;
-     << numRows A << "  "<< numColumns A << endl;
-     A = matrix apply(select(transpose entries A, a->a#0==0),l-> l);
-     << numRows A << "  "<< numColumns A << endl;
-     << numRows B << "  "<< numColumns B << endl;
-     B = matrix apply(select(transpose entries B, b->b#0==0),l-> l);
-     << numRows B << "  " << numColumns B << endl;
-     -- << class A << endl;
-     -- << A << endl << B << endl;
-     norm(promote(A-B,RR))
+     D = getMatrixFromFile(filename);
+     -- << D << endl;
+     A := time fourierMotzkin D;
+     B := time cdd D;
+     C := time lrs D;
+     -- << A#0 << B#0 << C#0 << endl;
+     -- bfm := benchmark "fourierMotzkin D";
+     -- bcdd := benchmark "cdd D";
+     -- blrs := benchmark "lrs D";
+     -- << bfm << " " << bcdd << " " << blrs << endl;
+     )
+compare Matrix := D ->(
+     -- bfm := benchmark "fourierMotzkin D";
+     -- bcdd := benchmark "gcdd D";
+     -- blrs := benchmark "glrs D";
+     -- << bfm << " " << bcdd << " " << blrs << endl;
+     time fourierMotzkin D;
+     time gcdd D;
+     time glrs D;
+     )
+compare (Matrix, Matrix) := (A, B) ->(
+     time fourierMotzkin (A,B);
+     gcdd (A,B);
+     glrs (A,B);
+     )
+compare (ZZ, ZZ, ZZ) := (n,k,l) -> (
+     C = transpose random(ZZ^k,ZZ^n, Density=>.8, Height=> 100);
+     H = transpose random(ZZ^l,ZZ^n, Density=>.8, Height=> 100);
+     time fourierMotzkin (C,H);
+     gcdd (C,H);
+     glrs (C,H);
      )
 
 getMatrixFromFile = method()
@@ -106,16 +127,15 @@ getMatrix String := (filename) -> (
 	  L = L#1;
      	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
      	  m = value( M#1);
-     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ)),i-> i#0==0),l->primitive toZZ drop(l,1)),matrix {{0}})
+     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ)),i-> i#0==0),l->drop(l,1)),matrix {{0}})
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
-     	  m = value( M#1);
-	  << "entered" << endl;
-     	  mat :=  pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ));
-	  linearity := sort transpose matrix apply(mat_lin, l-> primitive toZZ drop(l,1));
+     	  m = value( M#1);	  
+     	  mat :=  pack_m apply(drop(M,3), o-> lift(promote(value replace("E\\+?","e",o),RR),QQ));
+	  linearity := sort transpose matrix apply(mat_lin, l-> drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
-	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->primitive toZZ drop(l,1));
+	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l-> drop(l,1));
 	  (rays, linearity)
 	  )
 )
@@ -131,15 +151,15 @@ ggetMatrix String := (filename) -> (
 	  L = L#1;
      	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
      	  m = value( M#1);
-     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> promote(value o,QQ)),i-> i#0==0),l->primitive toZZ drop(l,1)),matrix {{0}})
+     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> promote(value o,QQ)),i-> i#0==0),l-> drop(l,1)),matrix {{0}})
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
      	  m = value( M#1);
      	  mat :=  pack_m apply(drop(M,3), o-> promote(value o,QQ));
-	  linearity := sort transpose matrix apply(mat_lin, l-> primitive toZZ drop(l,1));
+	  linearity := sort transpose matrix apply(mat_lin, l-> drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
-	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l->primitive toZZ drop(l,1));
+	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l-> drop(l,1));
 	  (rays, linearity)
 	  )
 )
@@ -151,7 +171,7 @@ glrs Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      ggetMatrix (filename | ".ext")
      )
@@ -162,7 +182,7 @@ glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      ggetMatrix (filename | ".ext")
      ))
@@ -197,7 +217,7 @@ cdd Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      getMatrix (filename | ".ext")
      )
@@ -208,7 +228,7 @@ cdd (Matrix, Matrix) := Matrix => (A,B) ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      getMatrix (filename | ".ext")
      ))
@@ -220,7 +240,7 @@ gcdd Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      ggetMatrix (filename | ".ext")
      )
@@ -231,7 +251,7 @@ gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
      run execstr;
      ggetMatrix (filename | ".ext")
      ))    
@@ -305,6 +325,20 @@ l = time gcdd C;
 (f#0-l#0)==0
 (f#1-l#1)==0
 
+L = {0, 0, -1, 0, 0, 0, 0, 0, 0, -16, 30.2222, 1, 20.3333, 
+     0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -1, 6.33333, 
+     0, 0, 0, 0, -.8, -.266667, -.7, 5.76667, 1, 0, 0, 0, -1.13333, 
+     2.14074, -.429167, 4.60694, 0, 1, 0, 0, 0, -1, 0, 0, 0, 0, 1}
+L = apply(L, l-> promote(l,RR))
+L = apply(L, l-> lift(l,QQ))
+
+
+D = transpose random(ZZ^4,ZZ^7, Density=>.3, Height=> 30)
+entries D
+f = cdd cdd cdd cdd cdd D
+l = cdd D
+(f#0-l#0)==0
+(f#1-l#1)==0
 
 cdd(C,H)
 lrs(C,H)
