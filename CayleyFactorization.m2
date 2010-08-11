@@ -10,7 +10,7 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{isAtom, listAtoms}
+   export{cayleyFactor}
    -- Jessica's code:  Step 1 --
    ----------------------------------------------------
    listAtoms = method()
@@ -293,18 +293,74 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
 	  );
      )
            
+ ------------------------------------------------------------------- 
+  ----------------------Documentation------------------------------------- 
+   ------------------------------------------------------------------- 
 
+beginDocumentation()
+
+doc ///
+  Key
+       CayleyFactorization
+  Headline
+       Cayley Factorization
+  Description
+   Text
+   	This is a package that can be used to factor multilinear bracket polynomials as simple expressions in the Grassmann-Cayley algebra.  We used Neil White's algorithm, as described in the book "Algorithms in Invariant Theory" by Bernd Sturmfels.
+///
+
+doc ///
+  Key
+       cayleyFactor
+  Headline
+       Factors a multilinear bracket polynomial as a simple expression in the Grassmann-Cayley algebra
+  Usage
+       C = cayleyFactor(P,d,n)
+  Inputs
+     P: RingElement
+     	  a multilinear polynomial in the coordinate ring of Grassmannian(d,n)
+     d: ZZ
+     n: ZZ
+  Outputs
+     C: Expression
+     	  {,} denotes join, and (,) denotes meet
+  Consequences
+
+  Description
+   Text
+   Text
+   Example
+   	d = 2; n=5;
+	Grassmannian(d,n);
+	use((ring oo) / oo);
+  	P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
+	cayleyFactor(P,d,n)
+   Text
+   Example
+  Caveat
+       We do not check if the input polynomial is multilinear.
+  SeeAlso
+///
 
  ------------------------------------------------------------------- 
 
+TEST ///
 
------ TEST
+
+
+///
+
+ ------------------------------------------------------------------- 
+
 
 ---- Josephie's tests
 end
 
 restart
-debug loadPackage("CayleyFactorization", FileName => "/Users/bb/Documents/math/M2codes/Colorado-2010/CayleyFactorization.m2")
+path = path|{"/Users/bb/Documents/math/M2codes/Colorado-2010"}
+uninstallPackage("CayleyFactorization")
+installPackage("CayleyFactorization", RemakeAllDocumentation => true, AbsoluteLinks=>false )
+viewHelp CayleyFactorization
 d = 2; n=5;
 Grassmannian(d,n);
 use((ring oo) / oo);
@@ -345,6 +401,11 @@ cayleyFactor(P,d,n)
 
 P = p_(0,2,4)*p_(1,3,5)-2*p_(0,1,4)*p_(2,3,5)-p_(0,2,3)*p_(1,4,5)+p_(0,1,3)*p_(2,4,5)-2*p_(0,1,2)*p_(3,4,5)+2*p_(0,1,2);
 partialAtoms = {set {7}, set {6}, set {8}, set {1, 2}, set {0}};
+
+d=3;n=7;
+Grassmannian(d,n);
+use((ring oo) / oo);
+P = p_(0,3,4,5)*p_(1,2,6,7) - p_(1,3,4,5)*p_(0,2,6,7) +p_(2,3,4,5)*p_(0,1,6,7);
 
 
 L=listAtoms(P, 2, 8);
