@@ -21,7 +21,7 @@ export {
 	poset,
 --	DirectedGraph,
 --	directedGraph,
---	adjacencyMatrix,
+	adjacencyMatrix,
 	allPairsShortestPath,
 	transitiveClosure,
 --     FullRelationMatrix,
@@ -852,43 +852,44 @@ doc ///
 -- finding relations
 -----------
 
-doc ///
-     Key 
-     	  adjacencyMatrix
+--
+--doc ///
+--     Key 
+--     	  adjacencyMatrix
 --	  (adjacencyMatrix, DirectedGraph)
-	  (adjacencyMatrix, Poset)
-	  (adjacencyMatrix, List, List)
-     Headline
-	  returns adjacency matrix of a directed graph
-     Usage
+--	  (adjacencyMatrix, Poset)
+--	  (adjacencyMatrix, List, List)
+--   Headline
+--	  returns adjacency matrix of a directed graph
+--     Usage
 --	  M = adjacencyMatrix(G)
-	  M = adjacencyMatrix(P)
-	  M = adjacencyMatrix(I,C)
-     Inputs
+--	  M = adjacencyMatrix(P)
+--	  M = adjacencyMatrix(I,C)
+--     Inputs
 --	  G : DirectedGraph
-	  P : Poset
-       	  I : List
-	  C : List
-     Outputs
-      	  M : Matrix 
-	       whose rows and columns are indexed by G.Vertices 
-	       or P.GroundSet or I. The (i,j) entry of M  is 1 if (i,j) is 
-	       in P.Relations or C, and infinity otherwise.  Diagonal entries are 0. 
-     Description
-	  Example
-     	       I = {a,b,c,d,e};
-	       C = {(a,b),(b,c),(a,c),(a,d),(d,e)};
+--	  P : Poset
+--       	  I : List
+--	  C : List
+--     Outputs
+--      	  M : Matrix 
+--	       whose rows and columns are indexed by G.Vertices 
+--	       or P.GroundSet or I. The (i,j) entry of M  is 1 if (i,j) is 
+--	       in P.Relations or C, and infinity otherwise.  Diagonal entries are 0. 
+--     Description
+--	  Example
+--     	       I = {a,b,c,d,e};
+--	       C = {(a,b),(b,c),(a,c),(a,d),(d,e)};
 --	       G = directedGraph(I,C);
-	       P = poset(I,C);
+--	       P = poset(I,C);
 --	       adjacencyMatrix(G)
-	       adjacencyMatrix(P)
-	       adjacencyMatrix(I,C)	       	       
-     Caveat
-     	  Diagonal entries are 0.  Output matrix is over RR.
-     SeeAlso
+--	       adjacencyMatrix(P)
+--	       adjacencyMatrix(I,C)	       	       
+--     Caveat
+--     	  Diagonal entries are 0.  Output matrix is over RR.
+--     SeeAlso
 --     	  DirectedGraph
-     	  allPairsShortestPath    
-/// 
+--     	  allPairsShortestPath    
+--/// 
  
 doc ///
      Key 
