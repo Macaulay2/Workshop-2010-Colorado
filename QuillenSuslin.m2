@@ -4,7 +4,7 @@ newPackage(
     	Date => "August 08, 2010",
     	Authors => {
 	     {Name => "Hirotachi Abo", Email => "abo@uidaho.edu", HomePage => "http://www.webpages.uidaho.edu/~abo/"},
-	     {Name => "Brett Barwick", Email => "", HomePage => ""},
+	     {Name => "Brett Barwick", Email => "barwicjb@mailbox.sc.edu", HomePage => "http://www.math.sc.edu/~barwicjb/"},
 	     {Name => "Branden Stone", Email => "", HomePage => ""}	     
 	     },
     	Headline => "QuillenSusulin",
@@ -92,20 +92,39 @@ applyRowShortcut(Matrix) := g -> (
 	  );
 )
 
+-- Compute the ideal of maximal minors of a matrix.
+
+maxMinors = method()
+maxMinors(Matrix) := M -> (
+     local R; local i; 
+     R = ring(M);
+     i = min({rank target M, rank source M});
+     while minors(i,M) == 0 and i > 0 do i=i-1;
+     return minors(i,M);
+)
+
 
 -- Input: A module P over a Noetherian ring R.
 -- Output: 'true' if P is projective, 'false' if P is not projective.
 
 isProjective = method()
 isProjective(Module) := P -> (
-     local i; local R; local p;
+     local R; local p;
      R = ring(P);
      p = presentation(P);
-     i = min({rank target p, rank source p});
-     while minors(i,p) == 0 and i > 0 do i=i-1;
-     if minors(i,p) == R then return true else return false;
+     if maxMinors(p) == R then return true else return false;
 )
 
+
+-- Checks whether a given matrix is unimodular.  (ie. its maximal minors generate the unit ideal.)
+
+isUnimodular = method()
+isUnimodular(Matrix) := M -> (
+     local R;
+     R = ring(M);
+     if maxMinors(M) == R then return true else return false;
+)
+     
 
 -- This method takes a unimodular matrix phi over a PID and returns a unimodular matrix U such that phi*U = (I | 0).
 -- This works as long as Macaulay2 computes the Smith normal form like I think it does.
@@ -150,6 +169,29 @@ qsAlgorithm(Matrix) := Matrix => phi -> (
      V := (gens Vi // map(R^nrow,R^ncol,Ai))|(map(R^(nrow-r),R^r,0_R)||map(R^r));
      Ui*V
      )
+
+
+-- This computes a set of local solutions for a given unimodular row f.
+-- This still needs localSolution to be implemented.
+
+getLocalSolutions = method()
+getLocalSolutions(Matrix) := f -> (
+     local I; local matrixList; local rList;
+     I = ideal(0);
+     matrixList = new List from {};
+     rList = new List from {};
+     (U,r) = localSolution(f,I);
+     I = ideal(r);
+     matrixList#0 = U;
+     rList#0 = r;
+     while I =!= R do (
+	  (U,r) = localSolution(f,I);
+	  I = I+ideal(r);
+	  matrixList = append(matrixList,U);
+	  rList = append(rList,r);
+     )
+     return(matrixList,rList);
+)
 
 
 beginDocumentation()
