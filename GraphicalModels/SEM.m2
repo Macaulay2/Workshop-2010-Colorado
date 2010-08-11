@@ -10,7 +10,7 @@ newPackage("SEM",
 
 
 
-export {msize, shift, nonzerosize, pList, lList, directedEdges, bidirectedEdges, identify}
+export {msize, shift, nonzerosize, pList, lList, directedEdges, bigraph, bidirectedEdges, identify}
 
 needsPackage "Graphs"
 
@@ -24,7 +24,7 @@ bigraph Graph := g -> (
 
 pList = method()
 pList(ZZ, MixedGraph) := (n, g) -> (
-	join(toList(apply(1..n, i->p_(i,i))),delete(null,flatten(apply(keys(g#((keys(g))_1)), x-> apply(g#((keys(g))_1)#x, y->if x<y then p_(x,y) )))))	
+	join(toList(apply(1..n, i->p_(i,i))),delete(null,flatten(apply(keys(g#((keys(g))_1)), x-> apply(g#((keys(g))_1)#x, y->if x<y then p_(x,y))))))	
 )	
 
 lList = method()
@@ -33,7 +33,7 @@ lList(ZZ, MixedGraph) := (n, g) -> (
 )	
 
 directedEdges = method()
-directedEdges(HashTable) := (g) -> (
+directedEdges(MixedGraph) := (g) -> (
 	scanKeys(g, i-> if class g#i === Digraph then u=g#i);
 	u
 )
@@ -49,7 +49,7 @@ identify(MixedGraph) := (g) -> (
 	u := directedEdges(g);
 	v := bidirectedEdges(g);
 	n := #g#((keys(g))_0);
-	--changed v
+	--changed v to vertices
 	vertices := join(pList(n,g),lList(n,g));
 	m := #vertices;
 
