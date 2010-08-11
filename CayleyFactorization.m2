@@ -172,7 +172,7 @@ newPackage(
 			       )
 		     	  ), a -> a =!= null);
 		     	  inverseNewOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F));
-		     	  break({{E,F}, permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder), apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
+		     	  break({{E,F}, permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder), sort apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
 		     )
 	  	)
       )
@@ -340,6 +340,15 @@ L = {{0,1,2},{1,3},{3,4,5},{0,1,4,5}};
 L = subsets(n+1,d-1)| subsets(n+1,d) | {{0,1,2},{3,4,5}}
 factorBrackets(P, d, n, L)
 E = {0,2}; F = {1,4};
+
+d=2;n=6;
+Grassmannian(d,n);
+use((ring oo) / oo);
+P = p_(0,1,4)*p_(2,3,5) - p_(1,3,4)*p_(0,2,5);
+cayleyFactor(P,d,n)
+
+012345
+abcdef
 
 d=2;n=8;
 Grassmannian(d,n);
