@@ -1,3 +1,6 @@
+-- every page in the documentation should have the search bar instead of going back to index
+
+-- 
 
 -- lex order takes longer than several minutes (it never finished for me) 
 -- computing a basis first in gRevLex order, lifting in Lex order, and recomputing a basis is quick
@@ -27,4 +30,5 @@ I = ideal(i*r*B+i*s*C+s*B*C+i*s+s*B+B*C+s,b*f+b*o,c*F*J+E*F*J+c*E+C*J+F*J+c+C+F,
 --valence: 5
 ideal (d*h*j + h*j*o + d*k*o + j*k*o + d*k + d + h, e*f*o*q + e*g*o + f*g*o + e*g + f*q + g*q + g + 1, h*l*n + j*n*r, q*u + f + q + 1, b*j + h*n, l*m*o + l*q, f*h*o*q + f*h*o + f*o*t + h*q*t + h + 1, g*h*p*r + g*h*r + g*p*r + h*p*r + g*r + h*r + p*r + h + m, d*k + d*r + f*r + k, b*j*o*p*s + b*j*p*s + b*j*p + b*o + b + p + 1, g*r, e*j*r*s + o*r*s + o*r + r*s + e + j + s, m*u + n*u, i*j*p*q + h*i + h*p + j + q, e*l*t*u + d*e*l + e*l*t + d*l*u + e*l*u + d, e*l*m*r + e*l*m*s + l*m*r + l*r*s + m*r*s + l*m, j*m*q*r*t + j*m*q + j*m*t, b*d*r*u + d*p*r*u + d*p*u + b*p + d*p + b*r + p, c*e*m*s, d*e*q*u + e*u + q*u + q)
 --Lex Order of (I+FP):        14.8312 seconds.
+
 

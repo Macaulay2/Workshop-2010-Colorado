@@ -276,3 +276,6 @@ I = II6
  T = timing gens gb( sub( I, QRlex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
+
+installPackage "BenchmarkGb"
+check "BenchmarkGb"
