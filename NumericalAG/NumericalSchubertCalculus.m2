@@ -10,10 +10,12 @@ newPackage(
         )
 
 export {   
-   skewSchubertVariety,
-   solveSimpleSchubert,
-   launchSimpleSchubert,
-   createRandomFlagsForSimpleSchubert
+	 skewSchubertVariety,
+	 solveSimpleSchubert,
+	 createRandomFlagsForSimpleSchubert,
+	 trackSimpleSchubert,
+	 findGaloisElement,
+	 isFullSymmetric
    }
 
 -------------------------
@@ -24,12 +26,28 @@ export {
 --
 -- Date:  October 29, 2009
 --
--- Last Update: August 9, 2010
+-- Last Update: August 11, 2010
 -----------------------
 
 needsPackage "NumericalAlgebraicGeometry"
 
 H := new MutableHashTable;
+
+---------------------
+--	verifyLength	--
+--								--
+-- makes sure a partition l
+-- that is supposed to impose
+-- conditions on Gr(k,n)
+-- is in fact a partition 
+-- of length k (add 0´s if not)
+--
+verifyLength = method(TypicalValue => List)
+verifyLength(VisibleList, ZZ) := (l,k) ->(
+	x:={};
+  if #l < k then x = for i to k-#l-1 list 0;
+	l | x
+)
 
 ---------------------------
 --  skewSchubertVariety  --
@@ -39,17 +57,12 @@ skewSchubertVariety = method(TypicalValue=>Matrix)
 skewSchubertVariety(Sequence,List,List) := (kn,l,m)->(
      -- k and n are the integers defining the Grassmanian G(k,n)
      -- l and m are partitions of n
-     (k,n):=kn;
-     ----- make sure both partitions are of size k  ----
-		 x:={};
-     if #l < k then x = for i to k-#l-1 list 0;
-     l = l | x; -- makes sure l have size k
-     if #m < k then x = for i to k-#m-1 list 0;
-     m = m | x; -- makes sure m have size k
-     ---------------------------------------------------
-     d := (k*(n-k)-sum(l)-sum(m));  
-     R := CC[vars(53..d+52)]; -- ring where the variables for the matrix lie
-     r := 0;
+    (k,n):=kn;
+		l = verifyLength(l, k);
+		m = verifyLength(m, k);
+    d := (k*(n-k)-sum(l)-sum(m));  
+    R := CC[vars(53..d+52)]; -- ring where the variables for the matrix lie
+    r := 0;
      matrix (
       	  for i from 1 to k list (
                for j from 1 to n list (
@@ -63,7 +76,6 @@ skewSchubertVariety(Sequence,List,List) := (kn,l,m)->(
       	       )
       	  )
      )
-
 
 ---------------------
 -- Generate partitions for 
@@ -117,10 +129,8 @@ precookPieriHomotopy(Sequence,List,List) := (kn,l,m)->(
      -- l and m are partitions of n
      (k,n) := kn;
 	   x:={};
-     if #l < k then x = for i to k-#l-1 list 0;
-     l = l | x; -- makes sure l have size k
-     if #m < k then x = for i to k-#l-1 list 0;
-     m = m | x; -- makes sure m have size k
+		l = verifyLength(l, k);
+		m = verifyLength(m, k);
      E := skewSchubertVariety(kn,l,m);
      ------------
      -- d is the number of variables i.e. the codimension of the Schubert variety E_{l,m}
@@ -145,13 +155,8 @@ precookPieriHomotopy(Sequence,List,List) := (kn,l,m)->(
 createRandomFlagsForSimpleSchubert = method( )
 createRandomFlagsForSimpleSchubert(Sequence, List, List) := (kn,l,m)->(
 	 (k,n) := kn;
-   ----- make sure both partitions are of size k  ----
-	 x:={};
-   if #l < k then x = for i to k-#l-1 list 0;
-   l = l | x; -- makes sure l have size k
-   if #m < k then x = for i to k-#m-1 list 0;
-   m = m | x; -- makes sure m have size k
-   ---------------------------------------------------   
+	l = verifyLength(l, k);
+	m = verifyLength(m, k);
    d := k*(n-k)-sum(l)-sum(m);
    apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)))
    )
@@ -162,15 +167,8 @@ solveSimpleSchubert(Sequence,List,List,List) := (kn,l,m,G)->(
    -- l and m are partitions of n
    -- G is a flag
    (k,n) := kn;
-
-   ----- make sure both partitions are of size k  ----
-	 x:={};
-   if #l < k then x = for i to k-#l-1 list 0;
-   l = l | x; -- makes sure l have size k
-   if #m < k then x = for i to k-#m-1 list 0;
-   m = m | x; -- makes sure m have size k
-   ---------------------------------------------------
-
+	l = verifyLength(l, k);
+	m = verifyLength(m, k);
    d := k*(n-k)-sum(l)-sum(m);
    E := skewSchubertVariety(kn,l,m);
 	--- maybe change H#() by H#{}
@@ -229,62 +227,131 @@ solveEasy(RingElement) := (p)->(
 )
 
 
-	--------------------------------------
-	--- trackSimpleSchubert will be a function
-	--- to find solution from a specific instance 
-	--- of a Schubert problem using homotopy 
-	--- continuation starting from solving
-	--- another instance (hopefully easier) of
-	--- the Schubert problem, but with respect 
-	--- to a different flag
-	--------------------------------------
+--------------------------------------
+--- trackSimpleSchubert will be a function
+--- to find solution from a specific instance 
+--- of a Schubert problem using homotopy 
+--- continuation starting from solving
+--- another instance (hopefully easier) of
+--- the Schubert problem, but with respect 
+--- to a different flag
+--------------------------------------
 
-	trackSimpleSchubert = method(TypicalValue=>List)
-	trackSimpleSchubert(Sequence, Sequence, List, List) := (kn,cond,G,F) ->(
-	   -- k and n are integers defining the Grassmannian G(k,n)
-	   (k,n) := kn;
-	   -- l and m are partitions of n
-	   (l,m) := cond;
-	   -- G is the start flag and F the target flag
+trackSimpleSchubert = method(TypicalValue=>List)
+trackSimpleSchubert(Sequence, Sequence, List, List) := (kn,cond,G,F) ->(
+   -- k and n are integers defining the Grassmannian G(k,n)
+   (k,n) := kn;
+   -- l and m are partitions of n
+   (l,m) := cond;
+   -- G is the start flag and F the target flag
 
-	   Sols:=solveSimpleSchubert(kn,l,m,G);
-	   E := skewSchubertVariety(kn,l,m);
-	   Start:=apply(G, g->det( matrix E || sub(g, ring E),Strategy=>Cofactor));
-	   Target:=apply(F,f->det( matrix E || sub(f, ring E),Strategy=>Cofactor));
-		 track(Start,Target,Sols,gamma=>exp(2*pi*ii*random RR)) / first
+   Sols:=solveSimpleSchubert(kn,l,m,G);
+   E := skewSchubertVariety(kn,l,m);
+   Start:=apply(G, g->det( matrix E || sub(g, ring E),Strategy=>Cofactor));
+   Target:=apply(F,f->det( matrix E || sub(f, ring E),Strategy=>Cofactor));
+	 track(Start,Target,Sols,gamma=>exp(2*pi*ii*random RR)) / first
+)
+
+findGaloisElement = method(TypicalValue => List)
+findGaloisElement(Sequence, List, List) :=(prblm, flgs, solns) ->(
+     -- prblm is a List that contains
+     -- partitions l and m, and integers k,n 
+     -- that define the 
+     -- simple Schubert problem in Gr(k,n)
+     (l,m,k,n):=prblm;
+		l = verifyLength(l, k);
+		m = verifyLength(m, k);
+     d := k*(n-k)-sum(l)-sum(m);
+     -- create a random flag to start a loop
+     -- We will work only from a short loop
+     -- so we need only the first two rows
+     -- of a random flag
+     F := matrix apply(2, i->apply(n,j->random CC));
+     swaps := {0,1,0,1};
+     tmpMtrx := mutableMatrix(flgs#(d-1) || F);
+     tempSlns := solns;
+     apply(swaps, j->(
+	       M1 := submatrix'(matrix tmpMtrx, {n-k, n-k+1},);
+	       rowSwap(tmpMtrx, j, n-k+j);
+	       M2 := submatrix'(matrix tmpMtrx, {n-k,n-k+1},);
+	       tempSlns = trackSimpleSchubert((k,n), (l,m), drop(flgs, -1) | {M1}, drop(flgs, -1) | {M2});
+	       ));
+     apply(solns, s->positions(tempSlns, j->areEqual(j,s))) / first
+)
+
+------------------
+-- isFullSymmetric
+-- is a function that
+-- takes a list of permutations
+-- creates a file and run
+-- GAP to test if the list
+-- generates the full symmetric group
+------------------
+	--GAPexe ="/Applications/gap4r4/bin/./gap.sh";
+getFileName = () -> (
+	filename := temporaryFileName();
+	while fileExists(filename) or fileExists(filename|".mat") or fileExists(filename|".lat") do filename = temporaryFileName();
+	filename
 	)
+	
+GAPexe := "gap";
 
-	findGaloisElement = method()
-	findGaloisElement(Sequence, List, List) :=(prblm, flgs, solns) ->(
-	     -- prblm is a List that contains
-	     -- partitions l and m, and integers k,n 
-	     -- that define the 
-	     -- simple Schubert problem in Gr(k,n)
-	     (l,m,k,n):=prblm;
-	     ----- make sure both partitions are of size k  ----
-	     x:={};
-	     if #l < k then x = for i to k-#l-1 list 0;
-	     l = l | x; -- makes sure l have size k
-	     if #m < k then x = for i to k-#m-1 list 0;
-	     m = m | x; -- makes sure m have size k
-	     ---------------------------------------------------
-	     d := k*(n-k)-sum(l)-sum(m);
-	     -- create a random flag to start a loop
-	     -- We will work only from a short loop
-	     -- so we need only the first two rows
-	     -- of a random flag
-	     F := matrix apply(2, i->apply(n,j->random CC));
-	     swaps := {0,1,0,1};
-	     tmpMtrx := mutableMatrix(flgs#(d-1) || F);
-	     tempSlns := solns;
-	     apply(swaps, j->(
-		       M1 := submatrix'(matrix tmpMtrx, {n-k, n-k+1},);
-		       rowSwap(tmpMtrx, j, n-k+j);
-		       M2 := submatrix'(matrix tmpMtrx, {n-k,n-k+1},);
-		       tempSlns = trackSimpleSchubert((k,n), (l,m), drop(flgs, -1) | {M1}, drop(flgs, -1) | {M2});
-		       ));
-	     apply(solns, s->positions(tempSlns, j->areEqual(j,s))) / first
-	 )
+isFullSymmetric = method(TypicalValue => Nothing)
+isFullSymmetric(List) := (perms)->(
+	--
+	-- perms is a list of permutations
+	-- of [n] = {1,2,...,n}
+	--
+	F := getFileName();
+	file := openOut(F|".gapjob");
+	file << "u := Group(" << endl;
+	scan(#perms, i->
+		(
+			p := perms#i;
+			file << "PermList([" ;
+			scan(p, j->( 
+				file << j+1; 
+				if j=!= last p then file << ", " ;
+			));
+			file <<"])";
+			if i=!=#perms-1 then file << ", "<<endl; 
+		)
+	);
+	file <<endl << ");"<<endl;
+
+	n := max perms#0;
+	file <<"if NrMovedPoints(u)="<< n+1 << " and IsNaturalSymmetricGroup(u) then RemoveFile(\""<< toString(file) <<"\"); fi;\n";
+	file << "QUIT;\n";
+	close file;
+  --------------
+	--
+	-- Running GAP
+	--
+	--------------
+	run(GAPexe|" "|toString(file));
+	if fileExists toString(file) then (
+		removeFile toString(file); 
+		return false;
+	)else(
+		return true;
+	)
+)
+
+-------------------
+--
+--	getGaloisGroup
+--
+-------------------
+-- function that find Galois
+-- elements of a Schubert Problem
+-- until it gets the full symmetric
+-- group
+--
+-- CAVIAT: this assumes that we
+-- know that Gal(Prblm) = symm_n
+--
+-------------------
+
 
 -------------------
 -- Documentation --
