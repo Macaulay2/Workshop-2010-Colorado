@@ -35,6 +35,9 @@ II6 = ideal(b*c*e*j+b*c*j*n+b*e*j*n+c*e+c*n+c,g*k+g,d*e*f*o+d*f*o*r+d*f*o+e*f*o+
 --idealList = {II0, II0+II00, II2, II3, II4, II5, II6}
 --idealList = {II3, II0+II00, II5, II6, II0, II4, II2}
 idealList = {II3, II0+II00, II5, II6, II0, II4}
+
+end
+
 ff := "outputtmp.txt";
 counter := 0;
 scan( idealList, i -> (
@@ -49,6 +52,9 @@ end
 
 restart
 load "benchmarks.m2"
+
+gens gb II3
+timing gbBoolean II3
 
 R = ZZ/2[ vars(1..36)]
 QR = R / ideal apply(gens R, x -> x^2 + x)
@@ -97,3 +103,51 @@ runBenchmark ideal makeBooleanNetwork(QR, 4, 10 )
 end
 
 load "benchmarks.m2"
+
+-- gRevLex
+restart
+R = ZZ/2[w,x,y,z]
+--R = ZZ/2[w,x,y,z, MonomialOrder=>Lex]
+QR = R / ideal apply( gens R, x -> x^2 + x)
+I = ideal (x+y)
+I = ideal (x + y*z )
+I = ideal () 
+
+toString gens gb  ideal (x*y + w*z)
+
+-- in gRevLex {{x*y+w*z, w*y*z+w*z, w*x*z+w*z}}
+-- in Lex  {{x*y*z+x*y, w*z+x*y, w*x*y+x*y}}
+
+testgb ideal (x*y + w*z)
+
+a = toString (x*y+w*z,w*y*z+w*z,w*x*z+w*z)
+
+testgb II3
+
+restart
+load "benchmarks.m2"
+
+I = II2
+timing ideal gens gb I
+timing gbBoolean I
+
+testgb = method()
+testgb Ideal := Bool => I -> (
+  G := ideal gens gb I;
+  print toString G;
+  GG := gbBoolean I;
+  G == GG
+)
+
+I = ideal (x + y*z )
+
+
+
+I = ideal (x*y+z)
+
+
+
+
+
+
+
