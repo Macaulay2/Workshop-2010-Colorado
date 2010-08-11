@@ -388,6 +388,8 @@ pathConnected (Set,HashTable) := (A,M) -> (
       if not reachable#topVertex then (
         reachable#topVertex = true;
         queue = join(drop(queue,1),select(vertices,i->M#topVertex#i>0));
+      ) else (
+        queue = drop(queue,1);
       );
     );
     set select(vertices,i->reachable#i)
