@@ -376,12 +376,11 @@ incidenceMatrix = method()
 incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edgeSet G,j->(if j#?i then 1 else 0))))
 
 pathConnected = method()
-pathConnected (Set,Digraph) := (A,G) -> (
+pathConnected (Set,HashTable) := (A,M) -> (
     -- Input: A directed graph G and subset A of vertices.
     -- Output: Set of vertices of G which have a directed path from A.
 
-    vertices := keys G;
-    M := adjacencyHashTable(G);
+    vertices := keys M;
     reachable := new MutableHashTable from apply(vertices,i->{i,false});
     queue := toList A;   
     while #queue > 0 do (
@@ -393,6 +392,10 @@ pathConnected (Set,Digraph) := (A,G) -> (
     );
     set select(vertices,i->reachable#i)
 )
+
+pathConnected = method()
+pathConnected (Set,Digraph) := (A,G) -> pathConnected(A,adjacencyHashTable G)
+
 
 ----------------------
 -- Topological Sort --
