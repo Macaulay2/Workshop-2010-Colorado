@@ -205,6 +205,7 @@ solveBlackBox  List := List => system -> (
      -- OUT: solutions to the system = a list (?sequence?) of hashtables with keys being the solutions, and entries info on those solns (such as multiplicity, etc.)
      -- !!! problem with temporaryFileName: cygwin's /tmp is different from Windows' /tmp  ~~anton
      -- check the "path" discussion in FourTiTwo.m2 !! ~~sonja
+     -- -----I THINK this will fix CYGWIN PROBLEMS: prepending "rootPath" to filenames SHOULD fix this interface on cygwin!
      filename:=getFilename();
      << "using temporary file name " << filename|"PHCinput" << endl;
      infile := filename|"PHCinput";
@@ -227,7 +228,7 @@ solveBlackBox  List := List => system -> (
      systemToFile(system,infile);
      -- launching blackbox solver:
      execstr := PHCexe|" -b "|infile|" "|outfile;
-     --	    execstr = path'PHC|"phc -b" |infile|" "|rootPath |outfile;
+     --	    execstr = path'PHC|"phc -b" |infile|" "|rootPath |outfile; 
      --     execstr = PHCexe|" -b" |rootPath |infile|" "|rootPath |outfile;
      ret := run(execstr);
      if ret =!= 0 then error "error occurred while executing PHCpack command: phc -b";
