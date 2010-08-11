@@ -119,6 +119,13 @@ new ZZ from ooo
 -- David Eisenbud
 
 -- Franziska Hinkelmann
+new String from List := (String,l) -> toString l
+{*
+new String from {1,2,1,3,4}
+ascii oo
+*}
+
+
 
 -- Lars Kastner
 
