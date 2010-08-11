@@ -294,6 +294,27 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
      )
            
  ------------------------------------------------------------------- 
+ 
+ meet = (A,B) -> (
+      termsA := terms A;
+      termsB := terms B;
+      if(#termsA > 1) then (
+	   return(meet(termsA#0, B) + meet(sum drop(termsA, {0,0}),B)); 
+	   );
+      if(#termsB > 1) then
+      	   return(meet(A, termsB#0) + meet(A, sum drop(termsB, {0,0}))); 
+      );
+      monoA := termsA#0;
+      monoB := termsB#0;
+ )
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  ------------------------------------------------------------------- 
   ----------------------Documentation------------------------------------- 
    ------------------------------------------------------------------- 
 
@@ -344,7 +365,7 @@ doc ///
    Text
    Example
   Caveat
-       We do not check if the input polynomial is multilinear.
+       We do not check if the input polynomial is multilinear.  We assume that the input polynomial P is already in the coordinate ring of the Grassmannian.
   SeeAlso
 ///
 
@@ -363,18 +384,31 @@ TEST ///
 end
 
 restart
-path = path|{"/Users/bb/Documents/math/M2codes/Colorado-2010"}
 uninstallPackage("CayleyFactorization")
 installPackage("CayleyFactorization", RemakeAllDocumentation => true )
+debug loadPackage "CayleyFactorization"
 viewHelp CayleyFactorization
 d = 2; n=5;
 Grassmannian(d,n);
-use((ring oo) / oo);
+R = (ring oo) / oo;
 partialAtoms = toList apply(0..n, i->set {i})
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
   P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
 cayleyFactor(P,d,n)
+
+E = ZZ[x_0..x_n, SkewCommutative => true]
+GC = E ** R
+I = ideal apply(subsets(0..n,d+1),s-> p_(toSequence(sort toList s)) - product apply(s, i-> x_i))
+GC1 = GC / I;
+ x_1*x_3*x_2*x_4
+
+A = x_0*x_1 + 2*x_3*x_4
+B = x_1*x_2 - x_0*x_4
+
+
+eliminate(apply(gens R, v -> promote(v,GC1)), x_1*x_3*x_2)
+
  
 l = {1,2,5}
 n=5;
@@ -420,6 +454,9 @@ L = reverse L
 factorBrackets(P,d,n,toList L) 
 findPairFactor(P,d,n,toList L)
 sigma = {2,3,0,1,5,7,6,8,4}
+
+
+
 ------ Jessica's tests
 
 end
