@@ -214,8 +214,7 @@ newPackage(
       --     	  If there are repeated indices, 0 is assigned
       -- OUTPUT: the Plucker variable with indices indexList
     	   if(#(set indexList) == #indexList) then (
-	   	 sig := sign indexList;
-       	    	 sig * sub(value ((baseName R_0)#0)_(toSequence(sort indexList)), R)
+       	    	 sign indexList * sub(value ((baseName R_0)#0)_(toSequence(sort indexList)), R)
 	    ) else (
 	    	 sub(0, R)
     		 )
@@ -225,8 +224,11 @@ newPackage(
 
   sign = sigma ->(
        -- Sign of a permutation
+       -- 0 if sigma contains repeated elements
        product apply(subsets(#sigma,2), l -> (
-		 if(sigma#(l#0) > sigma#(l#1)) then -1 else 1
+		 if(sigma#(l#0) > sigma#(l#1)) then (-1 )
+		 else if(sigma#(l#0) < sigma#(l#1) ) then (1)
+		 else (0)
 		 )
 	    )
        )
@@ -237,7 +239,7 @@ newPackage(
 
 -- INPUT:  P, a multilinear bracket expression, i.e. an element of coord. ring of Gr(d,n)
 --     	      where each element of 0..n appears exactly once in each monomial
--- OUTPUT:  null, if P is not Cayley-factorable.  Otherwise, output the Cayley factorization
+-- OUTPUT:  null, if P is not Cayley-factorable.  Otherwise, output the Cayley factorization.
 --     	    (,) denotes "meet" and {,} denotes "join"
 -- WARNING:  We assume is P is already an element of the coordinate ring of Gr(d,n)
 
