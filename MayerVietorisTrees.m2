@@ -14,7 +14,7 @@ newPackage(
         DebuggingMode => true
         )
 
-export {fullMVT,relMVT,relevantNodes}
+export {fullMVT,relMVT,relevantNodes,lowerBettiMVT,upperBettiMVT}
 
 --TO DO:
 -- v0: document methods
@@ -27,25 +27,25 @@ export {fullMVT,relMVT,relevantNodes}
 -- Internal Support Methods --
  ----------------------------
 
-pivot = method(Options => {Strat => 1});  --Chooses the pivot generator for creating a MVT from a monomial ideal
+pivot = method(Options => {PivotStrategy => 1});  --Chooses the pivot generator for creating a MVT from a monomial ideal
 pivot(Matrix) := o -> (I) -> {
-     if o.Strat == 1 then {
+     if o.PivotStrategy == 1 then {
      return first first entries I;}
      else return last first entries I;
      }
 
-idealRight = method(Options => {Strat => 1});  --Creates the right child of node in an MVT
+idealRight = method(Options => {PivotStrategy => 1});  --Creates the right child of node in an MVT
 idealRight(Matrix) := o -> (I) -> {
-     return gens (monomialIdeal I - monomialIdeal pivot(I,Strat => o.Strat));
+     return gens (monomialIdeal I - monomialIdeal pivot(I,PivotStrategy => o.PivotStrategy));
      }
 
-idealLeft = method(Options => {Strat => 1});   --Creates the left child of a node in an MVT
+idealLeft = method(Options => {PivotStrategy => 1});   --Creates the left child of a node in an MVT
 idealLeft(Matrix) := o -> (I) -> {
-     return gens intersect(monomialIdeal idealRight(I,Strat => o.Strat), monomialIdeal pivot(I,Strat => o.Strat));
+     return gens intersect(monomialIdeal idealRight(I,PivotStrategy => o.PivotStrategy), monomialIdeal pivot(I,PivotStrategy => o.PivotStrategy));
       -- this can be optimized (we're computing pivot 2x)
      }
 
-myFullMVT = method(Options => {Strat => 1});   --Creates a full MVT (all nodes, not just relevant ones)
+myFullMVT = method(Options => {PivotStrategy => 1});   --Creates a full MVT (all nodes, not just relevant ones)
 myFullMVT(Matrix,ZZ,ZZ) := o -> (M,myDim,myPos) -> {
      undone := {};
      undone = undone | {(M,0,1)};
@@ -54,22 +54,22 @@ myFullMVT(Matrix,ZZ,ZZ) := o -> (M,myDim,myPos) -> {
 	  undone = remove(undone,0);
 	  J := A#0;
 	  if numcols J > 1 then {
-	       L1 := idealLeft(J,Strat => o.Strat);
-	       L2 := idealRight(J,Strat => o.Strat);
+	       L1 := idealLeft(J,PivotStrategy => o.PivotStrategy);
+	       L2 := idealRight(J,PivotStrategy => o.PivotStrategy);
 	       L = L | {(L1,1+A#1,2*A#2)}; --relevant nodes
 	       L = L | {(L2,A#1,1+2*A#2)}; --irrelevant nodes
 	       if numcols L1 != 1 then {	       
 		    if numcols L1 == 2 then { 
-			 L11 := idealLeft(L1,Strat => o.Strat);
-			 L12 := idealRight(L1,Strat => o.Strat);
+			 L11 := idealLeft(L1,PivotStrategy => o.PivotStrategy);
+			 L12 := idealRight(L1,PivotStrategy => o.PivotStrategy);
 			 L = L | {(L11,2+A#1,4*A#2)} | {(L12,1+A#1,1+4*A#2)};
 			 }
 	       	    else  {undone = undone | {(L1,1+A#1,2*A#2)}};
 		    };
 	       if numcols L2 != 1 then {
 	       	    if numcols L2 == 2 then { 
-			 L21 := idealLeft(L2,Strat => o.Strat);
-			 L22 := idealRight(L2,Strat => o.Strat);
+			 L21 := idealLeft(L2,PivotStrategy => o.PivotStrategy);
+			 L22 := idealRight(L2,PivotStrategy => o.PivotStrategy);
 			 L = L | {(L21,1+A#1,2+4*A#2)} | {(L22,A#1,3+4*A#2)};
 		    	 }
 		    else {undone = undone | {(L2,A#1,1+2*A#2)}};
@@ -79,7 +79,7 @@ myFullMVT(Matrix,ZZ,ZZ) := o -> (M,myDim,myPos) -> {
      return L;
      }
 
-myRelMVT = method(Options => {Strat => 1});    --Creates a list of only the relevant nodes in an MVT
+myRelMVT = method(Options => {PivotStrategy => 1});    --Creates a list of only the relevant nodes in an MVT
 myRelMVT(Matrix,ZZ,ZZ) := o -> (M,myDim,myPos) -> {
      undone := {};
      undone = undone | {(M,0,1)};
@@ -88,22 +88,22 @@ myRelMVT(Matrix,ZZ,ZZ) := o -> (M,myDim,myPos) -> {
 	  undone = remove(undone,0);
 	  J := A#0;
 	  if numcols J > 1 then {
-	       L1 := idealLeft(J,Strat => o.Strat);
-	       L2 := idealRight(J,Strat => o.Strat);
+	       L1 := idealLeft(J,PivotStrategy => o.PivotStrategy);
+	       L2 := idealRight(J,PivotStrategy => o.PivotStrategy);
 	       L = L | {(L1,1+A#1,2*A#2)}; --relevant nodes
 	       --L = L | {(L2,A#1,1+2*A#2)}; --irrelevant nodes; not output
 	       if numcols L1 != 1 then {	       
 		    if numcols L1 == 2 then { 
-			 L11 := idealLeft(L1,Strat => o.Strat);
-			 L12 := idealRight(L1,Strat => o.Strat);
+			 L11 := idealLeft(L1,PivotStrategy => o.PivotStrategy);
+			 L12 := idealRight(L1,PivotStrategy => o.PivotStrategy);
 			 L = L | {(L11,2+A#1,4*A#2)};
 			 }
 	       	    else  {undone = undone | {(L1,1+A#1,2*A#2)}};
 		    };
 	       if numcols L2 != 1 then {
 	       	    if numcols L2 == 2 then { 
-			 L21 := idealLeft(L2,Strat => o.Strat);
-			 L22 := idealRight(L2,Strat => o.Strat);
+			 L21 := idealLeft(L2,PivotStrategy => o.PivotStrategy);
+			 L22 := idealRight(L2,PivotStrategy => o.PivotStrategy);
 			 L = L | {(L21,1+A#1,2+4*A#2)};
 		    	 }
 		    else {undone = undone | {(L2,A#1,1+2*A#2)}};
@@ -140,25 +140,6 @@ splitNodes(List) := (myList) -> {
    return (repList,nonRepList)
  }
 
---myMVT(ZZ,ZZ,Matrix) := o -> (pos,dimn,I) -> {  --ORIGINAL ALGORITHM
---     undone := {};
---     undone = undone | {(1,0,I)};
---     L := {(1,0,I)};
---     while undone != {} do { A := undone#0;
-	--  undone = remove(undone,0);
-	--  J := A#2;
-	--  if numcols J > 1 then {
-	--       L1 := idealLeft(J,Strat => o.Strat);
-	--       L2 := idealRight(J,Strat => o.Strat);
-	--       if numcols L1 > 1 then {undone = undone | {(2*A#0,1+A#1,L1)}};
-	--       if numcols L2 > 1 then {undone = undone | {(1+2*A#0,A#1,L2)}};
-	--       L = L | {(2*A#0,1+A#1,L1)}; --relevant nodes
-	--       L = L | {(1+2*A#0,A#1,L2)}; --irrelevant nodes
-	--  }
---     }; -- \ends the "do"
---     return L;
---     }
-
 maxDim = method();
 maxDim(List) := L -> {
      l = length L - 1;
@@ -181,17 +162,17 @@ maxReg(List) := L -> {
 -- Methods for Export --
  ----------------------
 
-fullMVT = method(Options => {Strat => 1} );
+fullMVT = method(Options => {PivotStrategy => 1} );
 fullMVT(MonomialIdeal) := o -> (I) -> {
      J := gens I;
-     T := myFullMVT(J,1,0, Strat => o.Strat);
+     T := myFullMVT(J,1,0, PivotStrategy => o.PivotStrategy);
      return T;
      }
   
-relMVT = method(Options => {Strat => 1} );
+relMVT = method(Options => {PivotStrategy => 1} );
 relMVT(MonomialIdeal) := o -> (I) -> {
      J := gens I;
-     T := myRelMVT(J,1,0, Strat => o.Strat);
+     T := myRelMVT(J,1,0, PivotStrategy => o.PivotStrategy);
      return T;
      }
 
@@ -208,27 +189,57 @@ relevantNodes(List) := (L) -> {
      return K;
      }
 
-projDim = method(Options => {Strat => 1});
+projDim = method(Options => {PivotStrategy => 1});
 projDim(MonomialIdeal) := o -> (I) -> {
-     myNodes := relNodesGens(relMVT(I,Strat => o.Strat));
+     myNodes := relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy));
      nonRep := first splitNodes(myNodes);
      rep := last splitNodes(myNodes);
      if maxDim(nonRep) >= maxDim(rep) then return maxDim(nonRep)
      else return (maxDim(nonRep),maxDim(rep));
      }
 
-reg = method(Options => {Strat => 1});
+reg = method(Options => {PivotStrategy => 1});
 reg(MonomialIdeal) := o -> (I) -> {
-     myNodes := relNodesGens(relMVT(I,Strat => o.Strat));
+     myNodes := relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy));
      nonRep := first splitNodes(myNodes);
      rep := last splitNodes(myNodes);
      if maxReg(nonRep) >= maxReg(rep) then return maxReg(nonRep)
      else return (maxReg(nonRep),maxReg(rep));
      }
 
---totalBetti = method(); -- outputs a BettiTally
+lowerBettiMVT = method(Options => {PivotStrategy => 1}); --returns lower bounds on the Betti numbers of a monomial ideal I
+lowerBettiMVT(MonomialIdeal) := o -> I -> {
+     L := (splitNodes(relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy))))#0;
+     M := apply(L, i->{i#1,i#0});
+     T := new MutableHashTable from apply(L,i->{i#1,{}});
+     for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
+     W := new HashTable from T;
+     Y := applyValues (W, tally);
+     B :={};
+     for i from 0 to #Y-1 do {
+     	  for j from 0 to #(Y#i)-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
+     	  };
+     t= new BettiTally from B;
+     return t
+     }
 
---gradedBetti = method(); -- outputs a BettiTally
+upperBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
+upperBettiMVT(MonomialIdeal) := o -> I -> {
+     L := (splitNodes(relNodesGens(relMVT(I,PivotStrategy => o.PivotStrategy))))#1;
+     M := apply(L, i->{i#1,i#0});
+     T := new MutableHashTable from apply(L,i->{i#1,{}});
+     for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
+     W := new HashTable from T;
+     Y := applyValues (W, tally);
+     B :={};
+     for i from 0 to #Y-1 do {
+     	  for j from 0 to #(Y#i)-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
+     	  };
+     t= new BettiTally from B;
+     return t
+     }
+
+--pseudoBettiMVT = method(); -- outputs a VirtualTally similar to a BettiTally that gives bounds on the dimension
 
 
 
@@ -255,17 +266,17 @@ document {
 TEST ///
     R = QQ[x,y,z]
     I = monomialIdeal "x2,x3y,xyz,z2"
-    idealLeft(gens I, Strat => 2)
-    idealLeft(gens I, Strat => 2)
+    idealLeft(gens I, PivotStrategy => 2)
+    idealLeft(gens I, PivotStrategy => 2)
     
-    myMVT(1,0,gens I, Strat => 2)
+    myMVT(1,0,gens I, PivotStrategy => 2)
          
-    L = relevantNodes(fullMVT(I,Strat => 2))
+    L = relevantNodes(fullMVT(I,PivotStrategy => 2))
     listOfPositions L
     
     pivot(gens I) 
     oo == x^2
-    pivot(gens I,Strat => 2) 
+    pivot(gens I,PivotStrategy => 2) 
     oo == z^2
     
     R = QQ[s_1..s_10]
@@ -310,8 +321,21 @@ reg(J)
 
 S = QQ[x,y,z]
 I = monomialIdeal "x2,y2,xy"
-relMVT(I,Strat => 2)
-relNodesGens(relMVT(I,Strat => 2))
-splitNodes(oo)
+relMVT(I,PivotStrategy => 2)
+relNodesGens(relMVT(I,PivotStrateg => 2))
+L = (splitNodes(oo))#0
 projDim(I)
 reg I
+
+restart
+load "MayerVietorisTrees.m2"
+installPackage "MayerVietorisTrees"
+
+R = QQ[x,y,z]
+I = monomialIdeal "x2,y2,xy,xz"
+relMVT(I)
+--relNodesGens(relMVT(I))
+upperBettiMVT(I)
+betti res I
+lowerBettiMVT(I) --Notice compatibility (repeated nodes don't matter here)
+
