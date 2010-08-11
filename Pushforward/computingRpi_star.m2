@@ -138,7 +138,8 @@ RpistarLinPres(Module) := (M) -> (
 
 
 Rpistar = method()
-Rpistar Module := (M) -> (F = RpistarLinPres truncateMultiGraded(regularityMultiGraded M, M);
+Rpistar Module := (M) -> (
+     F = RpistarLinPres truncateMultiGraded(regularityMultiGraded M, M);
      --now just show the relevant part of F
      G:=new ChainComplex;
      n := numgens ring M;
@@ -157,6 +158,33 @@ Rpistar Module := (M) -> (F = RpistarLinPres truncateMultiGraded(regularityMulti
      --     obtaining a complex FF over A.
      -- (3) return FF[-m]
 
+directImageComplex = method(Options => {Regularity=>null})
+directImageComplex Module := opts -> (M) -> (
+     S := ring M;
+     regM := if opts.Regularity === null then regularityMultiGraded M
+          else opts.Regularity;
+     degsM := degrees M/first;
+     if max degsM > regM then error("regularity is higher than you think!");
+     N := if min degsM === regM then M else truncateMultiGraded(regM,M);
+
+     xm = regM * degree(S_0);
+     phi = symmetricToExteriorOverA(N ** S^{xm});
+     E := ring phi;
+     F = complete res( image phi, LengthLimit => max(1,1+regM));
+     F = E^{-xm} ** F[regM];
+     F0 = degreeD(0, F);
+     toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
+     --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
+     F0A := toA F0;
+     G:=new ChainComplex;
+     G.ring = ring F0A;
+     n := numgens ring M;
+     for i from -n+1 to 1 do(
+	  G.dd_i = F0A.dd_i);
+     G
+     )
+
+
 truncateMultiGraded = method()
 truncateMultiGraded (ZZ, Module) := (d,M) -> (
      --Assumes that M is a module over a polynomial ring S=A[x0..xn]
@@ -166,11 +194,11 @@ truncateMultiGraded (ZZ, Module) := (d,M) -> (
      kk := ultimate (coefficientRing, S);
      S0 := kk[Variables => numgens S];
      f := map(S,S0, vars S);
-     L = ((degrees gens M)_1)/first;
+     L := (degrees M)/first;
      Md := image M_{};
      scan(#L, i-> 
 	  if L#i >= d then Md = Md + image M_{i} 
-	  else Md = (ideal f(basis(d-L#i, S0^1)))*(image M_{i}));
+	  else Md = Md+((ideal f(basis(d-L#i, S0^1)))*(image M_{i})));
      Md
      )
 
@@ -182,6 +210,18 @@ regularityMultiGraded (Module) := (M) -> (
      w := flatten {1,toList(deglen-1:0)};
      regularity (coker f presentation M, Weights=>w)
      )
+
+defoMatrix = d->(
+     --makes the presentation matrix of the universal extension of O(d) by O(-d) on P^1
+     A = kk[x_0..x_(2*d-2)];
+     S = A[y_0,y_1];
+     map(S^{{-d,1},2*d:{-d+1,0}}, S^{(2*d-1):{-d,0}}, (i,j)->(
+	       if i == 0 then sub(A_j, S) else
+	       if i == j+1 then S_0 else
+	       if i == j+2 then S_1 else
+	       0_S)
+     )
+)
 end	      
 --------------------------------
 restart
