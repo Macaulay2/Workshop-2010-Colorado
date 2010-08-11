@@ -50,16 +50,16 @@ identify(MixedGraph) := (g) -> (
 	v := bidirectedEdges(g);
 	n := #u;
 	
-	pL := join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply((v)#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
-	lL := delete(null,flatten(apply(keys(u), x-> apply((u)#x, y->l_(x,y) ))));
+	pL := join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply(toList v#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
+	lL := delete(null,flatten(apply(keys(u), x-> apply(toList u#x, y->l_(x,y) ))));
 	vertices := join(pL,lL);
 	m := #vertices;
 	-- replace above 4 lines with next line once it is implemented in Graphs 
 	-- m := numEdges(u)+numEdges(v); 
 	
 	SLP := QQ[vertices,s_(1,1)..s_(n,n), MonomialOrder => Eliminate m];
-	pL = join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply((v)#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
-	lL = delete(null,flatten(apply(keys(u), x-> apply((u)#x, y->l_(x,y) ))));	 
+	pL = join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply(toList v#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
+	lL = delete(null,flatten(apply(keys(u), x-> apply(toList u#x, y->l_(x,y) ))));	 
 	vertices = join(pL,lL);
 
 	SM := map(SLP^n,n,(i,j)->s_(i+1,j+1));
