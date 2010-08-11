@@ -172,7 +172,7 @@ qsAlgorithm(Matrix) := Matrix => phi -> (
 
 -- This computes a set of local solutions for a given unimodular row f.
 -- This still needs localSolution to be implemented.
-
+{*
 getLocalSolutions = method()
 getLocalSolutions(Matrix) := f -> (
      local I; local matrixList; local rList;
@@ -191,6 +191,7 @@ getLocalSolutions(Matrix) := f -> (
      )
      return(matrixList,rList);
 )
+*}
 
 
 beginDocumentation()
