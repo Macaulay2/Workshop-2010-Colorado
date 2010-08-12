@@ -144,6 +144,13 @@ toZZ List := List => L -> (
 defaultAlg := ((options FourierMotzkin1).Configuration)#"Algorithm"
 fourierMotzkin = method(Options => {Algorithm => defaultAlg});
 fourierMotzkin (Matrix, Matrix) := Sequence => opt -> (Z, H) ->(
+     -- checking for input errors
+     R := ring source Z;
+     if (R =!= ring source H) then
+     error ("expected matrices over the same ring");
+     if (rank target Z =!= rank target H) then
+     error ("expected matrices to have the same number of rows");
+     -- choosing algorithm defined by configuration
      alg := opt.Algorithm;
      if alg==="M2" then return fourierMotzkinM2 (Z, H)
      else if alg==="lrs" then return lrs (Z, H)
@@ -153,6 +160,7 @@ fourierMotzkin (Matrix, Matrix) := Sequence => opt -> (Z, H) ->(
      else error ("-- Invalid Algorithm option: " | alg | ".")
      )
 fourierMotzkin Matrix := Sequence => opt -> Z ->(
+     -- choosing algorithm defined by configuration
      alg := opt.Algorithm;
      if alg==="M2" then return fourierMotzkinM2 Z
      else if alg==="lrs" then return lrs Z
@@ -161,8 +169,6 @@ fourierMotzkin Matrix := Sequence => opt -> Z ->(
      else if alg==="gcdd" then return gcdd Z
      else error ("-- Invalid Algorithm option: " | alg |".")
      )
-
-
 
 
 -- Computes the dual representation for the polyhedral cone
@@ -178,13 +184,8 @@ fourierMotzkinM2 = method();
 --               space in the polar cone
 -- COMMENT :  'cone(Z) + affine(H) = {x : A^t * x <= 0, E^t * x = 0}'
 fourierMotzkinM2 (Matrix, Matrix) := Sequence => (Z, H) -> (
-     -- checking for input errors
-     R := ring source Z;
-     if (R =!= ring source H) then
-     error ("expected matrices over the same ring");
-     if (rank target Z =!= rank target H) then
-     error ("expected matrices to have the same number of rows");
      -- making 'QQ' versions of the input
+     R := ring source Z;
      local Y;
      local B;
      outputZZ := false;
@@ -344,7 +345,8 @@ lrs Matrix := Matrix => A ->(
      close F;
      execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with lrs, for details see " | rootPath | filename | ".txt.");
-     getMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     else getMatrix (filename | ".ext")
      )
 lrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return lrs A else(
@@ -355,7 +357,8 @@ lrs (Matrix,Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with lrs, for details see " | rootPath | filename | ".txt.");
-	  getMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     	  else getMatrix (filename | ".ext")
 	  )
      )
 
@@ -368,7 +371,8 @@ cdd Matrix := Matrix => A ->(
      close F;
      execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with cdd, for details see " | rootPath | filename | ".txt.");
-     getMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     else getMatrix (filename | ".ext")
      )
 cdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return cdd A else(
@@ -379,7 +383,8 @@ cdd (Matrix, Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with cdd, for details see " | rootPath | filename | ".txt.");
-	  getMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     	  else getMatrix (filename | ".ext")
 	  )
      )
 
@@ -415,7 +420,8 @@ glrs Matrix := Matrix => A ->(
      close F;
      execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with glrs, for details see " | rootPath | filename | ".txt.");
-     ggetMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     else ggetMatrix (filename | ".ext")
      )
 glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return glrs A else(
@@ -426,7 +432,8 @@ glrs (Matrix,Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with glrs, for details see " | rootPath | filename | ".txt.");
-	  ggetMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     	  else ggetMatrix (filename | ".ext")
 	  )
      )
 
@@ -439,7 +446,8 @@ gcdd Matrix := Matrix => A ->(
      close F;
      execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with gcdd, for details see " | rootPath | filename | ".txt.");
-     ggetMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     else ggetMatrix (filename | ".ext")
      )
 gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return gcdd A else(
@@ -450,7 +458,8 @@ gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with gcdd, for details see " | rootPath | filename | ".txt.");
-	  ggetMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
+     	  else ggetMatrix (filename | ".ext")
 	  )
      )
 
@@ -830,6 +839,28 @@ avisExt2 = sort transpose matrix {{ -1, 0, 0, 0, 0, 0}, { -1, -1, -1, 0, 0, 0},
 assert( (fourierMotzkin avisIn2)#0 == avisExt2)
 ///
 
+TEST ///
+Z = transpose random(ZZ^20,ZZ^50, Density=>.8, Height=>100)
+H = transpose random(ZZ^10,ZZ^50, Density=>.8, Height=>100)
+FM = fourierMotzkin (Z,H)
+GLRS = fourierMotzkin fourierMotzkin fourierMotzkin(Z,H, Algorithm=>"glrs")
+GCDD = fourierMotzkin fourierMotzkin fourierMotzkin(Z,H, Algorithm=>"gcdd")
+assert( FM#0==GLRS#0 )
+assert( FM#1==GLRS#1 )
+assert( FM#0==GCDD#0 )
+assert( FM#1==GCDD#1 )
+///
+
+TEST ///
+Z = transpose matrix {{1,0,0},{0,1,0},{0,0,1},{1,1,-1}}
+FM = fourierMotzkin Z
+GLRS = fourierMotzkin fourierMotzkin fourierMotzkin(Z, Algorithm=>"glrs")
+GCDD = fourierMotzkin fourierMotzkin fourierMotzkin(Z, Algorithm=>"gcdd")
+assert( FM#0==GLRS#0 )
+assert( FM#1==GLRS#1 )
+assert( FM#0==GCDD#0 )
+assert( FM#1==GCDD#1 )
+///
 end
 
 ------------------------------------------------------------
