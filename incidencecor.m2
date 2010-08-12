@@ -114,6 +114,7 @@ incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
 		   coefficient(k1(chern(i,Q1)*chern(j,QQ1)), e)*chern(i,Qa2)*chern(j,Q2))))))};
 	 pfmap := map(R2,R1',M1);
 	 pushforward := method();
+	 pushforward ZZ := pushforward QQ := r -> promote(r,R2);
 	 pushforward R1 := c -> (pfmap (k1 c));
 	 pushforward AbstractSheaf := E -> (
 	      abstractSheaf(I2,Rank => rank E, ChernClass => pushforward chern E));
@@ -122,6 +123,7 @@ incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
 		   coefficient(k2(chern(i,Q2)*chern(j,QS2)), e)*chern(i,QQ1)*chern(j,SQ1))))))};
 	 pbmap := map(R1,R2',M2);
 	 pullback := method();
+	 pullback ZZ := pullback QQ := r -> promote(r,R1);
 	 pullback R2 := c -> (pbmap (k2 c));
 	 pullback AbstractSheaf := E -> (
 	      abstractSheaf(I1,Rank => rank E, ChernClass => pullback chern E));
@@ -134,15 +136,13 @@ incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
 	 A1 := intersectionRing G1;
 	 A2 := intersectionRing G2;
 	 sourcetotarget := method();
-	 sourcetotarget A1 := c -> (
+	 sourcetotarget ZZ := sourcetotarget QQ :=
+	 sourcetotarget A1 := sourcetotarget AbstractSheaf := c -> (
 	      g_* (iso_* (f^* c)));
-	 sourcetotarget AbstractSheaf := E -> (
-	      g_* (iso_* (f^* E)));
 	 targettosource := method();
-	 targettosource A2 := c -> (
+	 targettosource ZZ := targettosource QQ :=
+	 targettosource A1 := targettosource AbstractSheaf := c -> (
 	      f_* (iso^* (g^* c)));
-	 targettosource AbstractSheaf := E -> (
-	      f_* (iso^* (g^* E)));
 	 rez := new IncidenceCorrespondence from {
 	      Source => G1,
 	      Target => G2,
@@ -203,6 +203,8 @@ g_* f^* c -- should be 3sigma_1 = 3L_(2,1)
 st = IC.SourceToTarget
 st c
 IC_* c
+IC_* 1
+IC^* 1
 
 c2 = schubertCycle({1,0},G2)
 f_* g^* c2 -- should be 0 because of dimension considerations
@@ -212,7 +214,7 @@ f_* g^* ((c2)^2)
 ts ((c2)^2)
 
 T = G2.TangentBundle
-f_* g^* T
+IC^* T
 T = G1.TangentBundle
 IC_* T
 
