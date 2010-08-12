@@ -315,7 +315,7 @@ document {
 	  "relMVT (I,PivotStrategy => 2)",
           },
      "If the user has input an MVT, the method ", EM "relevantNodes ", "outputs only the relevantn nodes of the tree."
-     Caveat => {"warning"}
+     Caveat => {"warning"},
      Subnodes => {
           TO fullMVT,
           TO relMVT,
