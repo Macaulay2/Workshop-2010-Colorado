@@ -188,8 +188,8 @@ pseudoBettiHelper(BettiTally,BettiTally) := (lowBetti,highBetti) -> {
 		  totals#(homDegList#i) = totals#(homDegList#i)#0
 		  };
 	     };
- 	return {tally printEntireList, peek totals};
-};
+ 	outPut = {tally printEntireList, peek totals}
+	}
 
  ----------------------
 -- Methods for Export --
@@ -250,14 +250,14 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
      Y := applyValues (W, tally);
      B :={};
      for i from 0 to #Y-1 do {
-     	  for j from 0 to #(Y#((keys Y)#i))-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
-     	  };
-     t= new BettiTally from B;
+     	  for j from 0 to #(Y#((keys Y)#i))-1 do B = append(B,((keys Y)#i,{(keys Y#((keys Y)#i))#j},(keys Y#((keys Y)#i))#j)=>(Y#((keys Y)#i))#((keys Y#((keys Y)#i))#j))
+	  };
+     t := new BettiTally from B;
      return t
      }
 
-upperBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
-upperBettiMVT(MonomialIdeal) := o -> I -> {
+undecidedBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
+undecidedBettiMVT(MonomialIdeal) := o -> I -> {
      L := ((splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#1);
      M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
@@ -266,15 +266,24 @@ upperBettiMVT(MonomialIdeal) := o -> I -> {
      Y := applyValues (W, tally);
      B :={};
      for i from 0 to #Y-1 do {
-     	  for j from 0 to #(Y#((keys Y)#i))-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
-     	  };
-     t= new BettiTally from B;
+     	  for j from 0 to #(Y#((keys Y)#i))-1 do B = append(B,((keys Y)#i,{(keys Y#((keys Y)#i))#j},(keys Y#((keys Y)#i))#j)=>(Y#((keys Y)#i))#((keys Y#((keys Y)#i))#j))
+	  };
+     t := new BettiTally from B;
+     return t
+     }
+
+upperBettiMVT = method(Options => {PivotStrategy => 1});
+upperBettiMVT(MonomialIdeal) := o -> I -> {
+     t := lowerBettiMVT(I,PivotStrategy => o.PivotStrategy) ++ undecidedBettiMVT(I,PivotStrategy => o.PivotStrategy);
      return t
      }
 
 pseudoBettiMVT = method(Options => {PivotStrategy => 1}); -- outputs a VirtualTally similar to a BettiTally that gives bounds on the dimension
 pseudoBettiMVT(MonomialIdeal) := o -> I -> {
-     return pseudoBettiHelper(lowerBettiMVT(I, PivotStrategy => o.PivotStrategy),upperBettiMVT(I, PivotStrategy => o.PivotStrategy));
+     LB := lowerBettiMVT(I, PivotStrategy => o.PivotStrategy);
+     UB := upperBettiMVT(I, PivotStrategy => o.PivotStrategy);
+     P := pseudoBettiHelper(LB,UB);
+     return P
      }
 
 
@@ -324,6 +333,7 @@ TEST ///
     
 restart
 installPackage "MayerVietorisTrees"
+load "MayerVietorisTrees.m2"
 R = QQ[x,y,z]
 I = monomialIdeal "x2,x3y,xyz,z2"
 J = monomialIdeal "x2,y2,xy,xz,yz"
@@ -331,6 +341,8 @@ upperBettiMVT(I)
 lowerBettiMVT(I)
 upperBettiMVT(J)
 lowerBettiMVT(J)
+
+pseudoBettiHelper(lowerBettiMVT(J),upperBettiMVT(J))
 pseudoBettiMVT(I)
 pseudoBettiMVT(J)
 
@@ -367,8 +379,8 @@ I = monomialIdeal "x2,y2,xy"
 relMVT(I,PivotStrategy => 2)
 relNodesGens(relMVT(I,PivotStrategy => 2))
 L = (splitNodes(oo))#0
-projDim(I)
-reg I
+projDimMVT(I)
+regMVT I
 upperBettiMVT(I)
 lowerBettiMVT(I)
 pseudoBettiMVT(I)
