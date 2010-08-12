@@ -354,8 +354,8 @@ beginDocumentation()
 
 document { 
      Key => MayerVietorisTrees,
-     Headline => "The package creates and manipulates Mayer-Vietoris trees (MVTs) to compute bounds on homological invariants for monomial ideals.",
-     "The package can output full MVTs or MVTs containing only the relevant nodes.",
+     Headline => "Computes bounds on homological invariants for monomial ideals.",
+     "This package can output full MVTs or MVTs containing only the relevant nodes.",
      EXAMPLE {
           "R = QQ[x,y,z]",
           "I = monomialIdeal(x^2,y^2,x*y)",
@@ -374,8 +374,8 @@ document {
           "relMVT I",
 	  "relMVT (I,PivotStrategy => 2)",
           },
-     "If the user has input an MVT, the method ", EM "relevantNodes ", "outputs only the relevantn nodes of the tree.",
-     Caveat => {"warning"},
+     "If the user has input an MVT, the method " TO relevantNodes " outputs only the relevant nodes of the tree.",
+     Caveat => {"This package is most useful for computing small examples."},
      Subnodes => {
           TO fullMVT,
           TO relMVT,
@@ -390,64 +390,98 @@ document {
      }
      
 document {
-     Key => fullMVT,
-     Headline => "Outputs a Mayer-Vietoris Tree from a monomial ideal.",
-     Usage => "usage",
+     Key => {fullMVT,(fullMVT,MonomialIdeal)},
+     Headline => "Outputs a Mayer-Vietoris Tree from a monomial ideal. ",
+     Usage => T = fullMVT(I),
      Inputs => {
 	  MonomialIdeal
           -- each input is a hypertext list
           },
      Outputs => {
-          "A Mayer-Vietoris tree (MVT)"
+          List
 	  -- each output is a hypertext list
           },
-     Consequences => {
-          -- each effect is a hypertext list
-          },
-     "There can be explanatory prose here in the form of a hypertext list.",
      EXAMPLE {
-          "m2code",
-          "m2code",
-          "m2code"
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "fullMVT (I,PivotStrategy => 2)"
           },
-     "There can be explanatory prose here in the form of a hypertext list.",
-     Caveat => {"warning"}
+     Caveat => {"This method is inefficient for computing large examples."}
      }
-   
+
 document {
-     Key => (fullMVT,MonomialIdeal),
-     Usage => "usage",
+     Key => [fullMVT, PivotStrategy],
+     Usage => "fullMVT(...,PivotStrategy => n)",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "fullMVT (I,PivotStrategy => 2)"
+          },
+     }
+
+document {
+     Key => {relMVT, (relMVT,MonomialIdeal)},
+     Headline => "Outputs the relevant nodes of a Mayer-Vietoris tree from a monomial ideal.",
+     Usage => "relMVT(I)",
      Inputs => {
+	  I:MonomialIdeal,
           -- each input is a hypertext list
           },
      Outputs => {
-          -- each output is a hypertext list
+          T:List
+	  -- each output is a hypertext list
           },
-     Consequences => {
-          -- each effect is a hypertext list
-          },
-     "There can be explanatory prose here in the form of a hypertext list.",
      EXAMPLE {
-          "m2code",
-          "m2code",
-          "m2code"
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "relMVT (I,PivotStrategy => 2)"
           },
-     "There can be explanatory prose here in the form of a hypertext list.",
-     Caveat => {"warning"}
+     Caveat => {"This method is inefficient for computing large examples."}
+     }
+
+document {
+     Key => [relMVT, PivotStrategy],
+     Usage => "relMVT(...,PivotStrategy => n) ",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "relMVT (I,PivotStrategy => 2)"
+          },
+     }
+
+document {
+     Key => {relevantNodes, (relevantNodes,List)},
+     Headline => "Outputs the relevant nodes of any list in the form of a Mayer Vietoris tree. ",
+     Usage => "relevantNodes(L)",
+     Inputs => {
+	  L:List, " of the form of an MVT.",
+          -- each input is a hypertext list
+          },
+     Outputs => {
+          T:List
+	  -- each output is a hypertext list
+          },
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "relMVT I",
+	  "relevantNodes oo"
+          },
+     Caveat => {"This method only understands lists that appear as those output by ", TO fullMVT, " or ", TO relMVT, " ."}
      }
    
    
 document {
      Key => PivotStrategy,
      Headline => "An option to specify how pivot generators are chosen.",
-     "The default option is 1.",
-     "PivotStrategy => 1 chooses the largest generator with respect to ambient monomial ordering for the ring.",
+     "The default option is 1 .",
+     "PivotStrategy => 1 chooses the largest generator with respect to ambient monomial ordering for the ring. ",
      EXAMPLE {
           "R = QQ[x,y,z]",
           "I = monomialIdeal(x^2,y^2,x*y)",
           "fullMVT(I,PivotStrategy => 1)"
           },
-     "PivotStrategy => 2 chooses the smallest generator with respect to the ambient monomial ordering for the ring.",
+     "PivotStrategy => 2 chooses the smallest generator with respect to the ambient monomial ordering for the ring. ",
      EXAMPLE {
           "R = QQ[x,y,z]",
           "I = monomialIdeal(x^2,y^2,x*y)",
@@ -455,6 +489,181 @@ document {
           },
      Caveat => {"Only two strategies are currently implemented."}
      }
+
+document {
+     Key => {hilbertSeriesMVT,(hilbertSeriesMVT,MonomialIdeal)},
+     Headline => "computes the numerator of the Hilbert series",
+     Usage => "hilbertSeriesMVT I",
+     Inputs => {
+          MonomialIdeal
+          },
+     Outputs => {
+          RingElement
+          },
+     "The Hilbert series is a formal power series whose coefficients are the dimensions of the corresponding graded component. Note that the numerator is provided as a polynomial in the variables of the ring.",
+     EXAMPLE {
+          "R=QQ[x,y]",
+          "I=monomialIdeal(x^2,y^2,x*y)",
+          "hilbertSeriesMVT I"
+          },
+ --    "There can be explanatory prose here in the form of a hypertext list.",
+     Caveat => {"Only the numerator of the Hilbert series is returned. The numerator is not reduced."}
+     }
+
+document {
+     Key => {projDimMVT,(projDimMVT,MonomialIdeal)},
+     Headline => "computes bounds for the projective dimension ",
+     Usage => "projDimMVT I",
+     Inputs => {
+          MonomialIdeal
+          },
+     Outputs => {
+          ZZ or {ZZ,ZZ}
+          },
+     "Bounds for the projective dimension are computed using both nonrepeated nodes and repeated nodes.  If the values agree, this value is returned.  Otherwise both values are returned in a list.",
+     EXAMPLE {
+          "R=QQ[x,y]",
+          "I=monomialIdeal(x^2,y^2,x*y)",
+          "projDimMVT I"
+          }
+ --    "There can be explanatory prose here in the form of a hypertext list.",
+ --    Caveat => {"warning"},
+     SeeAlso => {"regMVT"},
+     }
+
+document {
+     Key => [projDimMVT, PivotStrategy],
+     Usage => "projDimMVT(...,PivotStrategy => n)",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "projDimMVT (I,PivotStrategy => 2)"
+          },
+     }
+
+document {
+     Key => {regMVT,(regMVT,MonomialIdeal)},
+     Headline => "computes the regularity",
+     Usage => "regMVT I",
+     Inputs => {
+          MonomialIdeal
+          },
+     Outputs => {
+          ZZ or {ZZ,ZZ}
+          },
+     "Bounds for the regularity are computed using both nonrepeated nodes and repeated nodes.  If the values agree, this value is returned.  Otherwise both values are returned in a list.",
+     EXAMPLE {
+          "R=QQ[x,y]",
+          "I=monomialIdeal(x^2,y^2,x*y)",
+          "regMVT I"
+          }
+ --    "There can be explanatory prose here in the form of a hypertext list.",
+ --    Caveat => {"warning"},
+     SeeAlso => {"projDimMVT"},
+     }
+
+document {
+     Key => [regMVT, PivotStrategy],
+     Usage => "regMVT(...,PivotStrategy => n)",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal (x^2,y^2,x*y)",
+          "regMVT (I,PivotStrategy => 2)"
+          },
+     }
+
+document {
+     Key => lowerBettiMVT,
+     Headline=>"Outputs lower bounds for the Betti numbers of a monomial ideal, based on a Mayer-Vietoris tree of it."
+}
+
+
+document {
+     Key => (lowerBettiMVT,MonomialIdeal),
+     Headline=>"Outputs lower bounds for the Betti numbers of a monomial ideal, based on a Mayer-Vietoris tree of it."
+     Usage => "lowerBettiMVT(I)",
+     Inputs => {
+          MonomialIdeal
+          -- each input is a hypertext list
+          },
+     Outputs => {
+          "A Betti diagram"
+          -- each output is a hypertext list
+          },
+     EXAMPLE {
+          "R=QQ[x,y,z]",
+          "I = monomialIdeal(x^2,y^2,x*y)",
+          "lowerBettiMVT(I)"
+          },
+     }
+
+document {
+     Key => [upperBettiMVT, PivotStrategy]
+     Headline=>"The Pivot Strategy is the one that will be used for the computation of the Mayer-Vietoris tree."
+}
+
+document {
+     Key => upperBettiMVT,
+     Headline=>"Outputs lower bounds for the Betti numbers of a monomial ideal, based on a Mayer-Vietoris tree of it."
+}
+
+
+document {
+     Key => (upperBettiMVT,MonomialIdeal),
+     Headline=>"Outputs upper bounds for the Betti numbers of a monomial ideal, based on a Mayer-Vietoris tree of it."
+     Usage => "lowerBettiMVT(I)",
+     Inputs => {
+          MonomialIdeal
+          -- each input is a hypertext list
+          },
+     Outputs => {
+          "A Betti diagram"
+          -- each output is a hypertext list
+          },
+     EXAMPLE {
+          "R=QQ[x,y,z]",
+          "I = monomialIdeal(x^2,y^2,x*y)",
+          "upperBettiMVT(I)"
+          },
+     }
+
+document {
+     Key => [upperBettiMVT, PivotStrategy]
+     Headline=>"The Pivot Strategy is the one that will be used for the computation of the Mayer-Vietoris tree."
+}
+
+document {
+     Key => pseudoBettiMVT,
+     Headline=>"Outputs lower and upper bounds for the Betti numbers of a monomial ideal, based on a Mayer-Vietoris tree of it."
+}
+
+
+document {
+     Key => (pseudoBettiMVT,MonomialIdeal),
+     Headline=>"Outputs lower and upper bounds for the Betti numbers of a monomial ideal, based on a Mayer-Vietoris tree of it."
+     Usage => "pseudoBettiMVT(I)",
+     Inputs => {
+          MonomialIdeal
+          -- each input is a hypertext list
+          },
+     Outputs => {
+          "A Betti diagram in which each entry is either an integer, which in that case is the corresponding Betti number of the ideal, or a pair of integers, which in that case are a lower and an upper bound for that particular Betti number of the ideal."
+          -- each output is a hypertext list
+          },
+     EXAMPLE {
+          "R=QQ[x_1..x_6]",
+          "I = monomialIdeal(x_1*x_2,x_2*x_3,x_3*x_4,x_4*x_5,x_5*x_6,x_6*x_1)",
+          "lowerBettiMVT(I)"
+          "upperBettiMVT(I)"
+          "pseudoBettiMVT(I)"
+          },
+     }
+
+document {
+     Key => [upperBettiMVT, PivotStrategy]
+     Headline=>"The Pivot Strategy is the one that will be used for the computation of the Mayer-Vietoris tree."
+}
+
 
 
 TEST ///
