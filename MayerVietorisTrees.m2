@@ -16,7 +16,7 @@ newPackage(
         DebuggingMode => true
         )
 
-export {fullMVT,relMVT,relevantNodes,projDimMVT,regMVT,lowerBettiMVT,upperBettiMVT,pseudoBettiMVT,PivotStrategy}
+export {fullMVT, relMVT, relevantNodes, projDimMVT, regMVT, lowerBettiMVT, upperBettiMVT, pseudoBettiMVT, PivotStrategy, hilbertSeriesMVT}
 
 --TO DO:
 -- v0: document methods
@@ -192,6 +192,30 @@ pseudoBettiHelper(BettiTally,BettiTally) := (lowBetti,highBetti) -> {
  	outPut = {tally printEntireList, peek totals}
 	}
 
+refineUndecided = method(TypicalValue=> List);
+refineUndecided(List,List):=(U,D)-> {
+    Und:=U;
+    Dec:=D;
+    M:=apply(Und, i->{i#1,i#2});
+    T:= new MutableHashTable from apply(U,i->{i#0,{}});
+    for i from 0 to #U-1 do T#(U#i#0)= append(T#(U#i#0),U#i#1);    
+    W:=new HashTable from T;
+    Y:=new MutableHashTable from applyValues(W, tally);
+    L:=#(keys Y);
+    for i from 0 to L-1 do
+    {
+      if (#Y#((keys Y)#i)==1) then 
+        {
+         dec=positions(Und,k->first k == (keys Y)#i);   --last parenthesis was omitted!
+         Dec=append(Dec,take(Und,{first dec, last dec}));
+         Und=drop(Und,{first dec, last dec});
+        }
+      else null;
+    };
+    return {Und, flatten Dec}
+};
+
+
  ----------------------
 -- Methods for Export --
  ----------------------
@@ -286,6 +310,17 @@ pseudoBettiMVT(MonomialIdeal) := o -> I -> {
      P := pseudoBettiHelper(LB,UB);
      return P
      }
+
+hilbertSeriesMVT = method(TypicalValue => RingElement); --returns the numerator of the multigraded Hilbert series of an ideal I
+hilbertSeriesMVT(MonomialIdeal) := I -> {
+     L:=relMVT(I);
+     L1:=apply(#L,i->{first entries L#i#0,L#i#1});
+     Numerator:=sub(0,ring first first first L1);
+     for i from 0 to #L1-1 do Numerator=Numerator+sum(L1#i#0)*(-1)^(L1#i#1);
+     return Numerator
+};    --should the output be a fraction of class 'divide' instead of just the numerator?
+
+
 
  -----------------
 -- Documentation --
