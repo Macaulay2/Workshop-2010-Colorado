@@ -11,8 +11,146 @@ newPackage(
     	)
    
    export{cayleyFactor}
-   -- Jessica's code:  Step 1 --
+   
+   
+    ------------------------------------------------------------------- 
+-------------------  the main function -------------------------
+ ------------------------------------------------------------------- 
+
+-- INPUT:  P, a multilinear bracket expression, i.e. an element of coord. ring of Gr(d,n)
+--     	      where each element of 0..n appears exactly once in each monomial
+-- OUTPUT:  null, if P is not Cayley-factorable.  Otherwise, output the Cayley factorization.
+--     	    (,) denotes "meet" and {,} denotes "join"
+-- WARNING:  We assume is P is already an element of the coordinate ring of Gr(d,n)
+
+cayleyFactor = method();
+cayleyFactor(RingElement, ZZ, ZZ) := Expression => (P,d,n) -> (
+     cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
+     )
+cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) -> (
+     if((degree P)#0 <= 0) then (return(P));
+     knownFactors := null;
+     atoms := toList listAtoms(P, partialAtoms, d, n); -- Step 1
+     if(#select(atoms, a -> #a >= d+1) <= 0 and (max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
+--	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
+--	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
+	  return(null);
+	  ); 
+     pureFactors := factorBrackets(P,d,n,atoms); -- Step 2
+     if(#pureFactors#0 > 0) then (
+    	  knownFactors = flatten sequence apply(pureFactors#0, a -> sort toList a);
+       	  P = pureFactors#1;
+       	  atoms = toList((set atoms) - (set pureFactors#0));
+	  if(#atoms == 0 or (degree P)#0 <= 0)then (
+--	       print( "after step 2: ", knownFactors);
+	       return(knownFactors);
+	       )
+       	  );
+     pairFactor := findPairFactor(P,d,n,atoms); -- Steps 3 and 4
+     if(pairFactor === null) then (
+--	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
+	  return(null);
+	  );
+     if(knownFactors === null) then (
+	  knownFactors = flatten sequence pairFactor#0;
+       	  ) else (
+	  knownFactors = (knownFactors, flatten sequence pairFactor#0);
+	  );
+     newIndices := pairFactor#2;
+     newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {set newIndices};
+     expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
+ --    print("trying to factor ", toString pairFactor#1);
+ --    print("new partial atoms: ", newPartialAtoms);
+ --    print("expansionKey: ", expansionKey);
+     smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms);
+     if(smallerFactors === null) then (
+--	 print("not factorable, recursive step. P = ", P, "atoms = ", atoms);
+	  return(null);
+	  ) else (
+--	  print("smaller Factors: ", smallerFactors);
+--	  print("after substitution: ", replace(expansionKey#0, expansionKey#1, toString smallerFactors));
+     	  return(value replace(expansionKey#0, expansionKey#1, toString smallerFactors));
+	  );
+     )
+           
+	   
+	   
+	   
+ ------------------------------------------------------------------- 
+ --------------- Grassmann-Cayley algebra ---------------------------
+ -------------------------------------------------------------------
+
+meet = method()
+
+GrassmannCayleyAlgebra =  method(
+     TypicalValue => Ring, 
+     Options => { 
+	  CoefficientRing => ZZ, 
+	  PointName => symbol a,
+	  BasisChoice => symbol e,
+	  PluckerVariable => symbol p
+	  });
+
+GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
+      a := o.PointName;
+      e := o.BasisChoice;
+      p := o.PluckerVariable;
+      G := Grassmannian(d,n, CoefficientRing => o.CoefficientRing, Variable => p);
+      R := ring(G)/G;
+      E := o.CoefficientRing[a_0..a_n, e_0..e_d, SkewCommutative => true];
+      GC0 := E ** R;
+      use(GC0);      
+      I := ideal apply(a_0..a_n, v-> v_GC0* product(apply(toList(e_0..e_d), ee -> ee_GC0))) + 
+     ideal apply(subsets(0..n,d+1),s-> (p_(toSequence(sort toList s)))_GC0*product(apply(toList(e_0..e_d), ee->ee_GC0))- product apply(s, i-> (a_i)_GC0));
+     GC := GC0/I;
+      
+     meet(GC, GC, ZZ,ZZ) := (A,B, d, n) -> (
+      termsA := terms A;
+      termsB := terms B;
+      if(#termsA > 1) then (
+	   return(meet(termsA#0, B,d,n) + meet(sum drop(termsA, {0,0}),B, d,n)); 
+	   );
+      if(#termsB > 1) then (
+      	   return(meet(A, termsB#0,d,n) + meet(A, sum drop(termsB, {0,0}), d,n)); 
+	   );
+      monoA := termsA#0;
+      monoB := termsB#0;
+      degA := (degree(monoA))#0;
+      degB := (degree(monoB))#0;
+      if(degA + degB < d+1) then (return(0));
+      sum apply(subsets(degA , d+1 - degB), S -> (
+		coeffA := (first listForm(monoA))#1;
+		insideA := sort toList S;
+		outsideA := sort toList (set(0..degA-1) - S);
+     	        signOfShuffle := sign(insideA|outsideA);
+		insideMonoA := product apply(insideA, i -> (support monoA)#i); 
+		outsideMonoA := product(set(support monoA) - {insideMonoA});
+		bracket :=insideMonoA*monoB;
+		if(bracket == 0) then (0)
+		else (
+		     bracketCoeff :=  (first listForm(bracket))#1;
+		     bracket = product drop(support(bracket),{0,d});
+		     signOfShuffle*coeffA*bracketCoeff*bracket*outsideMonoA
+		     )
+		)	   
+	   )
+      );
+ GC
+      )
+ 
+ 
+ 
+ 
+ 
+
+
+ 
+	   
+
    ----------------------------------------------------
+ -----------------Step 1 functions ---------------------
+   ----------------------------------------------------
+
    listAtoms = method()
      
    listAtoms(RingElement, ZZ, ZZ) := (P, d, n) ->(
@@ -110,7 +248,6 @@ newPackage(
    permutePoints(P,d,n,points) == 0_R
 )	     
 
-  -- Josephine's code:  Step 2 --
  
  ------------------- Step 2 ------------------------------------------------ 
   
@@ -233,110 +370,11 @@ newPackage(
 	    )
        )
 
- ------------------------------------------------------------------- 
--------------------  the main function -------------------------
- ------------------------------------------------------------------- 
 
--- INPUT:  P, a multilinear bracket expression, i.e. an element of coord. ring of Gr(d,n)
---     	      where each element of 0..n appears exactly once in each monomial
--- OUTPUT:  null, if P is not Cayley-factorable.  Otherwise, output the Cayley factorization.
---     	    (,) denotes "meet" and {,} denotes "join"
--- WARNING:  We assume is P is already an element of the coordinate ring of Gr(d,n)
-
-cayleyFactor = method();
-cayleyFactor(RingElement, ZZ, ZZ) := Expression => (P,d,n) -> (
-     cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
-     )
-cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) -> (
-     if((degree P)#0 <= 0) then (return(P));
-     knownFactors := null;
-     atoms := toList listAtoms(P, partialAtoms, d, n); -- Step 1
-     if(#select(atoms, a -> #a >= d+1) <= 0 and (max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
---	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
---	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
-	  return(null);
-	  ); 
-     pureFactors := factorBrackets(P,d,n,atoms); -- Step 2
-     if(#pureFactors#0 > 0) then (
-    	  knownFactors = flatten sequence apply(pureFactors#0, a -> sort toList a);
-       	  P = pureFactors#1;
-       	  atoms = toList((set atoms) - (set pureFactors#0));
-	  if(#atoms == 0 or (degree P)#0 <= 0)then (
---	       print( "after step 2: ", knownFactors);
-	       return(knownFactors);
-	       )
-       	  );
-     pairFactor := findPairFactor(P,d,n,atoms); -- Steps 3 and 4
-     if(pairFactor === null) then (
---	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
-	  return(null);
-	  );
-     if(knownFactors === null) then (
-	  knownFactors = flatten sequence pairFactor#0;
-       	  ) else (
-	  knownFactors = (knownFactors, flatten sequence pairFactor#0);
-	  );
-     newIndices := pairFactor#2;
-     newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {set newIndices};
-     expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
- --    print("trying to factor ", toString pairFactor#1);
- --    print("new partial atoms: ", newPartialAtoms);
- --    print("expansionKey: ", expansionKey);
-     smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms);
-     if(smallerFactors === null) then (
---	 print("not factorable, recursive step. P = ", P, "atoms = ", atoms);
-	  return(null);
-	  ) else (
---	  print("smaller Factors: ", smallerFactors);
---	  print("after substitution: ", replace(expansionKey#0, expansionKey#1, toString smallerFactors));
-     	  return(value replace(expansionKey#0, expansionKey#1, toString smallerFactors));
-	  );
-     )
-           
- ------------------------------------------------------------------- 
- 
- 
- meet = (A,B, d, n) -> (
-      termsA := terms A;
-      termsB := terms B;
-      if(#termsA > 1) then (
-	   return(meet(termsA#0, B,d,n) + meet(sum drop(termsA, {0,0}),B, d,n)); 
-	   );
-      if(#termsB > 1) then (
-      	   return(meet(A, termsB#0,d,n) + meet(A, sum drop(termsB, {0,0}), d,n)); 
-	   );
-      monoA := termsA#0;
-      monoB := termsB#0;
-      degA := (degree(monoA))#0;
-      degB := (degree(monoB))#0;
-      if(degA + degB < d+1) then (return(0));
-      sum apply(subsets(degA , d+1 - degB), S -> (
-		coeffA := (first listForm(monoA))#1;
-		insideA := sort toList S;
-		outsideA := sort toList (set(0..degA-1) - S);
-     	        signOfShuffle := sign(insideA|outsideA);
-		insideMonoA := product apply(insideA, i -> (support monoA)#i); 
-		outsideMonoA := product(set(support monoA) - {insideMonoA});
-		bracket :=insideMonoA*monoB;
-		if(bracket == 0) then (0)
-		else (
-		     bracketCoeff :=  (first listForm(bracket))#1;
-		     bracket = product drop(support(bracket),{0,d});
-		     signOfShuffle*coeffA*bracketCoeff*bracket*outsideMonoA
-		     )
-		)	   
-	   )
- )
-
- 
- 
- 
- 
- 
  
  
   ------------------------------------------------------------------- 
-  ----------------------Documentation------------------------------------- 
+  ----------------------Documentation--------------------------------
    ------------------------------------------------------------------- 
 
 beginDocumentation()
@@ -408,11 +446,15 @@ restart
 uninstallPackage("CayleyFactorization")
 installPackage("CayleyFactorization", RemakeAllDocumentation => true )
 debug loadPackage "CayleyFactorization"
+
+GrassmannCayleyAlgebra(2,5)
+
 viewHelp CayleyFactorization
 d = 2; n=5;
 Grassmannian(d,n);
 R = (ring oo) / oo;
 partialAtoms = toList apply(0..n, i->set {i})
+P = -p_(0,1,2)*p_(0,3,4)*p_(1,3,5)*p_(2,4,5)+p_(0,1,3)*p_(0,2,4)*p_(1,2,5)*p_(3,4,5)
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
   P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
@@ -428,7 +470,12 @@ GC1 = GC / I;
 
 A = 2*p_(0,1,2)*a_3*a_4
 B = a_1*a_2 - a_0*a_4
-meet(A,B,d,n)
+
+meet(a_0*a_1, a_3*a_4,d,n)*meet(a_1*a_2, a_4*a_5,d,n)*meet(a_2*a_3, a_5*a_0,d,n)
+
+meet( meet( a_0*a_1, a_2*a_3, d,n) , a_4*a_5, d, n)
+use R
+cayleyFactor( p_(0,1,3)*p_(2,4,5)-p_(0,1,2)*p_(3,4,5), d,n)
 
 eliminate(apply(gens R, v -> promote(v,GC1)), x_1*x_3*x_2)
 
@@ -471,7 +518,7 @@ use((ring oo) / oo);
 P = p_(0,3,4,5)*p_(1,2,6,7) - p_(1,3,4,5)*p_(0,2,6,7) +p_(2,3,4,5)*p_(0,1,6,7);
 
 
-L=listAtoms(P, 2, 8);
+L=listAtoms(P, 2, 5);
 L = apply((toList L),a->toList a)
 L = reverse L
 factorBrackets(P,d,n,toList L) 
