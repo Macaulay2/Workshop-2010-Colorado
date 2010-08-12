@@ -19,10 +19,6 @@ newPackage(
 export {
 	Poset,
 	poset,
---	DirectedGraph,
---	directedGraph,
-	adjacencyMatrix,
-	allPairsShortestPath,
 	transitiveClosure,
 --     FullRelationMatrix,
 	RelationMatrix,
@@ -31,8 +27,6 @@ export {
 	filter,
 	Relations,
 	GroundSet,
---	Vertices,
---	DirectedEdges,
 	posetMeet, 
 	meetExists, -- do tests for
 	posetJoin,
@@ -86,40 +80,7 @@ poset(List,List,Matrix) := (I,C,M) ->
 	  symbol cache => new CacheTable
 	  }
      
---------------
-
---inputs: (I,C), I is a List (ground set or vertex set) and C is a List of pairs of elements in I
---     	     OR DirectedGraph OR Poset
---output: a matrix whose rows and columns are indexed by I, 
---     	    where (i,j) entry is infinity (i.e. 1/0.) if (i,j) is not in C
---     	    and 1 otherwise (i.e. tropicalization of the "usual" adjacency matrix)
---caveat: diagonal entries are 0
--- uses:  transitive closure 
-
---adjacencyMatrix = method()  (in Graphs.m2)
-adjacencyMatrix(List,List) := Matrix => (I, C) -> (
-     M := mutableMatrix table(#I, #I, (i,j)->1/0.);
-     ind := hashTable( apply(I, i-> i=> position(I,j-> j==i) )  ); --indices 
-     scan(C, e -> M_(ind#(e#0), ind#(e#1))= 1);
-     scan(numrows M, i-> M_(i,i) = 0);
-     matrix M      
-     )
---adjacencyMatrix(DirectedGraph) := Matrix => (G) -> adjacencyMatrix(G.Vertices,G.DirectedEdges)
-adjacencyMatrix(Poset) := Matrix => (P) -> adjacencyMatrix(P.GroundSet,P.Relations)
-
---input: adjacency matrix of a directed graph
---output: a matrix whose (i,j) entry is the length of the shortest path from i to j
---algorithm: Floyd–Warshall algorithm for all pairs shortest path
-allPairsShortestPath = method()
-allPairsShortestPath(Matrix) := Matrix => (A) -> (
-     D := mutableMatrix(A);
-     n := numrows D;
-     scan(n, k->
-	       table(n,n,(i,j)-> D_(i,j) = min(D_(i,j), D_(i,k)+D_(k,j)))
-	  );
-     matrix D
-     )
---allPairsShortestPath(DirectedGraph) := Matrix => (G)-> allPairsShortestPath(adjacencyMatrix(G))
+-- DirectedGraph, adjacencyMatrix and allPairsShortestPath were moved to Graphs.m2
 
 -- input: a poset, and an element A from I
 -- output:  the index of A in the ground set of P
@@ -143,18 +104,11 @@ nonnull :=(L) -> (
 --uses: poset
 
 transitiveClosure = method()
-transitiveClosure(List,List) := List => (I,C)-> (
-     A := adjacencyMatrix(I,C);
-     D := mutableMatrix allPairsShortestPath(A);
-     scan(numrows D, i-> D_(i,i) = 0);
-     table(numrows D, numrows D, (i,j)->(
-	  if D_(i,j) ==1/0. then D_(i,j) = 0 else D_(i,j) = 1;	  
-	  )
-	  );
-     matrix applyTable (entries D, i -> lift(i, ZZ))
+transitiveClosure(List,List) := (I,C) -> (
+     G := digraph hashTable apply(I,v->v=>set apply(select(C,e->e_0==v),e->e_1));
+     H := floydWarshall G;
+     matrix apply(I,u->apply(I,v->if H#(u,v)<1/0. then 1 else 0))
      )
-
-
 
 --input: A poset with any type of relation C (not necessarily minimal, maximal, etc.)
 --output:  The transitive closure of relations in C in our poset
@@ -724,30 +678,6 @@ doc ///
 	  RelationMatrix	   
 ///     
 
-
---doc ///
---     Key
---     	  DirectedGraph
---     Headline 
---     	  a class for directed graphs
---     Description
---     	  Text
---	       This class is a type of HashTable which represents directed graphs.  It consists of a vertex 
---	       set and a set of sequences (a,b) representing a directed edge from a to b. 
---	  Example
---	       V = {a,b,c,d,e}; -- the vertex set
---	       E = {(a,b),(b,c),(a,c),(a,d),(d,e)}; -- directed edges; (a,b) means a directed edge from a to b.
---	       G = directedGraph(V,E)
---	       allPairsShortestPath(G)
---     SeeAlso
---     	  directedGraph
---	  Vertices
---	  DirectedEdges
---	  adjacencyMatrix
---	  allPairsShortestPath
---/// 
-
-
 -------------
 -- constructors
 -------------
@@ -802,113 +732,10 @@ doc ///
 	  Relations
 	  RelationMatrix
 ///
- 
---doc ///
---     Key
---     	  directedGraph
---	  (directedGraph, List, List)
---     Headline
---     	  creating a directed graph
---     Usage
---     	  G = directedGraph(V,E)
---     Inputs
---     	  V : List 
---	       elements in the vertices of G
---	  E : List 
---	       sequences (a,b) which represents a directed edge from a to b
---     Outputs
---     	  G : DirectedGraph 
---	       a directed graph on vertex set V with directed edges E
---     Description
---      	   Text
---	   	This function allows one to create a directed graph by defining the vertices and directed edges between them.
---	   Example
---	   	V = {a,b,c,d};
---		E = {(a,b), (a,c), (c,d)};
---		G = directedGraph (V,E)	
---     SeeAlso
---     	  DirectedGraph
---	  Vertices
---	  DirectedEdges
---     	  adjacencyMatrix     
---/// 
- 
+  
 -----------
 -- finding relations
 -----------
-
---
---doc ///
---     Key 
---     	  adjacencyMatrix
---	  (adjacencyMatrix, DirectedGraph)
---	  (adjacencyMatrix, Poset)
---	  (adjacencyMatrix, List, List)
---   Headline
---	  returns adjacency matrix of a directed graph
---     Usage
---	  M = adjacencyMatrix(G)
---	  M = adjacencyMatrix(P)
---	  M = adjacencyMatrix(I,C)
---     Inputs
---	  G : DirectedGraph
---	  P : Poset
---       	  I : List
---	  C : List
---     Outputs
---      	  M : Matrix 
---	       whose rows and columns are indexed by G.Vertices 
---	       or P.GroundSet or I. The (i,j) entry of M  is 1 if (i,j) is 
---	       in P.Relations or C, and infinity otherwise.  Diagonal entries are 0. 
---     Description
---	  Example
---     	       I = {a,b,c,d,e};
---	       C = {(a,b),(b,c),(a,c),(a,d),(d,e)};
---	       G = directedGraph(I,C);
---	       P = poset(I,C);
---	       adjacencyMatrix(G)
---	       adjacencyMatrix(P)
---	       adjacencyMatrix(I,C)	       	       
---     Caveat
---     	  Diagonal entries are 0.  Output matrix is over RR.
---     SeeAlso
---     	  DirectedGraph
---     	  allPairsShortestPath    
---/// 
- 
-doc ///
-     Key 
-     	  allPairsShortestPath
---	  (allPairsShortestPath, DirectedGraph)
-	  (allPairsShortestPath, Matrix)
-     Headline
-     	  computes lengths of shortest paths between all pairs in a directed graph
-     Usage
---     	  D = allPairsShortestPath(G)
-	  D = allPairsShortestPath(A)
-     Inputs
---     	  G : DirectedGraph 
-	  A : Matrix
-	      adjacency matrix of a directed graph, whose (i,j) entry is the length of the directed edge from i to j and is infinity (1/0.) if there is no such directed edge.
-     Outputs
-     	  D : Matrix 
-	       whose (i,j) entry is the length of the shortest path from i to j and is infinity if there is no directed path from i to j.
-     Description
-      	   Text
-	   	This function uses the Floyd-Warshall algorithm to compute the lengths of shortest paths between all pairs of vertices in a directed graph.
-	   Example
---	       G = directedGraph( {a,b,c,d,e}, {(a,b),(b,c),(a,c),(a,d),(d,e)});
---	       allPairsShortestPath(G)
---	       allPairsShortestPath(adjacencyMatrix(G))
-	       A = matrix({{0,1,3,5},{1/0.,0,1,3},{1/0.,1/0.,0,1},{2,1/0.,1/0.,0}})
-	       allPairsShortestPath(A)
-     Caveat
-     	  Assume there is no negative cycles.  Output matrix is over RR.
-     SeeAlso
---     	  DirectedGraph
-     	  adjacencyMatrix   
-/// 
-  
 
 doc ///
      Key
@@ -928,7 +755,7 @@ doc ///
 	       whose (i,j) entry is 1 if (i,j) is a relation and 0 otherwise.
      Description
       	   Text
-	   	This function uses allPairsShortestPath method is used by the poset constructor to compute RelationMatrix from Relations in a Poset.
+	   	This function uses the floydWarshall method from the Graphs package and is used by the poset constructor to compute RelationMatrix from Relations in a Poset.
 	   Example
 	       I = {a,b,c,d,e}; -- the ground set
 	       R = {(a,b),(b,c),(a,c),(a,d),(d,e)}; -- relations
@@ -940,7 +767,6 @@ doc ///
 	  poset
 	  Relations
 	  RelationMatrix
-     	  allPairsShortestPath
 /// 
  
  
@@ -1850,56 +1676,6 @@ doc ///
      	  lcmLattice
 ///
 
---doc ///
---     Key 
---     	  Vertices
---     Headline
---     	  the set of vertices a directed graph
---     Usage
---     	  V = G.Vertices
---     Inputs
---     	  G : DirectedGraph
---     Outputs
---     	  V : List
---	       list of vertices of the directed graph G
---     Description
---     	  Text
---     	       Since any DirectedGraph is in fact a HashTable this symbol denotes the data in the HashTable consisting of the vertices of the directed graph.
---	  Example
---	       G = directedGraph({a,b,c,d,e},  {(a,b),(b,c),(a,c),(a,d),(d,e)});
---	       V = G.Vertices -- the vertex set
---     SeeAlso
---     	  DirectedGraph
---	  directedGraph
---	  DirectedEdges
---///
-
---doc ///
---     Key 
---     	  DirectedEdges
---     Headline
---     	  the set of directed edges of a directed graph
---     Usage
---     	  E = G.DirectedEdges
---     Inputs
---     	  G : DirectedGraph
---     Outputs
---     	  E : List
---	       list of directed edges of the directed graph G
---     Description
---     	  Text
---     	       Since any DirectedGraph is in fact a HashTable this symbol denotes the data in the HashTable consisting of the directed edges of the directed graph.
---	  Example
---	       G = directedGraph({a,b,c,d,e},  {(a,b),(b,c),(a,c),(a,d),(d,e)});
---	       E = G.DirectedEdges -- the vertex set
---     SeeAlso
---     	  DirectedGraph
---	  directedGraph
---	  Vertices
---///
- 
- 
- 
 ---------------------------------
 --Tests
 ---------------------------------
@@ -1919,12 +1695,6 @@ M = matrix {{1,1,1,1,1,1,1,1},
 	    {0,0,0,0,0,0,1,1},
 	    {0,0,0,0,0,0,0,1}};
 assert (entries P.RelationMatrix == entries M)
---G=directedGraph(I,C)
---A=adjacencyMatrix(I,C) -- not exported
---allPairsShortestPath(A) -- not exported
---adjacencyMatrix(G) -- not exported
---adjacencyMatrix(P) -- not exported
---transitiveClosure(I,C) 
 assert (posetJoin(P,a,b) == {b})
 assert (posetJoin(P,b,d) == {f})
 assert (posetMeet(P,a,b) == {a})
@@ -1944,13 +1714,10 @@ I1={a,b,c,d,e,f};
 C1={(a,c),(a,d),(b,c),(b,d),(c,e),(d,e),(e,f)};
 P1=poset(I1,C1);
 
---G1 = directedGraph(I1,C1)
-
 --Poset P1 with additional relations (a,e) and (a,f) added
 I2={a,b,c,d,e,f};
 C2={(a,c),(a,d),(b,c),(b,d),(c,e),(d,e),(a,e),(a,f),(e,f)};
 P2=poset(I2,C2);
---G2=directedGraph(I2,C2) -- adds the non minimal edges
 
 assert (P1.RelationMatrix == P2.RelationMatrix)    
 assert (orderIdeal(P1,b) == {b})
