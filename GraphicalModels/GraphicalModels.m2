@@ -323,22 +323,18 @@ bayesBall = (A,C,G) -> (
 -- Markov rings ---
 -------------------
 
-----m =method(Dispatch=>Thing,Options=>
      
      
 markovRingList := new MutableHashTable;
---markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ})
-markovRing = method(Dispatch=>Thing)
---markovRing Sequence := Ring => opts -> (d) -> (
-markovRing Sequence := Ring => d -> (
+markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ})
+markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
-     --added:
-     --if opts.CoefficientRing =!= null then (
-     --  kk := opts.CoefficientRing
-     --) else 
      kk:=QQ;
+     --added:
+     if opts.CoefficientRing =!=  QQ 
+     then kk = opts.CoefficientRing;
      p = value "symbol p";
      if not markovRingList#?d then (
      	  start := (#d):1;
@@ -832,16 +828,14 @@ doc ///
       coefficientRing R
     Text 
       If we prefer to have a different base field, the following command can be used:
-      Rnew = markovRing (d)--,CoefficientRing=>CC); 
-      --THIS IS CURRENTLY NOT WORKING.
-      -- PROBLEM WITH PASSING SEQUENCE AGAIN?
-      coefficientRing Rnew \break
-
+    Example
+      Rnew = markovRing (d,CoefficientRing=>CC); 
+      coefficientRing Rnew
+    Text
       The LIST OF FNS USING THIS FUNCTION SHOULD BE INSERTED AS WELL.
   Caveat
     Currently, the user has no choice about the names of the variables.  
-    Also, the base field is set to be QQ, without option of changing it. <<<<<--- DO THIS FRIDAY!!!
-    These will hopefully change in a later version.  
+    These might change in a later version.  
   SeeAlso
 ///
 
