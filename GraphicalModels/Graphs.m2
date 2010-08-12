@@ -75,16 +75,43 @@ MixedGraph = new Type of HashTable
 LabeledGraph = new Type of Graph 
    
 
-union := S -> (
-     -- Input:  A list of lists of sets, in particular the list of the
-     --         sets of individual neighbors of nodes, and the position of
-     --         a particular node.
-     -- Output:  A set of all the neighbors of a particular node.
-     x = new MutableHashTable;
-     for t in S do scanKeys(t, z -> x#z = 1);
-     new Set from x)  
+digraph = method()
+digraph List := (g) -> (
+     -- Input:  A list of pairs where the first element of the pair is the 
+     --         name of a node and the second is the list of 
+     --         children for that node. If a node has no children,
+     --         then the second element of the pair should be empty. 
+     -- Output:  A hashtable with keys the names of the nodes 
+     --          with values the children.
+     G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
+     H := new MutableHashTable from apply(G,x->{x#0,set {}});     
+     scan(G, x -> H#(x#0) = H#(x#0) + x#1);
+     new Digraph from H)
+     
+digraph HashTable := (g) -> (
+     -- Input:  A hash table with keys the names of the nodes of 
+     --         and the values the children of that node.      
+     -- Output: A hash table of type Digraph.
+     --         If a value of the hash table g is a List, Sequence or Array, it is converted into a set.
+     --         If a value x of the hash table g is not a Set or VisibleList, it is converted into a set {x}.
+
+     G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
+     nullVertices := toList (sum(values G) - keys G);
+     new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus))
+
 
 graph = method(Options => {Singletons => null})
+graph HashTable := opts -> (g) -> (
+     -- Input:  A hash table with keys the names of the nodes of 
+     --         the graph and the values the neighbors of that node. 
+     -- Output: A hash table of type Graph. 
+     
+     G := digraph g;
+     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
+     H := new MutableHashTable from G;
+     scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     new Graph from H)
+
 graph List := opts -> (g) -> (
      -- Input:  A list of lists with two elements which describe the 
      --         edges of the graph. 
@@ -92,30 +119,80 @@ graph List := opts -> (g) -> (
      --          values are the neighbors corresponding to that node. 
      ---- Note to Selves --- this code should also nicely build
      ---- hypergraphs as hash tables with again, nodes as keys and
-     ---- neighbors as values. 
-     h := new MutableHashTable;
-     vertices := toList set flatten g;
-     if opts.Singletons === null then (
-	  neighbors := for j to #vertices-1 list( 
-	       for k to #g-1 list (if member(vertices#j, set g#k) 
-		    then set g#k - set {vertices#j} 
-		    else continue)
-	       );
-	  neighbors = apply(neighbors, i -> union i);
-	  )
-     else (vertices = join(vertices, opts.Singletons);
-	  newEdges := apply(for i to #opts.Singletons - 1 list {}, i -> set i);
-	  neighbors = for j to #vertices-1 list( 
-	       for k to #g-1 list (if member(vertices#j, set g#k) 
-		    then set g#k - set {vertices#j} 
-		    else continue)
-	       );
-	  neighbors = apply(neighbors, i -> union i);
-	  neighbors = join(neighbors,newEdges);
-	  );
-     apply(#vertices, i -> h#(vertices#i) = neighbors#i);
-     new Graph from h
-     )
+     ---- neighbors as values.      
+     graph digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}})))
+
+
+-- (Shaowei) Below are the old implementations of graph and digraph constructors:
+--
+-- union := S -> (
+--     -- Input:  A list of lists of sets, in particular the list of the
+--     --         sets of individual neighbors of nodes, and the position of
+--     --         a particular node.
+--     -- Output:  A set of all the neighbors of a particular node.
+--     x = new MutableHashTable;
+--     for t in S do scanKeys(t, z -> x#z = 1);
+--     new Set from x)  
+--
+-- graph List := opts -> (g) -> (
+--     -- Input:  A list of lists with two elements which describe the 
+--     --         edges of the graph. 
+--     -- Output:  A hash table with keys the names of the nodes and the 
+--     --          values are the neighbors corresponding to that node. 
+--     ---- Note to Selves --- this code should also nicely build
+--     ---- hypergraphs as hash tables with again, nodes as keys and
+--     ---- neighbors as values. 
+--     h := new MutableHashTable;
+--     vertices := toList set flatten g;
+--     if opts.Singletons === null then (
+--	  neighbors := for j to #vertices-1 list( 
+--	       for k to #g-1 list (if member(vertices#j, set g#k) 
+--		    then set g#k - set {vertices#j} 
+--		    else continue)
+--	       );
+--	  neighbors = apply(neighbors, i -> union i);
+--	  )
+--     else (vertices = join(vertices, opts.Singletons);
+--	  newEdges := apply(for i to #opts.Singletons - 1 list {}, i -> set i);
+--	  neighbors = for j to #vertices-1 list( 
+--	       for k to #g-1 list (if member(vertices#j, set g#k) 
+--		    then set g#k - set {vertices#j} 
+--		    else continue)
+--	       );
+--	  neighbors = apply(neighbors, i -> union i);
+--	  neighbors = join(neighbors,newEdges);
+--	  );
+--     apply(#vertices, i -> h#(vertices#i) = neighbors#i);
+--     new Graph from h
+--     )
+--
+-- graph MutableHashTable := opts -> (g) -> (
+--     new Graph from h)
+--
+-- graph HashTable := opts -> (g) -> (
+--     -- Input:  A hash table with keys the names of the nodes of 
+--     --         the graph and the values the neighbors of that node. 
+--     -- Output: A hash table of type Graph. 
+--     new Graph from g)
+--
+-- digraph = method()
+-- digraph List := (g) -> (
+--     -- Input:  A list of pairs where the first element of the pair is the 
+--     --         name of a node and the second is the list of 
+--     --         children for that node. If a node has no children,
+--     --         then the second element of the pair should be empty. 
+--     -- Output:  A hashtable with keys the names of the nodes 
+--     --          with values the children.
+--     h := new MutableHashTable;
+--     scan(#g, i -> h#(g#i#0) = set g#i#1);
+--     new Digraph from h)
+--     
+-- digraph HashTable := (g) -> (
+--     -- Input:  A hash table with keys the names of the nodes of 
+--     --         and the values the children of that node. 
+--     -- Output: A hash table of type Diraph. 
+--     new Digraph from g)
+
 
 mixedGraph = method()
 mixedGraph HashTable := (g) -> (
@@ -130,6 +207,7 @@ mixedGraph HashTable := (g) -> (
 	  new class(i) from hh
 	))
 )     
+
 
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
@@ -149,34 +227,6 @@ labeledGraph (Digraph,List) := (g,L) -> (
      new LabeledGraph from lg
      )
 
-
---graph MutableHashTable := opts -> (g) -> (
---     new Graph from h)
-
-graph HashTable := opts -> (g) -> (
-     -- Input:  A hash table with keys the names of the nodes of 
-     --         the graph and the values the neighbors of that node. 
-     -- Output: A hash table of type Graph. 
-     new Graph from g)
-
-digraph = method()
-digraph List := (g) -> (
-     -- Input:  A list of pairs where the first element of the pair is the 
-     --         name of a node and the second is the list of 
-     --         children for that node. If a node has no children,
-     --         then the second element of the pair should be empty. 
-     -- Output:  A hashtable with keys the names of the nodes 
-     --          with values the children.
-     h := new MutableHashTable;
-     scan(#g, i -> h#(g#i#0) = set g#i#1);
-     new Digraph from h)
-     
-
-digraph HashTable := (g) -> (
-     -- Input:  A hash table with keys the names of the nodes of 
-     --         and the values the children of that node. 
-     -- Output: A hash table of type Diraph. 
-     new Digraph from g)
      
 -----------------------------
 -- Graph Display Functions --
