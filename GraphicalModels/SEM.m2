@@ -106,6 +106,10 @@ identify(MixedGraph) := (g) -> (
 	);
 )
 
+
+setToBinary := (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then 1 else 0)))
+subsetsBetween := (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
+
 trekSeparation = method()
 trekSeparation MixedGraph := (G) -> (
     -- Input: A mixed graph containing a directed graph and a bidirected graph.
@@ -127,18 +131,28 @@ trekSeparation MixedGraph := (G) -> (
     M := adjacencyHashTable(cdG);
     
     statements := {};
-    for A in drop(subsets aVertices,1) do (
-      for CA in (subsets A) do (
-        for CB in (subsets bVertices) do (
+    for CA in (subsets aVertices) do (
+      for CB in (subsets bVertices) do (
+	CAbin := setToBinary(aVertices,CA);
+	CBbin := setToBinary(bVertices,CB);
+	if CAbin <= CBbin then (
           C := CA|CB;
           MC := hashTable apply(keys M,i->{i,new MutableHashTable from M#i});
           scan(C, i->scan(allVertices, j->(MC#i#j=0;MC#j#i=0;)));
-	  B := toList ((set bVertices) - pathConnected(set A,MC));
-	  if #CA+#CB < min{#A,#B} then (
-            statements = append(statements,{
-              apply(A,i->i#1),apply(B,i->i#1),
-              apply(CA,i->i#1),apply(CB,i->i#1)});
-          );
+	  Alist := delete({},subsetsBetween(CA,aVertices));
+          while #Alist > 0 do (
+	    minA := first Alist;
+	    pC := pathConnected(set minA,MC);
+	    A := toList ((pC*(set aVertices)) + set CA);
+	    Alist = Alist - (set subsetsBetween(minA,A));
+	    B := toList ((set bVertices) - pC);
+	    if #CA+#CB < min{#A,#B} then (
+	    if not ((CAbin==CBbin) and (setToBinary(aVertices,A) > setToBinary(bVertices,B))) then (
+              statements = append(statements,{
+                apply(A,i->i#1),apply(B,i->i#1),
+                apply(CA,i->i#1),apply(CB,i->i#1)});
+            ););
+     	  );
         );
       );
     );
