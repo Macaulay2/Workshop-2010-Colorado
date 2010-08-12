@@ -4,7 +4,8 @@ newPackage(
         Version => "0.1", 
         Date => "August 8, 2010",
         Authors => {{Name => "Eduardo"},
-	     	    {Name => "Courtney"}},
+	     	    {Name => "Courtney Gibbons"},
+		    {Name => "Dennis"}},
 	--CurrentDevelopers => {{Name => "Eduardo"},
 	--    	                {Name => "Courtney"},
 	--     	    	      	{Name => "Dennis"}};
@@ -314,7 +315,7 @@ document {
           "relMVT I",
 	  "relMVT (I,PivotStrategy => 2)",
           },
-     "If the user has input an MVT, the method ", EM "relevantNodes ", "outputs only the relevantn nodes of the tree."
+     "If the user has input an MVT, the method ", EM "relevantNodes ", "outputs only the relevantn nodes of the tree.",
      Caveat => {"warning"},
      Subnodes => {
           TO fullMVT,
@@ -328,7 +329,7 @@ document {
 	  TO PivotStrategy
           }
      }
-        }
+     
 document {
      Key => fullMVT,
      Headline => "Outputs a Mayer-Vietoris Tree from a monomial ideal.",
@@ -379,18 +380,18 @@ document {
    
 document {
      Key => PivotStrategy,
-     Headline => "An option for choosing which generator to use as a pivot in MVT computations",
+     Headline => "An option to specify how pivot generators are chosen.",
      "The default option is 1.",
      "PivotStrategy => 1 chooses the largest generator with respect to ambient monomial ordering for the ring.",
      EXAMPLE {
           "R = QQ[x,y,z]",
-          "I = mopnomialIdeal(x^2,y^2,x*y)",
+          "I = monomialIdeal(x^2,y^2,x*y)",
           "fullMVT(I,PivotStrategy => 1)"
           },
      "PivotStrategy => 2 chooses the smallest generator with respect to the ambient monomial ordering for the ring.",
      EXAMPLE {
           "R = QQ[x,y,z]",
-          "I = mopnomialIdeal(x^2,y^2,x*y)",
+          "I = monomialIdeal(x^2,y^2,x*y)",
           "fullMVT(I,PivotStrategy => 2)"
           },
      Caveat => {"Only two strategies are currently implemented."}
@@ -492,3 +493,5 @@ lowerBettiMVT(I) --Notice compatibility (repeated nodes don't matter here)
 R = QQ[x,y,z]
 I = monomialIdeal "x2,y2,xy,xz,yz"
 P = pseudoBettiMVT(I)
+
+help MayerVietorisTrees
