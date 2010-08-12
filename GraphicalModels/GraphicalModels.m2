@@ -8,7 +8,7 @@ newPackage(
      Authors => {
 	  {Name => "Luis Garcia"},
 	  {Name => "Mike Stillman"},
-       	  {Name => "others"}
+       	  {Name => ""}
 	  },
      Headline => "Markov ideals, arising from Bayesian networks in
      statistics",
@@ -56,7 +56,6 @@ export {localMarkovStmts, globalMarkovStmts, pairMarkovStmts,
 needsPackage"Graphs"
 
 ---- List from Board at AIM.
-
 ---- a)  Discrete   b) Gaussian
 ----
 ---- (0) CI models   (3.1) 
@@ -90,23 +89,6 @@ needsPackage"Graphs"
 ---- NOTE ALL basic graph functionality has been moved to Graphs.m2
 ---- Should removeNodes also be moved? --it's already there!
 
--------------------------
--- Digraph can now have any labels for the nodes, not just integers.
--- However, all the code in this package requires integer lables.  For
--- now, we just conver the labels with an eye towards fixing all the
--- code. 
--------------------------
-
--- convertToIntegers := (G) -> (
---     n := #G;
---     h := new MutableHashTable;
---     scan(n, i -> h#(i+1) = (values G)#i);
---     mid := new MutableHashTable;
---     vertices := keys G;
---     scan(n, i -> mid#(vertices#i) = (keys h)#i);
---     scan(n, i -> h#(i+1) = set apply(toList h#(i+1), j -> mid#j));
---     new Digraph from h
---     )
 
 
 
@@ -341,15 +323,22 @@ bayesBall = (A,C,G) -> (
 -- Markov rings ---
 -------------------
 markovRingList := new MutableHashTable;
-markovRing = method(Dispatch=>Thing);
-markovRing Sequence := d -> (
+--markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ})
+markovRing = method(Dispatch=>Thing)
+--markovRing Sequence := Ring => opts -> (d) -> (
+markovRing Sequence := Ring => d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
+     --added:
+     --if opts.CoefficientRing =!= null then (
+     --  kk := opts.CoefficientRing
+     --) else 
+     kk:=QQ;
      p = value "symbol p";
      if not markovRingList#?d then (
      	  start := (#d):1;
-     	  markovRingList#d = QQ[p_start .. p_d];
+     	  markovRingList#d = kk[p_start .. p_d]; --changed to kk option -Sonja 12aug10
 	  markovRingList#d.markov = d;
 	  );
      markovRingList#d
@@ -364,7 +353,7 @@ markovRing Sequence := d -> (
   --------------
 
 marginMap = method()
-marginMap(ZZ,Ring) := (v,R) -> (
+marginMap(ZZ,Ring) := RingMap => (v,R) -> (
      -- R should be a Markov ring
      v = v-1;
      d := R.markov;
@@ -380,7 +369,7 @@ marginMap(ZZ,Ring) := (v,R) -> (
      map(R,R,F))
 
 hideMap = method()
-hideMap(ZZ,Ring) := (v,A) -> (
+hideMap(ZZ,Ring) := RingMap => (v,A) -> (
      -- creates a ring map inclusion F : S --> A.
      v = v-1;
      R := ring presentation A;
@@ -421,6 +410,10 @@ prob = (d,s) -> (
 	   then toList(1..d#i) 
 	   else {s#i});
      sum apply (L, v -> p_v))
+
+
+------ sonja: documented everything up to here. some notes remaining to be done for marginMap and hideMap.
+
 
 markovMatrices = method()
 markovMatrices(Ring,List) := (R, Stmts) -> (
@@ -607,7 +600,7 @@ doc ///
     GraphicalModels. ideals arising from Bayesian networks in statistics
   Description
     Text
-      ****NEEDS UPDATING!**** two parts of the package: markov statements, and gaussRing/markovRing and matrices and minors. 
+      ****NEEDS UPDATING!****
       
       This package is used to construct ideals corresponding to discrete graphical models,
       as described in several places, including the paper: Garcia, Stillman and Sturmfels,
@@ -639,39 +632,6 @@ doc ///
     SEE GRAPHS.M2. IT SHOULD BE STATED THAT THIS PACKAGE IS CALLED FOR.****
 ///
 
-
-doc ///
-  Key
-    markovRing
-    (markovRing,Sequence)
-  Headline
-    ring of probability distributions on several discrete random variables
-  Usage
-    markovRing(d)
-  Inputs
-    d:Sequence
-      with positive integer entries (d1,...,dr)
-  Outputs
-    R:Ring
-      A polynomial ring with d1*d2*...*dr variables $p_{(i1,...,ir)}$,
-      with each i_j satisfying 1 <= i_j <= d_j.
-  Consequences
-    Information about this sequence of integers is placed into the ring, and is used 
-    by other functions in this package.  Also, at most one ring for each such sequence
-    is created: the results are cached.
-  Description
-    Example
-      d=(2,3,4,5);
-      R = markovRing d;
-      numgens R
-      R_0, R_1, R_119 --here are some of the variables in the ring
-      coefficientRing R
-  Caveat
-    Currently, the user has no choice about the names of the variables.  
-    Also, the base field is set to be QQ, without option of changing it.
-    These will hopefully change in a later version.  
-  SeeAlso
-///
 
 doc ///
   Key
@@ -775,30 +735,119 @@ doc ///
     localMarkovStmts
     pairMarkovStmts
 ///
-end
 
---------------------------------------
+
 doc ///
   Key
+    marginMap
+    (marginMap,ZZ,Ring)
   Headline
-
+    marginalize the map on joint probabilities for discrete variables
   Usage
-
+    phi = marginMap(i,R)
   Inputs
-
+    i:ZZ
+      the index of the variable to marginalize
+    R:Ring
+      a Markov ring
   Outputs
-
-  Consequences
-
+    phi:RingMap
+      with coordinates....................
   Description
-   Text
-   Text
-   Example
-   Text
-   Example
+    Text
+      Copying the description from the code:
+      -- Return the ring map F : R --> R such that
+      	  $ F p_{u1,u2,..., +, ,un} = p_{u1,u2,..., 1, ,un}$
+       and
+         $F p_{u1,u2,..., j, ,un} = p_{u1,u2,..., j, ,un}$, for $j\geq 2$.
+    Example
+      marginMap(2,markovRing(1,2)) --add more for example? to explain.
+  SeeAlso
+    hideMap
+///
+
+doc ///
+  Key
+    hideMap
+    (hideMap,ZZ,Ring)
+  Headline
+    hide???marginalize the map on joint probabilities for discrete variables
+  Usage
+    phi = hideMap(i,R)
+  Inputs
+    i:ZZ
+      the index of the variable to marginalize
+    R:Ring
+      a Markov ring
+  Outputs
+    phi:RingMap
+      with coordinates....................
+  Description
+    Text
+      what does this do? 
+    Example
+      marginMap(1,markovRing(2,2)) --add more for example? to explain.
+  SeeAlso
+    marginMap
+///
+
+
+doc ///
+  Key
+    markovRing
+    (markovRing,Sequence)
+  Headline
+    ring of probability distributions on several discrete random variables
+  Usage
+    markovRing(d)
+  Inputs
+    d:Sequence
+      with positive integer entries (d1,...,dr)
+  Outputs
+    R:Ring
+      A polynomial ring with d1*d2*...*dr variables $p_{i_1,...,i_r}$,
+      with each $i_j$ satisfying $1\leq i_j \leq d_j$.
+  Consequences
+    Information about this sequence of integers is placed into the ring, and is used 
+    by other functions in this package.  Also, at most one ring for each such sequence
+    is created: the results are cached.
+  Description
+    Text 
+      The sequence $d$ represents the number of states each discrete random variable can take.
+      For example, if there are four random variables with the following state space sizes
+    Example
+      d=(2,3,4,5)
+    Text 
+      the corresponding ring will have as variables all the possible joint 
+      probability distributions for the four variables:
+    Example
+      R = markovRing d;
+      numgens R
+      R_0, R_1, R_119 --here are some of the variables in the ring
+    Text
+      If no coefficient choice is specified, the polynomial ring is created over the rationals. 
+    Example
+      coefficientRing R
+    Text 
+      If we prefer to have a different base field, the following command can be used:
+      Rnew = markovRing (d)--,CoefficientRing=>CC); 
+      --THIS IS CURRENTLY NOT WORKING.
+      -- PROBLEM WITH PASSING SEQUENCE AGAIN?
+      coefficientRing Rnew \break
+
+      The LIST OF FNS USING THIS FUNCTION SHOULD BE INSERTED AS WELL.
   Caveat
+    Currently, the user has no choice about the names of the variables.  
+    Also, the base field is set to be QQ, without option of changing it. <<<<<--- DO THIS FRIDAY!!!
+    These will hopefully change in a later version.  
   SeeAlso
 ///
+
+--------------------------------------
+--------------------------------------
+end
+--------------------------------------
+--------------------------------------
 
 
 document { 
