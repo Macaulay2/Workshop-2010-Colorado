@@ -23,15 +23,25 @@ export {fullMVT, relMVT, relevantNodes, projDimMVT, regMVT, lowerBettiMVT, upper
 -- v0: create relMVT
 -- v0: change output for all things to (monomial, dimension, position)
 --
--- Before first version
+-- Before Version 1:
 -- v1: document methods well
 -- v1: consistency among output, naming conventions (in our program, in M2)
 -- v1: data types? 
---     MVTs as hash tables
+--     --MVTs as hash tables
 -- v1: print MVTs, pseudoBettiMVTs nicely
---     output MVT as tree in M2
---     output for LaTeX
---     output pseudoBettiMVTs like betti diagrams
+--     --output MVT as tree in M2
+--     --output for LaTeX
+--     --output pseudoBettiMVTs like betti diagrams
+-- v1: get MVT C code added to the engine
+-- v1: coarse hilbertSeriesMVT (total degrees)
+-- v1: hilbertFunctionMVT with output that mirrors the method hilbertFunction(ZZ,Type)
+-- 
+-- Before Version 2:
+-- v2: specializations of the code
+--     --obtain the n-1 betti multidegrees for getting the irreducible composition
+--     --euler characteristic of the simplicial complex
+--
+-- Before later versions
 -- vN: Mapping cone resolution (MCR) with differentials <-- nice to have the M2 code for small examples
 -- vN: C version of MCR for the engine <-- for larger computations
 
