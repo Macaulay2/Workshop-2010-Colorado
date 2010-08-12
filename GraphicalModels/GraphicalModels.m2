@@ -322,6 +322,10 @@ bayesBall = (A,C,G) -> (
 -------------------
 -- Markov rings ---
 -------------------
+
+----m =method(Dispatch=>Thing,Options=>
+     
+     
 markovRingList := new MutableHashTable;
 --markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ})
 markovRing = method(Dispatch=>Thing)
@@ -364,7 +368,6 @@ marginMap(ZZ,Ring) := RingMap => (v,R) -> (
 		    i0 := drop(i,1);
 		    p_i - sum(apply(toList(2..d#v), j -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
-			      --print p_newi;
 			      p_newi))))));
      map(R,R,F))
 
@@ -381,7 +384,6 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
      F := toList apply(((#e):1) .. e, i -> (
 	       sum(apply(toList(1..dv), j -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
-			      --print p_newi;
 			      p_newi)))));
      map(A,S,F))
 
