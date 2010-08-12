@@ -171,87 +171,89 @@ glrs Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      ggetMatrix (filename | ".ext")
      )
 glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return glrs A else(
-      filename := getFilename();
+     filename := getFilename();
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
+     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
+     run execstr ;
      ggetMatrix (filename | ".ext")
      ))
+
+
 	 
 lrs = method()
 lrs Matrix := Matrix => A ->(
-     filename := getFilename();
+     filename := getFilename();     
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      getMatrix (filename | ".ext")
      )
 lrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return lrs A else(
-      filename := getFilename();
+     filename := getFilename();
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      getMatrix (filename | ".ext")
      ))
 
 cdd = method()
 cdd Matrix := Matrix => A ->(
-     filename := getFilename();
+     filename := getFilename();     
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      getMatrix (filename | ".ext")
      )
 cdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return cdd A else(
-       filename := getFilename();
+     filename := getFilename();     
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      getMatrix (filename | ".ext")
      ))
  
 gcdd = method()
 gcdd Matrix := Matrix => A ->(
-     filename := getFilename();
+     filename := getFilename();    
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      ggetMatrix (filename | ".ext")
      )
 gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return gcdd A else(
-       filename := getFilename();
+     filename := getFilename();    
      << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
+     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      ggetMatrix (filename | ".ext")
      ))    
@@ -299,9 +301,10 @@ cdd getMatrixFromFile "in5.ine"
 fourierMotzkin getMatrixFromFile "cyc.ine"
 
 restart
-load "FourierMotzkin/FourierMotzkinExtending.m2"
+load "FourierMotzkinExtending.m2"
 C = transpose matrix{{1,1,0}, {0,1,1}}
 H = transpose matrix{{1,0,-1}}
+gcdd (C,H)
 C|H
 fourierMotzkin (C,H)
 cdd(C,H)
@@ -310,7 +313,7 @@ C = transpose matrix{{1,0,3,1},{1,1,0,7},{1,2,1,1}}
 fourierMotzkin C
 D = transpose matrix apply(entries transpose C, l-> reverse l)
 G = cdd D
-lrs lrs lrs lrs C
+glrs glrs glrs glrs C
 cdd cdd cdd cdd C
 
 fourierMotzkin C
@@ -319,18 +322,11 @@ lrs fourierMotzkin fourierMotzkin C
 lrs (sort C,matrix{{0}})
 lrs C
 
-C = transpose random(ZZ^30, ZZ^70, Density=>.8, Height=> 100)
+C = transpose random(ZZ^10, ZZ^20, Density=>.8, Height=> 100)
 f = gcdd gcdd time fourierMotzkin C;
-l = time gcdd C;
+l = gcdd C;
 (f#0-l#0)==0
 (f#1-l#1)==0
-
-L = {0, 0, -1, 0, 0, 0, 0, 0, 0, -16, 30.2222, 1, 20.3333, 
-     0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -1, 6.33333, 
-     0, 0, 0, 0, -.8, -.266667, -.7, 5.76667, 1, 0, 0, 0, -1.13333, 
-     2.14074, -.429167, 4.60694, 0, 1, 0, 0, 0, -1, 0, 0, 0, 0, 1}
-L = apply(L, l-> promote(l,RR))
-L = apply(L, l-> lift(l,QQ))
 
 
 D = transpose random(ZZ^4,ZZ^7, Density=>.8, Height=> 30)
