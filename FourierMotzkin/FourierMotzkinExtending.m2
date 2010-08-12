@@ -5,25 +5,22 @@ getFilename = () -> (
      filename)
 	 
 putMatrix = method()
-putMatrix (File, Matrix) := (F,A) ->(
-    
+putMatrix (File, Matrix) := (F,A) ->(    
 	F << "polytope" << endl;
 	F << "H-representation" << endl;
 	F << "begin" << endl;
 	m := numColumns A;
 	n := numRows A;
 	A = matrix({toList(m:0)})||A;
-	F << m << " " << n+1 << " rational" << endl;
-	
+	F << m << " " << n+1 << " rational" << endl;	
 	L := entries transpose A;
-     for i from 0 to m-1 do (
+     	for i from 0 to m-1 do (
 	  for j from 0 to n do (
 	       if (class L#i#j)===QQ then F << numerator L#i#j << "/" << denominator L#i#j << " "
 	       else F << L#i#j << " ";	      
 	       );
 	  F << endl;
 	  );
-	
 	F << "end" << endl;
 )
 
@@ -132,7 +129,10 @@ getMatrix String := (filename) -> (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
      	  m = value( M#1);	  
-     	  mat :=  pack_m apply(drop(M,3), o-> lift(promote(value replace("E\\+?","e",o),RR),QQ));
+     	  mat := apply(drop(M,3), o-> promote(value replace("E\\+?","e",o),RR));
+	  << "starting lifting." << endl;
+	  << mat << endl;
+	  mat = pack_m apply(mat, m-> << m <<" " << lift(m,QQ)<<endl);
 	  linearity := sort transpose matrix apply(mat_lin, l-> drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
 	  rays := sort transpose matrix apply(select(mat_r, l-> l#0==0),l-> drop(l,1));
