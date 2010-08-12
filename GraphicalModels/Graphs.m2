@@ -250,7 +250,7 @@ simpleGraph(Graph) := H -> (
 	  testVertices := set for i to k-1 list pairH#i#0;
       	  pairH#k = (pairH#k#0, pairH#k#1-testVertices)
 	  );
-     new Graph from hashTable pairH)
+     new Digraph from hashTable pairH)
 
 
  
@@ -259,10 +259,10 @@ writeDotFile(String, Graph) := (filename, G) -> (
      -- Input: The desired file name for the DOT file created and a graph.
      -- Output: The code for the inputted graph to be constructed in Graphviz 
      --         with the specified file name.
-     G = simpleGraph G;
+     H := simpleGraph G;
      fil := openOut filename;
      fil << "graph G {" << endl;
-     q := pairs G;
+     q := pairs H;
      for i from 0 to #q-1 do (
 	  e := q#i;
 	  fil << "  \"" << toString e#0 << "\""; -- number of spaces added before the node is arbitrary
@@ -354,8 +354,8 @@ vertices(Digraph) := G -> keys(G)
 edges = method()
      -- Input: A graph
      -- Output: A list of sets of order 2, each corresponding to an edge
-edges(Digraph) := G -> unique flatten apply(keys(G),i->apply(#G#i,j->set{i,(elements G#i)_j}))
-
+edges(Digraph) := G -> flatten apply(keys(G),i->apply(toList G#i,j->{i,j}))
+edges(Graph) := G -> edges simpleGraph G 
 
 
 descendents = method()
