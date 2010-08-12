@@ -825,10 +825,11 @@ doc ///
   Key
     markovRing
     (markovRing,Sequence)
+    [markovRing, CoefficientRing, Variable]
   Headline
     ring of probability distributions on several discrete random variables
   Usage
-    markovRing(d)
+    markovRing(d) or markovRing(d,CoefficientRing=>Ring) or markovRing(d,Variable=>Symbol)
   Inputs
     d:Sequence
       with positive integer entries (d1,...,dr)
@@ -881,30 +882,63 @@ end
 --------------------------------------
 --------------------------------------
 
+doc ///
+  Key 
+    gaussRing
+    (gaussRing,ZZ)
+  Headline
+    ring of gaussian correlations on n random variables
+  Usage
+    R = gaussRing n
+  Inputs
+    n:ZZ
+      the number of random variables
+  Outputs
+    R:Ring
+      a ring with indeterminates s_(i,j), 1 <= i <= j <= n
+  Description
+    Text
+      The routines  {gaussIdeal} {gaussTrekIdeal} 
+      all require that the ring      be created by this function.
+    Example
+      R = gaussRing 5;
+      gens R
+      genericSymmetricMatrix(R,5)
+    Text 
+      OPTIONAL INPUTS NEEDING DOCUMENTATION: 
+      CoefficientRing => "a coefficient field or ring",
+      Variable => "a symbol, the variables in the ring will be s_(1,1),..." 
+  SeeAlso
+    gaussIdeal
+    trekIdeal
+///
+--------------------------------------
+--------------------------------------
+end
+--------------------------------------
+--------------------------------------
 
-document { 
-     Key => {gaussRing, (gaussRing,ZZ)},
-     Headline => "ring of gaussian correlations on n random variables",
-     Usage => "gaussRing n",
-     Inputs => { 
-	  "n" => ZZ => "the number of random variables",
-	  CoefficientRing => "a coefficient field or ring",
-	  Variable => "a symbol, the variables in the ring will be s_(1,1),..."
-	   },
-     Outputs => {
-	  Ring => "a ring with indeterminates s_(i,j), 1 <= i <= j <= n"
-	  },
-     "The routines ", TO "gaussMinors", ", ", TO "gaussIdeal", ", ", TO "gaussTrekIdeal", 
-     " all require that the ring
-     be created by this function.",
-     PARA{},
-     EXAMPLE lines ///
-     	  R = gaussRing 5;
-	  gens R
-	  genericSymmetricMatrix(R,5)
-          ///,
-     SeeAlso => {"gaussMinors", "gaussIdeal", "gaussTrekIdeal"}
-     }
+doc ///
+  Key
+    Coefficients
+  Description
+    Text
+      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in the function markovRing
+  SeeAlso
+    markovRing
+///;
+
+doc ///
+  Key
+    VariableName
+  Description
+    Text
+      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function markovRing
+  SeeAlso
+    markovRing
+///;
+
+
 
 document { 
      Key => {gaussIdeal, (gaussIdeal,Ring,Digraph), (gaussIdeal,Ring,List)},
