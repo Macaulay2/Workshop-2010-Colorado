@@ -27,7 +27,8 @@ load "solveHomot.m2"
 
 
 restart
-load "solveHomot.m2"
+--load "solveHomot.m2"
+needsPackage "NumericalSchubertCalculus"
 --- TEST GAP ---
 perms = permutations 4;
 isFullSymmetric( perms)
@@ -43,8 +44,19 @@ G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
 ---------------------------------
 S = solveSimpleSchubert((k,n),l,m,G);
 
---- TEST symmetric Group
+--- Test symmetric Group
 isGaloisFullSymmetric((l,m,k,n),G,S,1)
+isGaloisFullSymmetric((l,m,k,n),G,S,5)
+
+l={1,1}
+m={1}
+(k,n)=(4,8);
+d = k*(n-k)-sum(l)-sum(m);
+G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+---------------------------------
+S = solveSimpleSchubert((k,n),l,m,G);
+#S
+isGaloisFullSymmetric((l,m,k,n),G,S,3)
 
 
 findGaloisElement((l,m,k,n), G, S)
