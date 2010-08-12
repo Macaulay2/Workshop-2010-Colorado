@@ -401,15 +401,15 @@ doc ///
    Key
       skewSchubertVariety
    Headline
-      skew Schubert variety (or Richardson variety) from partitions l and m
+      skew Schubert variety (or Richardson variety) from partitions $l$ and $m$
    Usage
       skewSchubertVariety(kn,l,m)
    Inputs
       kn:Sequence
-         two integers denoting the Grassmannian Gr(k,n)
+         two integers denoting the Grassmannian $Gr(k,n)$
       l:List
       m:List
-         partitions of n
+         partitions of $n$
    Outputs
       :Matrix
    Consequences
@@ -434,16 +434,16 @@ doc ///
       createRandomFlagsForSimpleSchubert(kn,l,m)
    Inputs
       kn:Sequence
-         two integers denoting the Grassmannian Gr(k,n)
+         two integers denoting the Grassmannian $Gr(k,n)$
       l:List
       m:List
-         partitions of n
+         partitions of $n$
    Outputs
       :List
          random fixed flags
    Description
       Text
-         Creates a list of d matrices with random numbers, where d = k*(n-k)-sum(m)-sum(l).
+         Creates a list of d matrices with random numbers, where $d = k*(n-k)-|m|-|l|$.
      Example
        -- for l = 2,1 and m = 1,1
        -- in Gr(3,7)
@@ -463,18 +463,18 @@ doc ///
       solveSimpleSchubert(kn,l,m,G)
    Inputs
       kn:Sequence
-         two integers denoting the Grassmannian Gr(k,n)
+         two integers denoting the Grassmannian $Gr(k,n)$
       l:List
       m:List
-         partitions of n
+         partitions of $n$
       G:List
-         of fixed Flags G_1,...,G_d
+         of fixed Flags $G_1,\ldots,G_d$
    Outputs
       :List
-         solutions of the simple Schubert Problem defined by l and m with respect to the flags G_1,...,G_d
+         solutions of the simple Schubert Problem defined by $l$ and $m$ with respect to the flags $G_1,\ldots,G_d$
    Description
       Text
-         Given partitions l and m in the Grassmannian Gr(k,n), and a set of fixed flags G_1,...,G_d, where d=k*(k-n) - sum(l) - sum(m). The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one G_m. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
+         Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,\ldots,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
          This function is used to solve Simple Schubert Problems, as described in the paper:          
          Leykin and Sottile, "Galois groups of Schubert problems via homotopy continuation", Mathematics of Computation, 78 (2009) 1749--1765.
      Example
@@ -501,23 +501,70 @@ doc ///
 			trackSimpleSchubert(kn,cond, G, F)
     Inputs
          kn:Sequence
-            two integers (k,n) denoting the Grassmannian Gr(k,n)
+            two integers $(k,n)$ denoting the Grassmannian $Gr(k,n)$
          cond:Sequence
-            of two partitions of n
+            of two partitions of $n$
          G:List
-            of starting Flags G_1,..., G_d
+            of starting Flags $G_1,\ldots, G_d$
          F:List
-            of target Flags F_1,...,F_d
+            of target Flags $F_1,\ldots,F_d$
     Outputs
          :List
             solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
     Description
 			Text
-            Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,\ldots,G_d$, and $F_1,\ldots,F_d$; where $d=k*(k-n) - sum(l) - sum(m)$. The function track the solutions of the system defined by $G_1,\ldots,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,\ldots,F_d$. 
+            Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,\ldots,G_d$, and $F_1,\ldots,F_d$; where $d=k*(k-n) - sum(l) - sum(m)$. The function tracks the solutions of the system defined by $G_1,\ldots,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,\ldots,F_d$. 
   		Example
-
+   ---- Simple Schubert Problem
+   (k,n) = (3,7)
+   l = {2,1,0}
+   m = {1,1,0}
+   ----  Generate random flags G and F----
+   d = k*(n-k)-sum(l)-sum(m);
+   G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   ---------------------------------
+   trackSimpleSchubert((k,n),(l,m),G,F)
+       
+         Text
+            If the solutions of the system defined by $G_1,\ldots,G_d$ are given, they can be given in the function to avoid unnecessary computations
+       Example
+   ---- Simple Schubert Problem
+   (k,n) = (3,7)
+   l = {2,1,0}
+   m = {1,1,0}
+   ----  Generate random flags G and F----
+   d = k*(n-k)-sum(l)-sum(m);
+   G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   ---------------------------------
+   Solns = solveSimpleSchubert((k,n),l,m,G);
+   
+   trackSimpleSchubert((k,n),(l,m),G,F, StartSolutions=>Solns)
+       
     SeeAlso
          solveSimpleSchubert
+         createRandomFlagsForSimpleSchubert
+///
+
+doc ///
+    Key
+      
+    Headline
+      
+    Usage
+      
+    Inputs
+      
+    Outputs
+      
+    Description
+			Text
+         
+  		Example
+         
+    SeeAlso
+      
 ///
 
 doc ///
