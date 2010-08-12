@@ -19,6 +19,8 @@ export {Graph,
      mixedGraph,
      labeledGraph,
      Singletons,
+     vertices,
+     edges,
      descendents,
      nondescendents,
      parents,
@@ -41,7 +43,6 @@ export {Graph,
      adjacencyMatrix,
      degreeMatrix,
      laplacianMatrix,
-     edgeSet,
      incidenceMatrix,
      pathConnected,
      adjacencyHashTable
@@ -345,6 +346,17 @@ showTikZ(Digraph) := opt -> G -> (
 -- Graph basics --
 ------------------
 
+vertices = method()
+     -- Input: A digraph
+     -- Output:  A list of vertices
+vertices(Digraph) := G -> keys(G)     
+
+edges = method()
+     -- Input: A graph
+     -- Output: A list of sets of order 2, each corresponding to an edge
+edges(Digraph) := G -> unique flatten apply(keys(G),i->apply(#G#i,j->set{i,(elements G#i)_j}))
+
+
 
 descendents = method()
      -- Input: A digraph and the key for the vertex of interest.
@@ -462,15 +474,10 @@ degreeMatrix(Graph) := G -> matrix apply(#keys(G),i->apply(#keys(G),j->if i==j t
 laplacianMatrix = method()
 laplacianMatrix(Graph) := G -> degreeMatrix G - adjacencyMatrix
 
-edgeSet = method()
-     -- Input: A graph
-     -- Output: A list of sets of order 2, each corresponding to an edge
-edgeSet(Graph) := G -> unique flatten apply(keys(G),i->apply(#G#i,j->set{i,(elements G#i)_j}))
-
 incidenceMatrix = method()
      -- Input: A graph
      -- Output: A matrix M, such that M_(i,j)=1 iff vertex i is incident to edge j     
-incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edgeSet G,j->(if j#?i then 1 else 0))))
+incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edges G,j->(if j#?i then 1 else 0))))
 
 pathConnected = method()
 pathConnected (Set,HashTable) := (A,M) -> (
@@ -494,6 +501,23 @@ pathConnected (Set,HashTable) := (A,M) -> (
 
 pathConnected (Set,Digraph) := (A,G) -> pathConnected(A,adjacencyHashTable G)
 
+floydWarshall = method()
+     -- Input:  A digraph
+     -- Output:  A hash table whose keys are pairs of vertices and the value is the length of the shortest path between the first vertex and the second vertex
+floydWarshall(Digraph) := G -> (
+     D := new MutableHashTable from flatten apply(vertices(G),u->(apply(vertices(G),v->((u,v)=> if u===v then 0 else if member(v,(children(G,u))) then 1 else 1/0.))));
+     scan(vertices(G),w->(
+	       scan(vertices(G),u->(
+			 scan(vertices(G),v->(
+				   D#(u,v)=min(D#(u,v),D#(u,w)+D#(w,v))
+				   )
+			      )
+			 )
+		    )
+	       )
+	  );
+     new HashTable from D
+     )
 
 ----------------------
 -- Topological Sort --
@@ -872,7 +896,7 @@ doc ///
 	      	    TikZ syntax which can be pasted into a .tex file to display G
          Description
             Text
-	    	 showTikZ requires the external program dot2tex, available at <a href="http://www.fauskes.net/code/dot2tex/">foo</a>.
+	    	 showTikZ requires the external program dot2tex, available at http://www.fauskes.net/code/dot2tex/.
 		 
 		 The following code gives TikZ syntax for the complete graph K_5.
             Example
@@ -886,6 +910,8 @@ doc ///
 	     a string which is passed to dot2tex.  Defaults to "-t math --prog=dot -f tikz --figonly".  Run "dot2tex --help" for all possibilties.
         Usage
 	     foo
+	Inputs
+	     S:String     
      ///
 
 end

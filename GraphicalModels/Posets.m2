@@ -203,11 +203,8 @@ coveringRelations (Poset) := (P) -> (
 --output:  A digraph which represents the Hasse Diagram of P
 hasseDiagram = method();
 hasseDiagram(Poset) := P -> (
-  if P.cache.?coveringRelations then (
-		return digraph(apply(P.GroundSet, elt-> 
-			  {elt, apply(select(P.cache.coveringRelations, rel -> 
-					 rel#1 == elt), goodrel-> goodrel#0)})));   
-  digraph(apply(P.GroundSet, elt-> {elt, apply(select(coveringRelations P, rel -> rel#1 == elt), goodrel-> goodrel#0)})) 
+  if P.cache.?coveringRelations then cr = P.cache.coveringRelations else cr = coveringRelations P;
+  digraph hashTable apply(P.GroundSet,v->v=>set apply(select(cr,e->e_0==v),e->e_1))
 )
 
 --G = digraph(apply(P.GroundSet, elt-> {elt, apply(select(P.cache.coveringRelations, rel -> rel#1 == elt), goodrel-> goodrel#0)})) 
