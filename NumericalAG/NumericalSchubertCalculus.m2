@@ -11,8 +11,8 @@ newPackage(
 
 export {   
 	 skewSchubertVariety,
+ 	 createRandomFlagsForSimpleSchubert,
 	 solveSimpleSchubert,
-	 createRandomFlagsForSimpleSchubert,
 	 trackSimpleSchubert,
 	 findGaloisElement,
 	 isFullSymmetric,
@@ -227,7 +227,7 @@ solveEasy(RingElement) := (p)->(
 
 
 --------------------------------------
---- trackSimpleSchubert will be 
+--- trackSimpleSchubert
 --------------------------------------
 ---
 --- A function to find solution from a specific instance 
@@ -491,24 +491,33 @@ doc ///
        createRandomFlagsForSimpleSchubert 
 			 skewSchubertVariety
 ///
+
 doc ///
     Key
-
+			trackSimpleSchubert
     Headline
-
+			Uses Homotopy continuation to solve a Schubert problem
     Usage
-
+			trackSimpleSchubert(kn,cond, G, F)
     Inputs
-
+         kn:Sequence
+            two integers (k,n) denoting the Grassmannian Gr(k,n)
+         cond:Sequence
+            of two partitions of n
+         G:List
+            of starting Flags G_1,..., G_d
+         F:List
+            of target Flags F_1,...,F_d
     Outputs
-
+         :List
+            solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
     Description
 			Text
-
+            Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,\ldots,G_d$, and $F_1,\ldots,F_d$; where $d=k*(k-n) - sum(l) - sum(m)$. The function track the solutions of the system defined by $G_1,\ldots,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,\ldots,F_d$. 
   		Example
 
     SeeAlso
-
+         solveSimpleSchubert
 ///
 
 doc ///
