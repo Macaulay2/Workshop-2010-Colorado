@@ -275,7 +275,7 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
      Y := applyValues (W, tally);
      B :={};
      for i from 0 to #Y-1 do {
-          for j from 0 to #(Y#i)-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
+     	  for j from 0 to #(Y#((keys Y)#i))-1 do B=append(B,((keys Y)#i,{(keys Y#i)#j},(keys Y#i)#j)=>(Y#i)#((keys Y#i)#j))
           };
      t := new BettiTally from B;
      return t
