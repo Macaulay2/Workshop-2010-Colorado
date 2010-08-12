@@ -406,10 +406,10 @@ doc ///
       skewSchubertVariety(kn,l,m)
    Inputs
       kn:Sequence
-         two integers denoting the Grassmannian $Gr(k,n)$
+         two integers denoting the Grassmannian Gr(k,n)
       l:List
       m:List
-         partitions of $n$
+         partitions of n
    Outputs
       :Matrix
    Consequences
@@ -434,10 +434,10 @@ doc ///
       createRandomFlagsForSimpleSchubert(kn,l,m)
    Inputs
       kn:Sequence
-         two integers denoting the Grassmannian $Gr(k,n)$
+         two integers denoting the Grassmannian Gr(k,n)
       l:List
       m:List
-         partitions of $n$
+         partitions of n
    Outputs
       :List
          random fixed flags
@@ -463,15 +463,15 @@ doc ///
       solveSimpleSchubert(kn,l,m,G)
    Inputs
       kn:Sequence
-         two integers denoting the Grassmannian $Gr(k,n)$
+         two integers denoting the Grassmannian Gr(k,n)
       l:List
       m:List
-         partitions of $n$
+         partitions of n
       G:List
-         of fixed Flags $G_1,\ldots,G_d$
+         of fixed Flags G_1,...,G_d
    Outputs
       :List
-         solutions of the simple Schubert Problem defined by $l$ and $m$ with respect to the flags $G_1,\ldots,G_d$
+         solutions of the simple Schubert Problem defined by l and m with respect to the flags G_1,...,G_d
    Description
       Text
          Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,\ldots,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
@@ -501,13 +501,13 @@ doc ///
 			trackSimpleSchubert(kn,cond, G, F)
     Inputs
          kn:Sequence
-            two integers $(k,n)$ denoting the Grassmannian $Gr(k,n)$
+            two integers (k,n) denoting the Grassmannian Gr(k,n)
          cond:Sequence
-            of two partitions of $n$
+            of two partitions of n
          G:List
-            of starting Flags $G_1,\ldots, G_d$
+            of starting Flags G_1,..., G_d
          F:List
-            of target Flags $F_1,\ldots,F_d$
+            of target Flags F_1,...,F_d
     Outputs
          :List
             solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
