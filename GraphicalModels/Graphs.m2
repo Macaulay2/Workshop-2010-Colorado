@@ -76,18 +76,6 @@ LabeledGraph = new Type of Graph
    
 
 digraph = method()
-digraph List := (g) -> (
-     -- Input:  A list of pairs where the first element of the pair is the 
-     --         name of a node and the second is the list of 
-     --         children for that node. If a node has no children,
-     --         then the second element of the pair should be empty. 
-     -- Output:  A hashtable with keys the names of the nodes 
-     --          with values the children.
-     G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
-     H := new MutableHashTable from apply(G,x->{x#0,set {}});     
-     scan(G, x -> H#(x#0) = H#(x#0) + x#1);
-     new Digraph from H)
-     
 digraph HashTable := (g) -> (
      -- Input:  A hash table with keys the names of the nodes of 
      --         and the values the children of that node.      
@@ -98,6 +86,19 @@ digraph HashTable := (g) -> (
      G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
      nullVertices := toList (sum(values G) - keys G);
      new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus))
+
+digraph List := (g) -> (
+     -- Input:  A list of pairs where the first element of the pair is the 
+     --         name of a node and the second is the list of 
+     --         children for that node. If a node has no children,
+     --         then the second element of the pair should be empty. 
+     -- Output:  A hashtable with keys the names of the nodes 
+     --          with values the children.
+     G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
+     H := new MutableHashTable from apply(G,x->{x#0,set {}});     
+     scan(G, x -> H#(x#0) = H#(x#0) + x#1);
+     digraph (new HashTable from H))
+     
 
 
 graph = method(Options => {Singletons => null})
