@@ -11,7 +11,18 @@ newPackage(
     	DebuggingMode => true
     	)
 
-export {}
+export {
+     "computeFreeBasis",
+     "applyRowShortcut",
+     "maxMinors",
+     "isProjective",
+     "isUnimodular",
+     "qsAlgorithmPID",
+     "qsAlgorithm",
+     "qsAlgorithmRow",
+     "findMaxIdeal",
+     "changeVar"     
+}
 
 -- Core prgram to compute the free basis
 -- Needs QSAlgorithm
