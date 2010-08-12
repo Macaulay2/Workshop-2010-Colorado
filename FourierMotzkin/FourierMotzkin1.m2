@@ -141,8 +141,20 @@ toZZ List := List => L -> (
      l := lcm d;
      apply(L, e -> (numerator(l*e))))
 
+
 defaultAlg := ((options FourierMotzkin1).Configuration)#"Algorithm"
+
+-- Computes the dual representation for the polyhedral cone
 fourierMotzkin = method(Options => {Algorithm => defaultAlg});
+--   INPUT : 'Z' a matrix; the columns are the rays generating the cone
+--	     'H' a matrix; the columns are the rays generaing the linear
+--               space in the cone.
+--  OUTPUT : a sequence (A,E) :
+--           'A' a matrix; the columns are the rays generating the polar
+--               cone
+--           'E' a matrix; the columns are the rays generating the linear
+--               space in the polar cone
+-- COMMENT :  'cone(Z) + affine(H) = {x : A^t * x <= 0, E^t * x = 0}'
 fourierMotzkin (Matrix, Matrix) := Sequence => opt -> (Z, H) ->(
      -- checking for input errors
      R := ring source Z;
@@ -171,9 +183,8 @@ fourierMotzkin Matrix := Sequence => opt -> Z ->(
      )
 
 
--- Computes the dual representation for the polyhedral cone
+-- Macaulay2 implementation of the Fourier Motzkin algorithm.
 fourierMotzkinM2 = method();
-
 --   INPUT : 'Z' a matrix; the columns are the rays generating the cone
 --	     'H' a matrix; the columns are the rays generaing the linear
 --               space in the cone.
@@ -266,11 +277,15 @@ fourierMotzkinM2 Matrix := Sequence => Z -> (
      -- calls fourierMotzkin(Matrix, Matrix)
      fourierMotzkin(Z,H))
 
+-- Get a temporary filename.
 getFilename = () -> (
      filename := temporaryFileName();
      while fileExists(filename) or fileExists(filename|".ine") or fileExists(filename|".out") do filename = temporaryFileName();
      filename)
 
+
+-- Method for creating the input files for glrs, lcdd, lcdd_gmp, lrs.
+-- Matrices are the same as in fourierMotzkin. 
 putMatrix = method()
 putMatrix (File, Matrix) := (F,A) ->(
      F << "polytope" << endl;
@@ -313,6 +328,7 @@ putMatrix (File, Matrix, Matrix) := (F,C,B) -> (
      F << "end" << endl;
      )
 
+-- Method for parsing the output files of lcdd and lrs.
 getMatrix = method()
 getMatrix String := (filename) -> (
      if debugLevel > 2 then << get filename << endl;
@@ -323,7 +339,8 @@ getMatrix String := (filename) -> (
 	  L = L#1;
      	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
      	  m = value( M#1);
-     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ)),i-> i#0==0),l->drop(l,1)),map(QQ^m,QQ^0,0))
+     	  A = sort transpose matrix apply(select(pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ)),i-> i#0==0),l->drop(l,1));
+	  (A, map(ZZ^(numRows A),ZZ^0,0))
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
@@ -336,6 +353,8 @@ getMatrix String := (filename) -> (
 	  )
      )
 
+-- Method for calling lrs.
+-- Creates an input file from the given matrices, applies lrs and parses output.
 lrs = method()
 lrs Matrix := Matrix => A ->(
      filename := getFilename();
@@ -345,8 +364,8 @@ lrs Matrix := Matrix => A ->(
      close F;
      execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with lrs, for details see " | rootPath | filename | ".txt.");
-     if ring source A === ZZ then apply(select(getMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     else getMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     else apply(getMatrix (filename | ".ext"), b-> substitute(b,QQ))
      )
 lrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return lrs A else(
@@ -357,11 +376,13 @@ lrs (Matrix,Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with lrs, for details see " | rootPath | filename | ".txt.");
-	  if ring source A === ZZ then apply(select(getMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     	  else getMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     	  else apply(getMatrix (filename | ".ext"), b-> substitute(b,QQ))
 	  )
      )
 
+-- Method for calling lcdd.
+-- Creates an input file from the given matrices, applies lcdd and parses output.
 cdd = method()
 cdd Matrix := Matrix => A ->(
      filename := getFilename();
@@ -371,8 +392,8 @@ cdd Matrix := Matrix => A ->(
      close F;
      execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with cdd, for details see " | rootPath | filename | ".txt.");
-     if ring source A === ZZ then apply(select(getMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     else getMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     else apply(getMatrix (filename | ".ext"), b-> substitute(b,QQ))
      )
 cdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return cdd A else(
@@ -383,11 +404,12 @@ cdd (Matrix, Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with cdd, for details see " | rootPath | filename | ".txt.");
-	  if ring source A === ZZ then apply(select(getMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     	  else getMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(getMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     	  else apply(getMatrix (filename | ".ext"), b-> substitute(b,QQ))
 	  )
      )
 
+-- Method for parsing the output files of glrs and lcdd_gmp.
 ggetMatrix = method()
 ggetMatrix String := (filename) -> (
      if debugLevel > 2 then << get filename << endl;
@@ -398,7 +420,8 @@ ggetMatrix String := (filename) -> (
 	  L = L#1;
      	  M = select(separateRegexp("[[:space:]]", L), m->m=!="");
      	  m = value( M#1);
-     	  (sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> promote(value o,QQ)),i-> i#0==0),l-> drop(l,1)),map(QQ^m,QQ^0,0))
+     	  A = sort transpose matrix apply(select(pack_m apply(drop(M,3), o-> promote(value o,QQ)),i-> i#0==0),l-> drop(l,1));
+	  (A, map(ZZ^(numRows A),ZZ^0,0))
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
@@ -411,6 +434,8 @@ ggetMatrix String := (filename) -> (
 	  )
      )
 
+-- Method for calling glrs.
+-- Creates an input file from the given matrices, applies glrs and parses output.
 glrs = method()
 glrs Matrix := Matrix => A ->(
      filename := getFilename();
@@ -420,8 +445,8 @@ glrs Matrix := Matrix => A ->(
      close F;
      execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with glrs, for details see " | rootPath | filename | ".txt.");     
-     if ring source A === ZZ then apply(select(ggetMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     else ggetMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     else apply(ggetMatrix (filename | ".ext"), b-> substitute(b,QQ))
      )
 glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return glrs A else(
@@ -432,11 +457,13 @@ glrs (Matrix,Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with glrs, for details see " | rootPath | filename | ".txt.");
-	  if ring source A === ZZ then apply(select(ggetMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     	  else ggetMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     	  else apply(ggetMatrix (filename | ".ext"), b-> substitute(b,QQ))
 	  )
      )
 
+-- Method for calling lcdd_gmp.
+-- Creates an input file from the given matrices, applies lcdd_gmp and parses output.
 gcdd = method()
 gcdd Matrix := Matrix => A ->(
      filename := getFilename();
@@ -446,8 +473,8 @@ gcdd Matrix := Matrix => A ->(
      close F;
      execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
      if run execstr =!= 0 then error( "-- Error with gcdd, for details see " | rootPath | filename | ".txt.");     
-     if ring source A === ZZ then apply(select(ggetMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     else ggetMatrix (filename | ".ext")
+     if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     else apply(ggetMatrix (filename | ".ext"), b-> substitute(b,QQ))
      )
 gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return gcdd A else(
@@ -458,8 +485,8 @@ gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
 	  close F;
 	  execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
 	  if run execstr =!= 0 then error( "-- Error with gcdd, for details see " | rootPath | filename | ".txt.");
-	  if ring source A === ZZ then apply(select(ggetMatrix (filename | ".ext"), b-> b!= 0), b->transpose matrix apply(entries transpose b, e-> primitive toZZ e))
-     	  else ggetMatrix (filename | ".ext")
+	  if ring source A === ZZ then apply(ggetMatrix (filename | ".ext"), b-> if b!=0 then transpose matrix apply(entries transpose b, e-> primitive toZZ e) else b)
+     	  else apply(ggetMatrix (filename | ".ext"), b-> substitute(b,QQ))
 	  )
      )
 
@@ -761,6 +788,44 @@ document {
      Graduate Texts in Mathematics 152, Springer-Verlag, New York,
      1995."  }
 
+document {
+     Key => {[fourierMotzkin, Algorithm]},
+     Headline => "choice of algorithm",
+     "A string that determines which algorithm is used to compute the polar dual. 
+     The possible values are the following: \"M2\" (default), \"cdd\", \"gcdd\",
+     \"glrs\", \"lrs\".",
+     PARA{}, "The program cdd+ is the implementation of the Double Description
+     Method of Fourier and Motzkin. It is avaiable at ",
+     HREF("http://www.ifor.math.ethz.ch/~fukuda/cdd_home/cdd.html",
+     "cdd and cddplus Homepage"),
+     " and maintained by ",
+     HREF("http://www.ifor.math.ethz.ch/~fukuda/",
+     "Komei Fukuda"),". The cdd option uses floating point arithmetic and gcdd uses
+     exact rational arithmetic. In particular cdd may provide only an approximate
+     answer.",
+     EXAMPLE lines ///
+     rays = transpose matrix {{-2,-1,0,0,0},{0,5,2,0,0}}
+     linearities = transpose matrix {{0,-1,-1,3,0},{3,1,1,0,3}}
+     Z = fourierMotzkin (rays, linearities, Algorithm=>"cdd")
+     fourierMotzkin (Z, Algorithm=>"gcdd")          
+     ///,
+     PARA{}, "The programm lrs is based on the the reverse search algorithm of
+     Avis and Fukuda. It is avaiable at ",
+     HREF("http://cgm.cs.mcgill.ca/~avis/C/lrs.html",
+     "lrs home page"),
+     " and maintained by ",
+     HREF("http://cgm.cs.mcgill.ca/~avis/",
+     "David Avis"), ". The lrs option uses extended precision arithmetic and glrs uses
+     exact rational arithmetic. The first case returns an error in the event of
+     an overflow.",
+     EXAMPLE lines ///
+     rays = transpose matrix {{0,5,2,0,0},{-6,8,11,0,0}}
+     linearities = transpose matrix {{0,-1,-1,13,0},{3,1,1,0,3}}
+     Z = fourierMotzkin (rays, linearities, Algorithm=>"lrs")
+     fourierMotzkin (Z, Algorithm=>"glrs")     
+     ///
+     }
+
 TEST ///
 C = transpose matrix{{1,1,1,1}}
 assert(C == (fourierMotzkin fourierMotzkin C)#0)
@@ -854,8 +919,8 @@ assert( FM#1==GCDD#1 )
 TEST ///
 Z = transpose matrix {{1,0,0},{0,1,0},{0,0,1},{1,1,-1}}
 FM = fourierMotzkin Z
-GLRS = fourierMotzkin fourierMotzkin fourierMotzkin(Z, Algorithm=>"glrs")
-GCDD = fourierMotzkin fourierMotzkin fourierMotzkin(Z, Algorithm=>"gcdd")
+GLRS = fourierMotzkin fourierMotzkin fourierMotzkin(Z, Algorithm=>"lrs")
+GCDD = fourierMotzkin fourierMotzkin fourierMotzkin(Z, Algorithm=>"cdd")
 assert( FM#0==GLRS#0 )
 assert( FM#1==GLRS#1 )
 assert( FM#0==GCDD#0 )
