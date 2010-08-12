@@ -5,3 +5,4 @@ lift(a,QQ)
 a = 4.537815126e-01
 lift(a,QQ)
 a = 5.923344948e-02
+lift(a,QQ)
