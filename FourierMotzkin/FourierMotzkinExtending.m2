@@ -299,7 +299,7 @@ cdd getMatrixFromFile "in5.ine"
 fourierMotzkin getMatrixFromFile "cyc.ine"
 
 restart
-load "FourierMotzkinExtending.m2"
+load "FourierMotzkin/FourierMotzkinExtending.m2"
 C = transpose matrix{{1,1,0}, {0,1,1}}
 H = transpose matrix{{1,0,-1}}
 C|H
@@ -333,7 +333,7 @@ L = apply(L, l-> promote(l,RR))
 L = apply(L, l-> lift(l,QQ))
 
 
-D = transpose random(ZZ^4,ZZ^7, Density=>.3, Height=> 30)
+D = transpose random(ZZ^4,ZZ^7, Density=>.8, Height=> 30)
 entries D
 f = cdd cdd cdd cdd cdd D
 l = cdd D
