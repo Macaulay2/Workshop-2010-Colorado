@@ -328,7 +328,7 @@ isFullSymmetric(List) := (perms)->(
 	-- Running GAP
 	--
 	--------------
-	run(GAPexe|" "|toString(file));
+	run(GAPexe|" "|toString(file)|" > null");
 	if fileExists toString(file) then (
 		removeFile toString(file); 
 		return false;

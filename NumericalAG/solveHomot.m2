@@ -19,7 +19,8 @@ restart
 needsPackage "NumericalSchubertCalculus"
 
 p = {toList(0..4)};
-isFullSymmetric(p)===false
+p = permutations toList(0..3)
+isFullSymmetric(p)
 
 
 load "solveHomot.m2"
