@@ -3,9 +3,9 @@ newPackage(
         "MayerVietorisTrees",
         Version => "0.1", 
         Date => "August 8, 2010",
-        Authors => {{Name => "Eduardo"},
+        Authors => {{Name => "Eduardo Saenz-de-Cabezon"},
 	     	    {Name => "Courtney Gibbons"},
-		    {Name => "Dennis"}},
+		    {Name => "Dennis Moore"}},
 	--CurrentDevelopers => {{Name => "Eduardo"},
 	--    	                {Name => "Courtney"},
 	--     	    	      	{Name => "Dennis"}};
