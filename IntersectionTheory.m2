@@ -1,4 +1,7 @@
 -- -*- coding: utf-8 -*-
+--To do:
+-- -Add functionality to multiply elements of the "Schubert Ring", perhaps by
+--  overloading the * operator
 needsPackage "Schubert2"
 needsPackage "SchurRings"
 
@@ -75,7 +78,8 @@ placeholderToSchubertBasis(RingElement,FlagBundle) := (c,G) -> (
 	  R.cache.schubertring = S;
 	  S.cache = new MutableHashTable;
 	  S.cache.intersectionmap = map(R,S,M));
-     (vars S)*(lift(c2,B))
+     rez := (vars S)*(lift(c2,B));
+     rez_(0,0)
      )
 
 beginDocumentation()
@@ -434,7 +438,6 @@ doc ///
 	   integral sigma^4)
     Text
       Now we can calculate to our hearts' content:
-      ***Set range to: from 1 to 8 in final draft***
     Example
       for k from 1 to 5 do (
 	   << numOfLines(k) << " lines meet four " << k << "-planes in P" << 2*k+1 << "\n")
@@ -453,12 +456,12 @@ doc ///
       calculate:
     Example
       G37 = flagBundle({3,4})
+      A37 = intersectionRing G37
       sigma = 8*placeholderSchubertCycle({3,2,1},G37)
       integral sigma^2
     Text
       More generally, we can ask: given 2 general quadrics in ${\mathbb P}^{2k+2}$, how many
       $k$-planes are contained in their intersection?  We calculate:
-      ***set range to: from 2 to 5 in final draft***
     Example
       numOfPlanes = k -> (
 	   G:= flagBundle({k+1,k+2});
@@ -469,7 +472,9 @@ doc ///
       for k from 2 to 4 do (
 	   << numOfPlanes(k) << " " << k << "-planes in two quadrics in P" << 2*k+2 <<"\n")
     Text
-      Exercise 4.44
+      Exercise 4.44:
+      
+      Compute $\sigma_{2,1}^2$ in the Chow ring of $G(3,6)$. 
       
       This is easy with the function @TO placeholderToSchubertBasis@, which we already saw in
       @TO "Intersection Theory Section 4.2"@:
