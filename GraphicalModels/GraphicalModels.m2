@@ -120,12 +120,12 @@ needsPackage"Graphs"
 ---- Should removeNodes also be moved? --it's already there!
 
 --------------------------
--- Markov relationships --
+--   Markov relations   --
 --------------------------
 
 pairMarkovStmts = method()
 pairMarkovStmts Digraph := List => (G) -> (
-     -- given a graph G, returns a list of triples {A,B,C}
+     -- given a digraph G, returns a list of triples {A,B,C}
      -- where A,B,C are disjoint sets, and for every vertex v
      -- and non-descendent w of v,
      -- {v, w, nondescendents(G,v) - w}
@@ -134,9 +134,10 @@ pairMarkovStmts Digraph := List => (G) -> (
 	       W := ND - parents(G,v);
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
 
+
 localMarkovStmts = method()			 
 localMarkovStmts Digraph := List =>  (G) -> (
-     -- Given a graph G, return a list of triples {A,B,C}
+     -- Given a digraph G, return a list of triples {A,B,C}
      -- of the form {v, nondescendents - parents, parents}
      result := {};
      scan(keys G, v -> (
@@ -177,20 +178,93 @@ globalMarkovStmts Digraph := List => (G) -> (
      removeRedundants result
      )
 
+--------------------------
+-- Bayes ball algorithm --
+--------------------------
+
+bayesBall = (A,C,G) -> (
+     -- A is a set in 1..n (n = #G)
+     -- C is a set in 1..n (the "blocking set")
+     -- G is a DAG
+     -- Returns the subset B of 1..n which is
+     --   independent of A given C.
+     -- The algorithm is the Bayes Ball algorithm,
+     -- as implemented by Luis Garcia, after
+     -- the paper of Ross Schlacter
+     n := #keys G; -- n := #G;
+     --zeros := toList((n+1):false);
+     --visited := new MutableList from zeros;
+     --blocked := new MutableList from zeros;
+     --up := new MutableList from zeros;
+     --down := new MutableList from zeros;
+     --top := new MutableList from zeros;
+     --bottom := new MutableList from zeros;
+     --now make new hashtables with same keys as G, but all entries false:
+     visited := new MutableHashTable from apply(keys G,k-> k=>false);
+     blocked :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     up :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     down := new MutableHashTable from apply(keys G,k-> k=>false);
+     top :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     bottom := new MutableHashTable from apply(keys G,k-> k=>false);
+     vqueue := toList A; -- sort toList A
+     -- Now initialize vqueue, set blocked
+     scan(vqueue, a -> up#a = true);
+     scan(toList C, c -> blocked#c = true);
+     local pa;
+     local ch;
+     while #vqueue > 0 do (
+	  v := vqueue#-1;
+	  vqueue = drop(vqueue,-1);
+	  visited#v = true;
+	  if not blocked#v and up#v
+	  then (
+	       if not top#v then (
+		    top#v = true;
+		    pa = toList parents(G,v);
+		    scan(pa, i -> up#i = true);
+		    vqueue = join(vqueue,pa);
+		    );
+	       if not bottom#v then (
+		    bottom#v = true;
+		    ch = toList children(G,v);
+		    scan(ch, i -> down#i = true);
+		    vqueue = join(vqueue,ch);
+		    );
+	       );
+	  if down#v
+	  then (
+	       if blocked#v and not top#v then (
+		    top#v = true;
+		    pa = toList parents(G,v);
+		    scan(pa, i -> up#i = true);
+		    vqueue = join(vqueue,pa);
+		    );
+	       if not blocked#v and not bottom#v then (
+		    bottom#v = true;
+		    ch = toList children(G,v);
+		    scan(ch, i -> down#i = true);
+		    vqueue = join(vqueue,ch);
+		    );
+	       );
+	  ); -- while loop
+     set toList select(keys G, i -> not blocked#i and not bottom#i)     
+     )
+
 
 ------------------------------------------------------------------
--- Removing redundant statements:
--- this is called from local, global, and pairwise Markov methods.
+-- Removing redundant statements:                               --
+-- called from local, global, and pairwise Markov methods.      --
 ------------------------------------------------------------------
 
--- A dependency is a list {A,B,C}
---  where A,B,C are (disjoint) subsets of labels for nodes in the graph.
---  The meaning is: A is independent of B given C.
+-- An independent statement is a list {A,B,C}
+-- where A,B,C are (disjoint) subsets of labels for nodes in the graph.
+-- It should be interpreted as: A independent of B given C.
 -- A dependency list is a list of dependencies.
 
--- No serious attempt is made to remove redundant dependencies.
--- However, we have several very simple routines to remove
--- the most obvious redundant elements
+-- We have several simple routines to remove
+-- the most obvious redundant elements, 
+-- but a more serious attempt to remove dependencies could be made.
+
 -- If S and T represent exactly the same dependency, return true.
  
 -- check for symmetry:
@@ -270,88 +344,10 @@ removeRedundants = (Ds) -> (
 	       D0 := drop(Ds,{i,i});
 	       all(D0, b -> not test1(a,b))));
      minimize(Ds_c))
-------------------------------------------------------------------
--- END of removing redundant statements.
-------------------------------------------------------------------
-
---------------------------
--- Bayes ball algorithm --
---------------------------
-bayesBall = (A,C,G) -> (
-     -- A is a set in 1..n (n = #G)
-     -- C is a set in 1..n (the "blocking set")
-     -- G is a DAG
-     -- Returns the subset B of 1..n which is
-     --   independent of A given C.
-     -- The algorithm is the Bayes Ball algorithm,
-     -- as implemented by Luis Garcia, after
-     -- the paper of Ross Schlacter
-     n := #keys G; -- n := #G;
-     --zeros := toList((n+1):false);
-     --visited := new MutableList from zeros;
-     --blocked := new MutableList from zeros;
-     --up := new MutableList from zeros;
-     --down := new MutableList from zeros;
-     --top := new MutableList from zeros;
-     --bottom := new MutableList from zeros;
-     --now make new hashtables with same keys as G, but all entries false:
-     visited := new MutableHashTable from apply(keys G,k-> k=>false);
-     blocked :=  new MutableHashTable from apply(keys G,k-> k=>false);
-     up :=  new MutableHashTable from apply(keys G,k-> k=>false);
-     down := new MutableHashTable from apply(keys G,k-> k=>false);
-     top :=  new MutableHashTable from apply(keys G,k-> k=>false);
-     bottom := new MutableHashTable from apply(keys G,k-> k=>false);
-     vqueue := toList A; -- sort toList A
-     -- Now initialize vqueue, set blocked
-     scan(vqueue, a -> up#a = true);
-     scan(toList C, c -> blocked#c = true);
-     local pa;
-     local ch;
-     while #vqueue > 0 do (
-	  v := vqueue#-1;
-	  vqueue = drop(vqueue,-1);
-	  visited#v = true;
-	  if not blocked#v and up#v
-	  then (
-	       if not top#v then (
-		    top#v = true;
-		    pa = toList parents(G,v);
-		    scan(pa, i -> up#i = true);
-		    vqueue = join(vqueue,pa);
-		    );
-	       if not bottom#v then (
-		    bottom#v = true;
-		    ch = toList children(G,v);
-		    scan(ch, i -> down#i = true);
-		    vqueue = join(vqueue,ch);
-		    );
-	       );
-	  if down#v
-	  then (
-	       if blocked#v and not top#v then (
-		    top#v = true;
-		    pa = toList parents(G,v);
-		    scan(pa, i -> up#i = true);
-		    vqueue = join(vqueue,pa);
-		    );
-	       if not blocked#v and not bottom#v then (
-		    bottom#v = true;
-		    ch = toList children(G,v);
-		    scan(ch, i -> down#i = true);
-		    vqueue = join(vqueue,ch);
-		    );
-	       );
-	  ); -- while loop
-     set toList select(keys G, i -> not blocked#i and not bottom#i)     
-     )
-
-
 
 -------------------
 -- Markov rings ---
 -------------------
-
-     
      
 markovRingList := new MutableHashTable;
 --the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
@@ -412,35 +408,11 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 			      p_newi)))));
      map(A,S,F))
 
-
-
--------------------------------------------------------
--- Constructing the ideal of a independence relation --
--------------------------------------------------------
-cartesian := (L) -> (
-     if #L == 1 then 
-	return toList apply (L#0, e -> 1:e);
-     L0 := L#0;
-     Lrest := drop (L,1);
-     C := cartesian Lrest;
-     flatten apply (L0, s -> apply (C, c -> prepend (s,c))))
-
-possibleValues := (d,A) ->
-     cartesian (toList apply(1..#d, i -> 
-	       if member(i,A) 
-	       then toList(1..d#(i-1)) 
-	       else {0}))
-
-prob = (d,s) -> (
-     L := cartesian toList apply (#d, i -> 
-	   if s#i === 0 
-	   then toList(1..d#i) 
-	   else {s#i});
-     sum apply (L, v -> p_v))
-
+-------------------
+-- Markov ideals --
+-------------------
 
 ------ sonja: documented everything up to here. some notes remaining to be done for marginMap and hideMap.
-
 
 markovMatrices = method()
 markovMatrices(Ring,List) := (R, Stmts) -> (
@@ -464,8 +436,34 @@ markovIdeal(Ring,List) := (R,Stmts) -> (
      sum apply(M, m -> minors(2,m))
      )
 
+-------------------------------------------------------
+-- Constructing the ideal of a independence relation --
+-------------------------------------------------------
 
+cartesian := (L) -> (
+     if #L == 1 then 
+	return toList apply (L#0, e -> 1:e);
+     L0 := L#0;
+     Lrest := drop (L,1);
+     C := cartesian Lrest;
+     flatten apply (L0, s -> apply (C, c -> prepend (s,c))))
 
+possibleValues := (d,A) ->
+     cartesian (toList apply(1..#d, i -> 
+	       if member(i,A) 
+	       then toList(1..d#(i-1)) 
+	       else {0}))
+
+prob = (d,s) -> (
+     L := cartesian toList apply (#d, i -> 
+	   if s#i === 0 
+	   then toList(1..d#i) 
+	   else {s#i});
+     sum apply (L, v -> p_v))
+
+-----------------------------------------
+-- Gaussian directed acyclic graphs    --
+-----------------------------------------
 
 gaussRing = method(Options=>{CoefficientRing=>QQ, Variable=>symbol s})
 gaussRing ZZ := opts -> (n) -> (
@@ -491,11 +489,6 @@ gaussRing Digraph := opts -> (G) -> (
      R#gaussRing = #keys G;
      R
      )
-
---the following function retrieves the position of the keys in the graph G
---for all keys that are contained in the ith entry of the list D 
-getPositionOfKeys:= (G,D,i)-> 
-     apply(D#i,oneLabel -> position(keys G, k-> k===oneLabel))
 
 
 gaussMinors = method()
@@ -605,6 +598,15 @@ trekIdeal(Ring, Digraph) := (R,G) -> (
 	  );
      substitute(I,R)
      )
+
+--the following function retrieves the position of the keys in the graph G
+--for all keys that are contained in the ith entry of the list D 
+getPositionOfKeys:= (G,D,i)-> 
+     apply(D#i,oneLabel -> position(keys G, k-> k===oneLabel))
+
+------------------------------
+-- Gaussian mixed graphs    --
+------------------------------
 
 ----------------------
 -- Parameterization --
