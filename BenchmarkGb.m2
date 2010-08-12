@@ -10,10 +10,12 @@ newPackage(
     )
 
 loadPackage "gbHelper"
+loadPackage "BooleanGB"
 export {runBenchmark, makeBooleanNetwork, testgb}
 
 testgb = method()
 testgb Ideal := Bool => I -> (
+  gbTrace = 1;
   G := ideal gens gb I;
   print toString G;
   GG := time gbBoolean I;
@@ -52,72 +54,76 @@ runBenchmark (Ideal,String) := Ideal => (I,ff) -> (
  assert( p == 2 );
  FP := ideal apply( gens R, x -> x^2 + x);
 
+-- lex in base ring
+
  Rlex = ZZ/(char R)[gens R, MonomialOrder=>Lex];
  T := timing gens gb( sub( I, Rlex) + sub( FP, Rlex) );
  tt := first T;
  G := last T;
- print ("Lex Order of (I+FP):\t\t\t\t" | toString tt | " seconds.");
- ff << "Lex Order of (I+FP):\t\t\t\t" << toString tt << " seconds." << endl;
+ print ("Lex Order of (I+FP):\t" | toString tt | " seconds.");
+ ff << "Lex Order of (I+FP):\t" << toString tt << " seconds." << endl;
 
  RgRevLex = ZZ/(char R)[gens R, MonomialOrder=>GRevLex];
  T = timing gens gb( sub( I, RgRevLex) + sub( FP, RgRevLex) );
  tt = first T;
  G = ideal last T;
- print ("GRevLex Order of (I+FP):\t\t\t" | toString tt | " seconds.");
- ff << "GRevLex Order of (I+FP):\t\t\t" << toString tt << " seconds." << endl;
+ print ("GRevLex Order of (I+FP):\t" | toString tt | " seconds.");
+ ff << "GRevLex Order of (I+FP):\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( G, Rlex) + sub( FP, Rlex) );
  tt = first T;
  G = ideal last T;
- print ("Lex order from GRevLex basis of (I+FP):\t\t" | toString tt | " seconds.\n");
- ff << "Lex order from GRevLex basis of (I+FP):\t\t" << toString tt << " seconds.\n" << endl;
+ print ("Lex order from GRevLex basis of (I+FP):\t" | toString tt | " seconds.\n");
+ ff << "Lex order from GRevLex basis of (I+FP):\t" << toString tt << " seconds.\n" << endl;
 
+---- lex in quotient ring
  QRlex = Rlex/ sub( FP, Rlex);
 -- T = timing gens gb( sub( I, QRlex));
 -- tt = first T;
 -- G = last T;
--- print ("Quotient Ring Lex Order:\t\t\t" | toString tt | " seconds.");
---
+-- print ("Quotient Ring Lex Order:\t" | toString tt | " seconds.");
+ 
  QRgRevLex = RgRevLex/ sub( FP, RgRevLex);
+
 -- T = timing gens gb( sub( I, QRgRevLex));
 -- tt = first T;
 -- G = last T;
--- print ("Quotient Ring GRevLex Order:\t\t\t" | toString tt | " seconds.");
+-- print ("Quotient Ring GRevLex Order:\t" | toString tt | " seconds.");
 --
 -- T = timing gens gb( sub( G, QRlex));
 -- tt = first T;
 -- G = last T;
--- print ("Quotient Ring Lex order from GRevLex basis:\t\t\t" | toString tt | " seconds.\n");
+-- print ("Quotient Ring Lex order from GRevLex basis:\t" | toString tt | " seconds.\n");
  
  T = timing gens gb( sub( I, QRlex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
- print ("Quotient Ring Lex Order, Sugarless:\t\t" | toString tt | " seconds.");
- ff << "Quotient Ring Lex Order, Sugarless:\t\t" << toString tt << " seconds." << endl;
+ print ("Quotient Ring Lex Order, Sugarless:\t" | toString tt | " seconds.");
+ ff << "Quotient Ring Lex Order, Sugarless:\t" << toString tt << " seconds." << endl;
 
- T = timing gens gb( sub( I, QRlex), Algorithm=>Test);
- tt = first T;
- G = last T;
- print ("Quotient Ring Lex Order, Test:\t\t" | toString tt | " seconds.");
- ff << "Quotient Ring Lex Order, Test:\t\t" << toString tt << " seconds." << endl;
+-- T = timing gens gb( sub( I, QRlex), Algorithm=>Test);
+-- tt = first T;
+-- G = last T;
+-- print ("Quotient Ring Lex Order, Test:\t" | toString tt | " seconds.");
+-- ff << "Quotient Ring Lex Order, Test:\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( I, QRgRevLex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
- print ("Quotient Ring GRevLex Order, Sugarless:\t\t" | toString tt | " seconds.");
- ff << "Quotient Ring GRevLex Order, Sugarless:\t\t" << toString tt << " seconds." << endl;
+ print ("Quotient Ring GRevLex Order, Sugarless:\t" | toString tt | " seconds.");
+ ff << "Quotient Ring GRevLex Order, Sugarless:\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( G, QRlex), Algorithm=>Sugarless);
  tt = first T;
  G = last T;
- print ("Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" | toString tt | " seconds.\n");
- ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t\t" << toString tt << " seconds.\n" << endl;
+ print ("Quotient Ring Lex order from GRevLex basis, Sugarless:\t" | toString tt | " seconds.\n");
+ ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t" << toString tt << " seconds.\n" << endl;
  
  T = timing gbBoolean I;
  tt = first T;
  G = last T;
- print ("gbBoolean:\t\t\t\t\t" | toString tt | " seconds.\n\n");
- ff << "gbBoolean:\t\t\t\t\t" << toString tt << " seconds.\n\n" << endl;
+ print ("gbBoolean:\t" | toString tt | " seconds.\n\n");
+ ff << "gbBoolean:\t" << toString tt << " seconds.\n\n" << endl;
 
  G
 )
