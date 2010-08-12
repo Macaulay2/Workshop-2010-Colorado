@@ -342,7 +342,6 @@ lowerBettiMVT(I)
 upperBettiMVT(J)
 lowerBettiMVT(J)
 
-pseudoBettiHelper(lowerBettiMVT(J),upperBettiMVT(J))
 pseudoBettiMVT(I)
 pseudoBettiMVT(J)
 
