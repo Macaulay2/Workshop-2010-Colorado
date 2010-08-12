@@ -155,9 +155,7 @@ trekIdeal(Ring, MixedGraph) := (SLP, g) -> (
 	n := #u;
 	c := trekSeparation(g);
 	I := {};
-  	A := map(SLP^n,n,(i,j)->SLP_(((n-1)*i)+(i+j)));
   	M := map (SLP^n, n, (i,j)->if i<j then SLP_(((n-1)*i)+(i+j)) else SLP_(((n-1)*j)+(i+j)));
-  	
 	for i from 1 to #c do (
 		s = 1;
 		if c#(i-1)#2 != {} then s = s + #c#(i-1)#2;
