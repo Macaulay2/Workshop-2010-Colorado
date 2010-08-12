@@ -148,51 +148,31 @@ trekSeparation MixedGraph := (G) -> (
 	
 
 trekIdeal = method()
-trekIdeal(MixedGraph) := (g) -> (
+trekIdeal(Ring, MixedGraph) := (SLP, g) -> (
+	use SLP;
 	u := directedEdges(g);
 	v := bidirectedEdges(g);
 	n := #u;
-	
-	pL := join(apply(keys(v), i->p_(i,i)),delete(null,flatten(apply(keys(v), x-> apply(toList v#x, y->if position(keys(v), i-> i===x) < position(keys(v), j-> j===y) then p_(x,y))))));
-	lL := delete(null,flatten(apply(keys(u), x-> apply(toList u#x, y->l_(x,y) ))));
-	vertices := join(pL,lL);
-	m := #vertices;
-	-- replace above 4 lines with next line once it is implemented in Graphs 
-	-- m := numEdges(u)+numEdges(v); 
-	
-	SLP := QQ[vertices,s_(1,1)..s_(n,n), MonomialOrder => Eliminate m];
-
-
-
 	c := trekSeparation(g);
-	M := mutableMatrix(SLP,n,n);
-	I := new Ideal;
-    M := map(SLP^n,n,(i,j)->s_(i+1,j+1));
-    
-    --k := 1;
-	--for i from 1 to n do (
-	--	for j from i to n do (
-	--		M_(i-1,j-1) = SLP_k;
-	--		M_(j-1,i-1) = SLP_k;
-	--		k = k+1;
-	--	)
-	--);
-	
-	print M;
+	I := {};
+  	M := map(SLP^n,n,(i,j)->SLP_(((n-1)*i)+(i+j)));
 	for i from 1 to #c do (
-		s = 0;
+		s = 1;
 		if c#(i-1)#2 != {} then s = s + #c#(i-1)#2;
 		if c#(i-1)#3 != {} then s = s + #c#(i-1)#3;
 		if (c#(i-1)#0) != {} then c1 = (c#(i-1)#0)/(l->l-1);
 		if (c#(i-1)#1) != {} then c2 = (c#(i-1)#1)/(l->l-1);
-		print c1;
-		print c2;
-		print s;
+		--print c1;
+		--print c2;
 		m = submatrix(matrix M, c1, c2);
-		print m;
-		I = I + minors(s, m);
+		--print s;
+		--print m;
+		--print entries gens minors(s,m);
+		I = append(I, flatten entries gens minors(s, m));
 	);
-	gb I
+	I = ideal flatten I;
+	--print I;
+	gens gb I
 )
 	
 	
