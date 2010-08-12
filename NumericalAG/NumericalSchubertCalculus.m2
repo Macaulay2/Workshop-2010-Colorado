@@ -422,7 +422,7 @@ doc ///
        	 -- in Gr(3,7)
       	 skewSchubertVariety( (3,7),{2,1},{1,1} )
    SeeAlso
-      solveSimpleSchubert
+         solveSimpleSchubert
 ///
 
 doc ///
@@ -449,7 +449,7 @@ doc ///
       	 -- in Gr(3,7)
       	 createRandomFlagsForSimpleSchubert((3,7),{2,1,0},{1,1,0})
    SeeAlso
-      solveSimpleSchubert
+         solveSimpleSchubert
 ///
 
 doc ///
@@ -487,17 +487,17 @@ doc ///
        	 ---------------------------------
        	 solveSimpleSchubert((k,n),l,m,G)
    SeeAlso
-      createRandomFlagsForSimpleSchubert 
-      skewSchubertVariety
+         createRandomFlagsForSimpleSchubert 
+         skewSchubertVariety
 ///	
 
 doc ///
     Key
-			trackSimpleSchubert
+       trackSimpleSchubert
     Headline
-			Uses Homotopy continuation to solve a Schubert problem
+       Uses Homotopy continuation to solve a Schubert problem
     Usage
-			trackSimpleSchubert(kn,cond, G, F)
+       trackSimpleSchubert(kn,cond, G, F)
     Inputs
          kn:Sequence
             two integers (k,n) denoting the Grassmannian Gr(k,n)
@@ -511,81 +511,38 @@ doc ///
          :List
             solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
     Description
-			Text
-   Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,...,G_d$, and $F_1,...,F_d$; where $d=k*(k-n) - |l| - |m|$. The function tracks the solutions of the system defined by $G_1,...,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,...,F_d$. 
-  		Example
-   ---- Simple Schubert Problem
-   (k,n) = (3,7)
-   l = {2,1,0}
-   m = {1,1,0}
-   ----  Generate random flags G and F----
-   d = k*(n-k)-sum(l)-sum(m);
-   G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   ---------------------------------
-   trackSimpleSchubert((k,n),(l,m),G,F)
-       
-         Text
-            If the solutions of the system defined by $G_1,...,G_d$ are given, they can be given in the function to avoid unnecessary computations
+       Text
+          Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,...,G_d$, and $F_1,...,F_d$; where $d=k*(k-n) - |l| - |m|$. The function tracks the solutions of the system defined by $G_1,...,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,...,F_d$. 
        Example
-   ---- Simple Schubert Problem
-   (k,n) = (3,7)
-   l = {2,1,0}
-   m = {1,1,0}
-   ----  Generate random flags G and F----
-   d = k*(n-k)-sum(l)-sum(m);
-   G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   ---------------------------------
-   Solns = solveSimpleSchubert((k,n),l,m,G);
-   
-   trackSimpleSchubert((k,n),(l,m),G,F, StartSolutions=>Solns)
+         ---- Simple Schubert Problem
+   	 (k,n) = (3,7)
+   	 l = {2,1,0}
+   	 m = {1,1,0}
+   	 ----  Generate random flags G and F----
+   	 d = k*(n-k)-sum(l)-sum(m);
+   	 G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	 F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	 ---------------------------------
+   	 trackSimpleSchubert((k,n),(l,m),G,F)
        
-    SeeAlso
+      Text
+         If the solutions of the system defined by $G_1,...,G_d$ are given, they can be given in the function to avoid unnecessary computations
+      Example
+         ---- Simple Schubert Problem
+   	 (k,n) = (3,7)
+   	 l = {2,1,0}
+   	 m = {1,1,0}
+   	 ----  Generate random flags G and F----
+   	 d = k*(n-k)-sum(l)-sum(m);
+   	 G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	 F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	 ---------------------------------
+   	 Solns = solveSimpleSchubert((k,n),l,m,G);
+         trackSimpleSchubert((k,n),(l,m),G,F, StartSolutions=>Solns)
+   SeeAlso
          solveSimpleSchubert
          createRandomFlagsForSimpleSchubert
 ///
-
-doc ///
-    Key
-      
-    Headline
-      
-    Usage
-      
-    Inputs
-      
-    Outputs
-      
-    Description
-			Text
-         
-  		Example
-         
-    SeeAlso
-      
-///
-
-doc ///
-    Key
-      
-    Headline
-      
-    Usage
-      
-    Inputs
-      
-    Outputs
-      
-    Description
-			Text
-         
-  		Example
-         
-    SeeAlso
-      
-///
-
 
 TEST ///
 -- test code and assertions here
