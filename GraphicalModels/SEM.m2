@@ -155,24 +155,20 @@ trekIdeal(Ring, MixedGraph) := (SLP, g) -> (
 	n := #u;
 	c := trekSeparation(g);
 	I := {};
-  	M := map(SLP^n,n,(i,j)->SLP_(((n-1)*i)+(i+j)));
+  	A := map(SLP^n,n,(i,j)->SLP_(((n-1)*i)+(i+j)));
+  	M := map (SLP^n, n, (i,j)->if i<j then SLP_(((n-1)*i)+(i+j)) else SLP_(((n-1)*j)+(i+j)));
+  	
 	for i from 1 to #c do (
 		s = 1;
 		if c#(i-1)#2 != {} then s = s + #c#(i-1)#2;
 		if c#(i-1)#3 != {} then s = s + #c#(i-1)#3;
 		if (c#(i-1)#0) != {} then c1 = (c#(i-1)#0)/(l->l-1);
 		if (c#(i-1)#1) != {} then c2 = (c#(i-1)#1)/(l->l-1);
-		--print c1;
-		--print c2;
 		m = submatrix(matrix M, c1, c2);
-		--print s;
-		--print m;
-		--print entries gens minors(s,m);
 		I = append(I, flatten entries gens minors(s, m));
 	);
 	I = ideal flatten I;
-	--print I;
-	gens gb I
+	flatten entries gens gb I
 )
 	
 	
