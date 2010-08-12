@@ -4,56 +4,83 @@ needsPackage"Graphs"
 
 newPackage(
      "GraphicalModels",
-     Version => "1.3",
+     Version => "1.4",
      Authors => {
-	  {Name => "Luis Garcia"},
+	  {Name => "Luis Garcia-Puente"},
 	  {Name => "Mike Stillman"},
        	  {Name => ""}
 	  },
-     Headline => "Markov ideals, arising from Bayesian networks in
-     statistics",
+     Headline => "A package for discrete and Gaussian statistical graphical models",
      DebuggingMode => true
      )
 
--------
--- 7-12 Aug 2010: updates, changes, bugs, typos, organization, documentation -- by the algstats grp at colorado!
--------
+------- 7-12 Aug 2010 -------------
+-- updates, changes, bugs, typos, organization, documentation 
+-- by the algstats grp at colorado!
+-----------------------------------
 
 ---- 28.10.09 ---- 
 ---- Version by the Working group at Aim  and MSRI
 ---- Amelia Taylor and Augustine O'Keefe
 ---- Comments from this group have 4 dashes, those with 2 are Mike/Luis. 
 
-
 ------------------------------------------
--- markov ideals in Macaulay2
--- Authors: Luis Garcia and Mike Stillman
+-- Algebraic Statistics in Macaulay2
+-- Authors: Luis Garcia-Puente and Mike Stillman
+-- Collaborators: Alex Diaz, Shaowei Lin, Augustine O'Keefe, Sonja Petrović, Amelia Taylor 
 -- 
 -- Routines:
---   makeGraph {{},{1},{1},{2,3},{2,4}}
---   displayGraph(name,G)
+--  Markov relations:
+--   pairMarkovStmts (Digraph G)
+--   localMarkovStmts (Digraph G)
+--   globalMarkovStmts (Digraph G)
+--   bayesBall (set A, set C, Digraph G)  [internal function used by globalMarkovStmts]
 --
---   localMarkovStmts G -- G is a directed graph
---   globalMarkovStmts G
---   pairMarkovStmts G
+--  Removing redundant statements: 
+--   equivStmts (S,T) -- [internal routine used within Markov relation routines]
+--   setit (d) -- [internal routine used within Markov relation routines] 
+--   under (d) -- [internal routine used within Markov relation routines]
+--   sortdeps (Ds) -- [internal routine used within Markov relation routines]
+--   normalizeStmt (D) -- [internal routine used within Markov relation routines]
+--   minimize (Ds) -- [internal routine used within Markov relation routines]
+--   removeRedundants (Ds) -- [internal routine used within Markov relation routines]
 --
---   markovRing (2,2,3,3)
---
+--  Markov Rings: 
+--   markovRing (sequence d)
 --   marginMap(R,i) : R --> R
---   hiddenMap(R,i) : R --> S
+--   hideMap(R,i) : R --> S
 --
---   markovMatrices S  -- S is a list of independence statements
---   markovIdeal S
+--  Markov Ideals:
+--   markovMatrices (Ring R, List S)  -- S is a list of independence statements
+--   markovIdeal (Ring R, List S)  -- S is a list of independence statements
+--   cartesian -- [internal routine used in MarkovMatrices and MarkovIdeal]
+--   possibleValues -- [internal routine used in MarkovMatrices and MarkovIdeal]
+--   prob -- [internal routine used in MarkovMatrices and MarkovIdeal]
+--   
+--  Gaussian directed acyclic graphs:
+--   gaussRing (Integer n)
+--   gaussRing (Digraph G)
+--   gaussMinors (Digraph G, Matrix M, List S) -- [iternal routine]
+--   gaussMatrices (Digraph G, Matrix M, List S)
+--   gaussIdeal (Ring R, Digraph G, List S) 
+--   trekIdeal (Ring R, Digraph D)
+--   getPositionofKeys (Digraph G, list D, Integer i) -- [internal routine]
+--    
+-- Gaussian mixed graphs (DAG + Bidirected)
 --
--- For examples of use, see the 
+--
+--
 ------------------------------------------
 
 
-export {localMarkovStmts, globalMarkovStmts, pairMarkovStmts,
+export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts, 
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
        gaussRing, gaussMatrices, gaussIdeal, trekIdeal}
      
 needsPackage"Graphs"
+
+-- Luis Garcia wants to remove comments
+-- FROM HERE
 
 ---- List from Board at AIM.
 ---- a)  Discrete   b) Gaussian
@@ -66,7 +93,10 @@ needsPackage"Graphs"
 ----  Local and Global Markov properties  (3.2)
 ----  use, when appropriate thms that say local <=> global based on conditions
 ----  
-----  parametrizations and for toric varieties the the corresponding matrix. 
+
+-- TO HERE
+
+----  parametrizations and for toric varieties the corresponding matrix. 
 ----  In the case of toric varieties the matrix is easy.  Here is the code, 
 ----  commented out to be used later when we are ready. 
 ---- 
@@ -89,12 +119,10 @@ needsPackage"Graphs"
 ---- NOTE ALL basic graph functionality has been moved to Graphs.m2
 ---- Should removeNodes also be moved? --it's already there!
 
-
-
-
 --------------------------
 -- Markov relationships --
 --------------------------
+
 pairMarkovStmts = method()
 pairMarkovStmts Digraph := List => (G) -> (
      -- given a graph G, returns a list of triples {A,B,C}
