@@ -417,10 +417,10 @@ doc ///
    Description
       Text
          Creates the matrix $E_{l,m}$ that parametrizes the skew Schubert variety $Y_{l,m} = Y_l \cap Y_m$.
-     Example
-       -- for l = 2,1 and m = 1,1
-       -- in Gr(3,7)
-       skewSchubertVariety( (3,7),{2,1},{1,1} )
+      Example
+         -- for l = 2,1 and m = 1,1
+       	 -- in Gr(3,7)
+      	 skewSchubertVariety( (3,7),{2,1},{1,1} )
    SeeAlso
       solveSimpleSchubert
 ///
@@ -444,10 +444,10 @@ doc ///
    Description
       Text
          Creates a list of d matrices with random numbers, where $d = k*(n-k)-|m|-|l|$.
-     Example
-       -- for l = 2,1 and m = 1,1
-       -- in Gr(3,7)
-       createRandomFlagsForSimpleSchubert((3,7),{2,1,0},{1,1,0})
+      Example
+         -- for l = 2,1 and m = 1,1
+      	 -- in Gr(3,7)
+      	 createRandomFlagsForSimpleSchubert((3,7),{2,1,0},{1,1,0})
    SeeAlso
       solveSimpleSchubert
 ///
@@ -472,24 +472,24 @@ doc ///
          solutions of the simple Schubert Problem defined by l and m with respect to the flags G_1,...,G_d
    Description
       Text
-    Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,...,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
-    This function is used to solve Simple Schubert Problems, as described in the paper:          
-    Leykin and Sottile, "Galois groups of Schubert problems via homotopy continuation", Mathematics of Computation, 78 (2009) 1749--1765.
-     Example
-       ---- Simple Schubert Problem
-       k = 3
-			 n = 7
-       l = {2,1,0}
-       m = {1,1,0}
-       ----  Generate random flags G----
-       d = k*(n-k)-sum(l)-sum(m);
-       G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-       ---------------------------------
-       solveSimpleSchubert((k,n),l,m,G)
+         Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,...,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
+    	 This function is used to solve Simple Schubert Problems, as described in the paper:          
+    	 Leykin and Sottile, "Galois groups of Schubert problems via homotopy continuation", Mathematics of Computation, 78 (2009) 1749--1765.
+      Example
+         ---- Simple Schubert Problem
+       	 k = 3
+	 n = 7
+       	 l = {2,1,0}
+       	 m = {1,1,0}
+       	 ----  Generate random flags G----
+       	 d = k*(n-k)-sum(l)-sum(m);
+       	 G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+       	 ---------------------------------
+       	 solveSimpleSchubert((k,n),l,m,G)
    SeeAlso
-       createRandomFlagsForSimpleSchubert 
-			 skewSchubertVariety
-///
+      createRandomFlagsForSimpleSchubert 
+      skewSchubertVariety
+///	
 
 doc ///
     Key
