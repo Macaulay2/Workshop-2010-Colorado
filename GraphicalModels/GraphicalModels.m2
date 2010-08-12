@@ -326,22 +326,23 @@ bayesBall = (A,C,G) -> (
      
      
 markovRingList := new MutableHashTable;
-markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ})
+--the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
+markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ,Variable=>value "symbol p"})
 markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
      kk:=QQ;
-     --added:
-     if opts.CoefficientRing =!=  QQ 
-     then kk = opts.CoefficientRing;
      p = value "symbol p";
-     if not markovRingList#?d then (
+     if opts.CoefficientRing =!= QQ then kk = opts.CoefficientRing;
+     if opts.Variable =!= value "symbol p" then p = opts.Variable;
+     if (not markovRingList#?(d,kk,toString symbol p)) then (
      	  start := (#d):1;
-     	  markovRingList#d = kk[p_start .. p_d]; --changed to kk option -Sonja 12aug10
-	  markovRingList#d.markov = d;
+     	  markovRingList#(d,kk,toString symbol p) = kk[p_start .. p_d]; --changed to kk option -Sonja 12aug10
+          markovRingList#(d,kk,toString symbol p).markov = d; --this is attached as info so that any poly ring can 
 	  );
-     markovRingList#d
+     --markovRingList#d
+     markovRingList#(d,kk,toString symbol p)
      )
 
   --------------
@@ -832,10 +833,15 @@ doc ///
       Rnew = markovRing (d,CoefficientRing=>CC); 
       coefficientRing Rnew
     Text
+      We might prefer to give diferent names to our variables. The letter ''p'' suggests a joint probability, 
+      but it might be useful to create a new ring where the variables have changed. This can easily be done
+      with the following option:
+    Example
+      d=(1,2);
+      markovRing (d,Variable=>q);
+      vars oo --here is the list of variables.
+    Text
       The LIST OF FNS USING THIS FUNCTION SHOULD BE INSERTED AS WELL.
-  Caveat
-    Currently, the user has no choice about the names of the variables.  
-    These might change in a later version.  
   SeeAlso
 ///
 
