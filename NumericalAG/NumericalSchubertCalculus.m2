@@ -420,7 +420,7 @@ doc ///
      Example
        -- for l = 2,1 and m = 1,1
        -- in Gr(3,7)
-       skewSchubertVariety((3,7),{2,1},{1,1})
+       skewSchubertVariety( (3,7),{2,1},{1,1} )
    SeeAlso
       solveSimpleSchubert
 ///
@@ -447,9 +447,7 @@ doc ///
      Example
        -- for l = 2,1 and m = 1,1
        -- in Gr(3,7)
-       createRandomFlagsForSimpleSchubert(3,7),{2,1,0},{1,1,0}
-       G = oo
-       skewSchubertVariety((3,7),{2,1},{1,1}, G)
+       createRandomFlagsForSimpleSchubert((3,7),{2,1,0},{1,1,0})
    SeeAlso
       solveSimpleSchubert
 ///
@@ -474,12 +472,13 @@ doc ///
          solutions of the simple Schubert Problem defined by l and m with respect to the flags G_1,...,G_d
    Description
       Text
-         Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,...,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
-         This function is used to solve Simple Schubert Problems, as described in the paper:          
-         Leykin and Sottile, "Galois groups of Schubert problems via homotopy continuation", Mathematics of Computation, 78 (2009) 1749--1765.
+    Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,...,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
+    This function is used to solve Simple Schubert Problems, as described in the paper:          
+    Leykin and Sottile, "Galois groups of Schubert problems via homotopy continuation", Mathematics of Computation, 78 (2009) 1749--1765.
      Example
        ---- Simple Schubert Problem
-       (k,n) = (3,7)
+       k = 3
+			 n = 7
        l = {2,1,0}
        m = {1,1,0}
        ----  Generate random flags G----
@@ -513,7 +512,7 @@ doc ///
             solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
     Description
 			Text
-            Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,...,G_d$, and $F_1,...,F_d$; where $d=k*(k-n) - |l| - |m|$. The function tracks the solutions of the system defined by $G_1,...,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,...,F_d$. 
+   Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,...,G_d$, and $F_1,...,F_d$; where $d=k*(k-n) - |l| - |m|$. The function tracks the solutions of the system defined by $G_1,...,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,...,F_d$. 
   		Example
    ---- Simple Schubert Problem
    (k,n) = (3,7)
