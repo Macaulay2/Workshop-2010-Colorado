@@ -286,26 +286,116 @@ pseudoBettiMVT(MonomialIdeal) := o -> I -> {
      return P
      }
 
-
-
+ -----------------
+-- Documentation --
+ -----------------
 
 beginDocumentation()
+
 document { 
-        Key => MayerVietorisTrees,
-        Headline => "Headlines",
-        EM "MayerVietorisTrees", " is a package that creates and manipulates Mayer-Vietoris trees for monomial ideals."
+     Key => MayerVietorisTrees,
+     Headline => "The package creates and manipulates Mayer-Vietoris trees (MVTs) to compute bounds on homological invariants for monomial ideals.",
+     "The package can output full MVTs or MVTs containing only the relevant nodes.",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal(x^2,y^2,x*y)",
+          "fullMVT I",
+	  "relMVT I",
+	  "projDimMVT I",
+	  "regMVT I",
+	  "upperBettiMVT I",
+	  "lowerBettiMVT I",
+	  "pseudoBettiMVT I",
+          },
+     "The user may specify a strategy for choosing the pivot generators in these MVT computations.",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = monomialIdeal(x^2,y^2,x*y)",
+          "relMVT I",
+	  "relMVT (I,PivotStrategy => 2)",
+          },
+     "If the user has input an MVT, the method ", EM "relevantNodes ", "outputs only the relevantn nodes of the tree."
+     Caveat => {"warning"}
+     Subnodes => {
+          TO fullMVT,
+          TO relMVT,
+	  TO relevantNodes,
+	  TO projDimMVT,
+	  TO regMVT,
+	  TO lowerBettiMVT,
+	  TO upperBettiMVT,
+	  TO pseudoBettiMVT,
+	  TO PivotStrategy
+          }
+     }
         }
---document {
-  --      Key => {(MVT,MonomialIdeal),MVT},
-  --      Headline => "Headline goes here...",
-  --      Inputs => { {"A monomial ideal ", TT "I"} },
-  --      Outputs => {{ "The relevant nodes of the Mayer-Vietoris tree of ", TT "I" }},
-  --	Usage => "Usage goes here",
-  --      SourceCode => {(MVT,MonomialIdeal)},
-  --      EXAMPLE lines ///
-  --         "Some examples of stuff"
-  --      ///
-  --      }
+document {
+     Key => fullMVT,
+     Headline => "Outputs a Mayer-Vietoris Tree from a monomial ideal.",
+     Usage => "usage",
+     Inputs => {
+	  MonomialIdeal
+          -- each input is a hypertext list
+          },
+     Outputs => {
+          "A Mayer-Vietoris tree (MVT)"
+	  -- each output is a hypertext list
+          },
+     Consequences => {
+          -- each effect is a hypertext list
+          },
+     "There can be explanatory prose here in the form of a hypertext list.",
+     EXAMPLE {
+          "m2code",
+          "m2code",
+          "m2code"
+          },
+     "There can be explanatory prose here in the form of a hypertext list.",
+     Caveat => {"warning"}
+     }
+   
+document {
+     Key => (fullMVT,MonomialIdeal),
+     Usage => "usage",
+     Inputs => {
+          -- each input is a hypertext list
+          },
+     Outputs => {
+          -- each output is a hypertext list
+          },
+     Consequences => {
+          -- each effect is a hypertext list
+          },
+     "There can be explanatory prose here in the form of a hypertext list.",
+     EXAMPLE {
+          "m2code",
+          "m2code",
+          "m2code"
+          },
+     "There can be explanatory prose here in the form of a hypertext list.",
+     Caveat => {"warning"}
+     }
+   
+   
+document {
+     Key => PivotStrategy,
+     Headline => "An option for choosing which generator to use as a pivot in MVT computations",
+     "The default option is 1.",
+     "PivotStrategy => 1 chooses the largest generator with respect to ambient monomial ordering for the ring.",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = mopnomialIdeal(x^2,y^2,x*y)",
+          "fullMVT(I,PivotStrategy => 1)"
+          },
+     "PivotStrategy => 2 chooses the smallest generator with respect to the ambient monomial ordering for the ring.",
+     EXAMPLE {
+          "R = QQ[x,y,z]",
+          "I = mopnomialIdeal(x^2,y^2,x*y)",
+          "fullMVT(I,PivotStrategy => 2)"
+          },
+     Caveat => {"Only two strategies are currently implemented."}
+     }
+
 
 TEST ///
     R = QQ[x,y,z]
