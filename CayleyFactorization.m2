@@ -245,7 +245,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	*}
    points:= toList (0..n);
    points = replace(a,b,points);
-   permutePoints(P,d,n,points) == 0_R
+   permutePoints(P,d,n,points) == 0_R --straightening used to check for 0
 )	     
 
  
@@ -260,7 +260,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
        topExtensors := select(L, ll -> (#ll == d+1)); -- list all step d+1 extensors 
        productFactors := product apply(topExtensors , l -> ( indicesToRingElement(ring P, d, n, sort toList(l))) ); -- convert them into variables in ring of P and take product
  --      if(P % productFactors == 0) then ( -- it takes too long to check
-        {topExtensors, P/productFactors}
+        {topExtensors, P/productFactors}--straightening is used
  --      ) else (
  --        print("error: the input polynomial is not divisible by the given bracket variables");
  --      	 null
@@ -335,7 +335,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	-- OUTPUT:  another polynomial in same variables, after substitution
 	-- This one does substitutions only for the variables appearing in the polynomial P
       sub(P, apply(unique flatten ((terms P) / support), v -> (
-			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))
+			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))--uses straightening when it returns a ring element
      	       	    	       )
       			  )
        )
@@ -371,6 +371,13 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
        )
 
 
+--------------------Straightening without a full Groebner basis--------
+
+straighten(P,d,n) ->(
+     R:= ring P;
+     L:= terms P;
+     apply(L, i-> apply(support i, j -> baseName#);
+     )
  
  
   ------------------------------------------------------------------- 
@@ -532,7 +539,20 @@ sigma = {2,3,0,1,5,7,6,8,4}
 end
 restart
 debug loadPackage "CayleyFactorization"
-Grassmannian(2,5)
+d = 2;
+n=8;
+I = Grassmannian(d,n),;
+use ring I/I;
+P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,6)*p_(2,3,4)*p_(5,7,8)
+F = cayleyFactor(P,d,n);
+peek F
+
+
+d = 6;
+n=12;
+I = Grassmannian(d,n),;
+
+
 use((ring oo)/ oo);
 P = p_(0,1,4)*p_(2,3,5)-p_(1,3,4)*p_(0,2,5);
 F = cayleyFactor(P, 2,5)
