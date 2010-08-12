@@ -580,15 +580,9 @@ doc ///
       perform basic functions on them. The user should note that this
       package assumes that all digraphs are acyclic.  Also, graphs are 
       assumed to have no loops or multiple edges. This package has
-      functions to view graphs and digraphs.  These functions call the program
-      Graphviz and is only set up to function on Macintosh computers, at
+      functions to view graphs and digraphs.  These functions call the programs
+      Graphviz and dot2tex and is only set up to function on Unix-like computers (e.g., Macintosh, Linux) at
       this time. 
-  Caveat
-    When asked to display a graph, this package converts the way M2 
-    stores information for a graph into a format readable by the 
-    external software Graphviz.  The way in which this is currently
-    done does not support node names that include superscripts or 
-    subscripts.
 ///
 
 doc ///
@@ -802,10 +796,9 @@ doc ///
 	      M = adjacencyMatrix(G)
          Inputs
 	      G:Digraph
-	      	   A graph or digraph of order n.
          Outputs
 	      M:Matrix
-	      	   An n x n matrix (a_(i,j)) with a_(i,j)=1 if vertices i and j are adjacent and 0 otherwise
+	      	    whose (i,j)-entry is 1 if ij is an edge or arc of G and 0 otherwise
          Description
             Text
 	    	 Compute the adjacency matrix of the complete graph K_5.
@@ -813,7 +806,39 @@ doc ///
 	    	 adjacencyMatrix completeGraph 5
       ///
 
+doc ///
+         Key
+	      (showTikZ,Digraph)
+	      showTikZ
+         Headline
+	      outputs TikZ syntax for displaying a graph or digraph in TeX
+         Usage
+	      showTikZ G
+         Inputs
+	      G:Digraph
+         Outputs
+	      S:String
+	      	    TikZ syntax which can be pasted into a .tex file to display G
+         Description
+            Text
+	    	 showTikZ requires the external program dot2tex, available at <a href="http://www.fauskes.net/code/dot2tex/">foo</a>.
+		 
+		 The following code gives TikZ syntax for the complete graph K_5.
+            Example
+     	       	 showTikZ completeGraph 5
+      ///
+      
+doc ///
+        Key
+	     [showTikZ,Options]
+        Headline
+	     a string which is passed to dot2tex.  Defaults to "-t math --prog=dot -f tikz --figonly".  Run "dot2tex --help" for all possibilties.
+        Usage
+	     foo
+     ///
+
 end
+
 
 doc ///
   Key
