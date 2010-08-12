@@ -86,16 +86,6 @@ poset(List,List,Matrix) := (I,C,M) ->
 	  symbol cache => new CacheTable
 	  }
      
-DirectedGraph = new Type of HashTable
- 
-directedGraph = method()
-directedGraph(List, List) := (V,E) ->
-     new DirectedGraph from {
-     	  symbol Vertices => V,
-     	  symbol DirectedEdges => E,
-	  symbol cache => new CacheTable
-     }
-
 --------------
 
 --inputs: (I,C), I is a List (ground set or vertex set) and C is a List of pairs of elements in I
@@ -114,7 +104,7 @@ adjacencyMatrix(List,List) := Matrix => (I, C) -> (
      scan(numrows M, i-> M_(i,i) = 0);
      matrix M      
      )
-adjacencyMatrix(DirectedGraph) := Matrix => (G) -> adjacencyMatrix(G.Vertices,G.DirectedEdges)
+--adjacencyMatrix(DirectedGraph) := Matrix => (G) -> adjacencyMatrix(G.Vertices,G.DirectedEdges)
 adjacencyMatrix(Poset) := Matrix => (P) -> adjacencyMatrix(P.GroundSet,P.Relations)
 
 --input: adjacency matrix of a directed graph
@@ -129,9 +119,7 @@ allPairsShortestPath(Matrix) := Matrix => (A) -> (
 	  );
      matrix D
      )
-allPairsShortestPath(DirectedGraph) := Matrix => (G)-> allPairsShortestPath(adjacencyMatrix(G))
-
-
+--allPairsShortestPath(DirectedGraph) := Matrix => (G)-> allPairsShortestPath(adjacencyMatrix(G))
 
 -- input: a poset, and an element A from I
 -- output:  the index of A in the ground set of P
@@ -212,9 +200,9 @@ coveringRelations (Poset) := (P) -> (
 )
 
 --input:  A poset P
---output:  A directedGraph which represents the Hasse Diagram of P
+--output:  A digraph which represents the Hasse Diagram of P
 hasseDiagram = method();
-hasseDiagram (Poset) := DirectedGraph => (P) -> (
+hasseDiagram(Poset) := P -> (
   if P.cache.?coveringRelations then (
 		return digraph(apply(P.GroundSet, elt-> 
 			  {elt, apply(select(P.cache.coveringRelations, rel -> 
@@ -2034,16 +2022,13 @@ P1 = poset({a,b,c,d,e},{(a,c),(a,d),(b,c),(b,d),(c,e),(d,e)});
 R = QQ[x,y,z];
 L = lcmLattice ideal (x^2, y^2, z^2);
 
-(hasseDiagram P1)#e
-
-
 -- testing hasseDiagram
 assert((hasseDiagram P1)#a === set {})
 assert((hasseDiagram P1)#b === set {})
 assert((hasseDiagram P1)#c === set {a,b})
 assert((hasseDiagram P1)#d === set {a,b})
 assert((hasseDiagram P1)#e === set {c,d})
-assert( (hasseDiagram L) === new Digraph from {x^2*y^2*z^2 => new Set from {x^2*y^2 => 1, x^2*z^2 => 1, y^2*z^2 => 1}, x^2*y^2 => new Set from {x^2 => 1, y^2 => 1}, x^2*z^2 => new Set from {x^2 => 1, z^2 => 1}, x^2 => new Set from {1 => 1}, y^2*z^2 => new Set from {y^2 => 1, z^2 => 1}, 1 => new Set from {}, z^2 => new Set from {1 => 1}, y^2 => new Set from {1 => 1}} )
+assert( toString sort pairs (hasseDiagram L) === toString sort pairs new Digraph from {x^2*y^2*z^2 => new Set from {x^2*y^2, x^2*z^2, y^2*z^2}, x^2*y^2 => new Set from {x^2, y^2}, x^2*z^2 => new Set from {x^2, z^2}, x^2 => new Set from {1}, y^2*z^2 => new Set from {y^2, z^2}, 1 => new Set from {}, z^2 => new Set from {1}, y^2 => new Set from {1}} )
 
 ///
 
@@ -2099,8 +2084,10 @@ P1 = poset({a,b,c,d,e},{(a,c),(a,d),(b,c),(b,d),(c,e),(d,e)});
 R = QQ[x,y,z];
 L = lcmLattice ideal (x^2, y^2, z^2);
 
-assert( ((orderComplex P1).facets) === map(QQ[v_0, v_1, v_2, v_3, v_4]^1,QQ[v_0, v_1, v_2, v_3, v_4]^{{-3},{-3},{-3},{-3}},{{v_1*v_3*v_4, v_0*v_3*v_4, v_1*v_2*v_4, v_0*v_2*v_4}}) )
-assert( ((orderComplex L).facets) === map(QQ[v_0, v_1, v_2, v_3, v_4, v_5, v_6, v_7]^1,QQ[v_0, v_1, v_2, v_3, v_4, v_5, v_6,v_7]^{{-4},{-4},{-4},{-4},{-4},{-4}},{{v_0*v_4*v_6*v_7, v_0*v_2*v_6*v_7, v_0*v_4*v_5*v_7, v_0*v_1*v_5*v_7, v_0*v_2*v_3*v_7, v_0*v_1*v_3*v_7}}) )
+S = QQ[v_0..v_4]
+T = QQ[v_0..v_7]
+assert( toString ((orderComplex P1).facets) === toString (use S; map(S^1,S^{{-3},{-3},{-3},{-3}},{{v_1*v_3*v_4, v_0*v_3*v_4, v_1*v_2*v_4, v_0*v_2*v_4}})) )
+assert( toString ((orderComplex L).facets) === toString (use T; map(T^1,T^{{-4},{-4},{-4},{-4},{-4},{-4}},{{v_0*v_4*v_6*v_7, v_0*v_2*v_6*v_7, v_0*v_4*v_5*v_7, v_0*v_1*v_5*v_7, v_0*v_2*v_3*v_7, v_0*v_1*v_3*v_7}})) )
 ///
 
 -- TEST 9
@@ -2170,17 +2157,17 @@ TEST ///
 P1 = poset ({h,i,j,k},{(h,i), (i,j), (i,k)});
 P2 = poset({a,b,c,d,e,f,g}, {(a,b), (a,c), (a,d), (b,e), (c,e), (c,f), (d,f), (e,g), (f,g)});
 
-assert( ((openInterval(P1,a,e)).Relations) === {(c,c),(d,d)} )
-assert( ((closedInterval(P1,b,c)).Relations) === {(b,b),(b,c),(c,c)} )
-assert( ((openInterval(P2,h,f)).Relations) === {(a,a),(a,e),(b,b),(b,e),(c,c),(e,e)} )
-assert( ((closedInterval(P2,h,f)).Relations) === {(a,a),(a,e),(a,f),(b,b),(b,e),(b,f),(c,c),(c,f),(e,e),(e,f),(f,f),(h,a),(h,b),(h,c),(h,e),(h,f),(h,h)} )
+assert( ((openInterval(P1,h,j)).Relations) === {(i,i)} )
+assert( ((closedInterval(P1,i,k)).Relations) === {(i,i),(i,k),(k,k)} )
+assert( ((openInterval(P2,a,e)).Relations) === {(b,b),(c,c)} )
+assert( ((closedInterval(P2,c,g)).Relations) === {(c,c),(c,e),(c,f),(c,g),(e,e),(e,g),(f,f),(f,g),(g,g)} )
 
 ///
 
 -- TEST 14
 TEST ///
 B = booleanLattice(2)   
-assert( (B.GroundSet) === {1,x_2,x_1,x_1*x_2} )
+assert( toString (B.GroundSet) === toString {1,x_2,x_1,x_1*x_2} )
 assert( (B.RelationMatrix) === map(ZZ^4,ZZ^4,{{1, 1, 1, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}, {0, 0, 0, 1}}) )
-assert( (B.Relations) === {(1,1),(1,x_2),(1,x_1),(1,x_1*x_2),(x_2,x_2),(x_2,x_1*x_2),(x_1,x_1),(x_1, x_1*x_2),(x_1*x_2,x_1*x_2)} )
+assert( toString (B.Relations) === toString {(1,1),(1,x_2),(1,x_1),(1,x_1*x_2),(x_2,x_2),(x_2,x_1*x_2),(x_1,x_1),(x_1, x_1*x_2),(x_1*x_2,x_1*x_2)} )
 ///

@@ -10,11 +10,42 @@ newPackage("Graphs",
      Version => "0.1"
      )
 
-export {Graph, Digraph, MixedGraph, LabeledGraph, graph, digraph, mixedGraph, labeledGraph, Singletons, descendents, nondescendents, 
-     parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
-     simpleGraph, removeNodes, inducedSubgraph, completeGraph,
-     cycleGraph, writeDotFile,SortedDigraph,topSort,DFS,isCyclic,adjacencyMatrix,
-     edgeSet,incidenceMatrix,pathConnected,adjacencyHashTable}
+export {Graph,
+     Digraph,
+     MixedGraph,
+     LabeledGraph,
+     graph,
+     digraph,
+     mixedGraph,
+     labeledGraph,
+     Singletons,
+     descendents,
+     nondescendents,
+     parents,
+     children,
+     neighbors,
+     nonneighbors,
+     foreFathers,     
+     displayGraph,
+     showTikZ,
+     simpleGraph,      
+     removeNodes, 
+     inducedSubgraph,
+     completeGraph,
+     cycleGraph,
+     writeDotFile,
+     SortedDigraph,
+     topSort,
+     DFS,
+     isCyclic,
+     adjacencyMatrix,
+     degreeMatrix,
+     laplacianMatrix,
+     edgeSet,
+     incidenceMatrix,
+     pathConnected,
+     adjacencyHashTable
+     }
 exportMutable {dotBinary,jpgViewer}
 
 
@@ -250,6 +281,15 @@ displayGraph Digraph := (G) -> (
      --removeFile dotfilename;
      )
 
+showTikZ = method(Options=>{Options=>"-t math --prog=dot -f tikz --figonly"})
+showTikZ(Digraph) := opt -> G -> (
+     dotfilename := temporaryFileName() | ".dot";
+     writeDotFile(dotfilename,G);
+     output := temporaryFileName();
+     runcmd("dot2tex "|opt#Options|" "|dotfilename|" >> "|output);
+     get output
+     )
+
 ------------------
 -- Graph basics --
 ------------------
@@ -365,6 +405,12 @@ adjacencyHashTable (Digraph) := (G) -> (
     hashTable apply(vertices, i->{i,hashTable apply(vertices,j->{j,#positions(toList G#i,k->k===j)})})
 )
 
+degreeMatrix = method()
+degreeMatrix(Graph) := G -> matrix apply(#keys(G),i->apply(#keys(G),j->if i==j then #(G#((keys G)_i)) else 0))
+
+laplacianMatrix = method()
+laplacianMatrix(Graph) := G -> degreeMatrix G - adjacencyMatrix
+
 edgeSet = method()
      -- Input: A graph
      -- Output: A list of sets of order 2, each corresponding to an edge
@@ -456,6 +502,7 @@ DFSvisit = (H,u) -> (
 isCyclic = method()
      -- Input:  A digraph (not undirected)
      -- Output:  Whether the digraph contains a cycle
+     -- uses Cormen Lemma 22.11 and Exercise 22.3-4
 isCyclic(Digraph) := G -> (
      if class G === Graph then error ("must be a digraph") else (
      	  D := DFS G;
@@ -470,10 +517,6 @@ isCyclic(Digraph) := G -> (
      	       )
      	  )
      )
-			      
-     
-     
-         
 
 -------------------
 -- Common Graphs --
@@ -747,6 +790,29 @@ doc ///
   	  {f, {}}, {g, {}}, {h, {}}})
       cH = children(D,e)
 ///
+
+
+doc ///
+         Key
+	      (adjacencyMatrix,Digraph)
+	      adjacencyMatrix
+         Headline
+	      Computes the adjacency matrix of a graph or digraph
+         Usage
+	      M = adjacencyMatrix(G)
+         Inputs
+	      G:Digraph
+	      	   A graph or digraph of order n.
+         Outputs
+	      M:Matrix
+	      	   An n x n matrix (a_(i,j)) with a_(i,j)=1 if vertices i and j are adjacent and 0 otherwise
+         Description
+            Text
+	    	 Compute the adjacency matrix of the complete graph K_5.
+            Example
+	    	 adjacencyMatrix completeGraph 5
+      ///
+
 end
 
 doc ///
