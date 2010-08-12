@@ -171,13 +171,14 @@ trekIdeal(Ring, MixedGraph) := (SLP, g) -> (
 	I := {};
   	M := map (SLP^n, n, (i,j)->if i<j then SLP_(((n-1)*i)+(i+j)) else SLP_(((n-1)*j)+(i+j)));
 	for i from 1 to #c do (
-		s = 1;
-		if c#(i-1)#2 != {} then s = s + #c#(i-1)#2;
-		if c#(i-1)#3 != {} then s = s + #c#(i-1)#3;
-		if (c#(i-1)#0) != {} then c1 = (c#(i-1)#0)/(l->l-1);
-		if (c#(i-1)#1) != {} then c2 = (c#(i-1)#1)/(l->l-1);
+		num = 1;
+		if c#(i-1)#2 != {} then num = num + #c#(i-1)#2;
+		if c#(i-1)#3 != {} then num = num + #c#(i-1)#3;
+
+		if c#(i-1)#0 != {} then c1 = apply(c#(i-1)#0, l->position(keys(u), k->k===l));
+		if c#(i-1)#1 != {} then c2 = apply(c#(i-1)#1, l->position(keys(u), k->k===l));
 		m = submatrix(matrix M, c1, c2);
-		I = append(I, flatten entries gens minors(s, m));
+		I = append(I, flatten entries gens minors(num, m));
 	);
 	I = ideal flatten I;
 	flatten entries gens gb I
