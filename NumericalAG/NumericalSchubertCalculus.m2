@@ -474,7 +474,7 @@ doc ///
          solutions of the simple Schubert Problem defined by l and m with respect to the flags G_1,...,G_d
    Description
       Text
-         Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,\ldots,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
+         Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and a set of fixed flags $G_1,...,G_d$, where $d=k*(k-n) - |l| - |m|$. The function solves the system taking the first $d-1$ flags, and replacing the last one for a simpler one $G_m$. Then it uses homotopy continuation to track the solutions of this simpler system to solutions of the original system.         
          This function is used to solve Simple Schubert Problems, as described in the paper:          
          Leykin and Sottile, "Galois groups of Schubert problems via homotopy continuation", Mathematics of Computation, 78 (2009) 1749--1765.
      Example
@@ -513,7 +513,7 @@ doc ///
             solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
     Description
 			Text
-            Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,\ldots,G_d$, and $F_1,\ldots,F_d$; where $d=k*(k-n) - sum(l) - sum(m)$. The function tracks the solutions of the system defined by $G_1,\ldots,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,\ldots,F_d$. 
+            Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,...,G_d$, and $F_1,...,F_d$; where $d=k*(k-n) - sum(l) - sum(m)$. The function tracks the solutions of the system defined by $G_1,...,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,...,F_d$. 
   		Example
    ---- Simple Schubert Problem
    (k,n) = (3,7)
@@ -527,7 +527,7 @@ doc ///
    trackSimpleSchubert((k,n),(l,m),G,F)
        
          Text
-            If the solutions of the system defined by $G_1,\ldots,G_d$ are given, they can be given in the function to avoid unnecessary computations
+            If the solutions of the system defined by $G_1,...,G_d$ are given, they can be given in the function to avoid unnecessary computations
        Example
    ---- Simple Schubert Problem
    (k,n) = (3,7)
