@@ -191,6 +191,33 @@ findMaxIdeal( Ideal ) := I -> (
      m
 )
 
+-- Changes variables according with Nagata's theorem (Lemma 2.3.1, Fabianska)
+-- Outputs: (1) new unimodular row with leading term of first entry a pure power
+-- of the "last" variable. (2) a function to reverse the change of variable.
+--
+changeVar = method()
+changeVar( Matrix, RingElement ) := (M,x) -> (
+     f := first flatten entries M;
+     m := first degree f + 1;
+
+     R := ring f;
+     var := flatten entries vars R;
+     s := position( var, i -> ( i == x ) ); -- Very much depends on the way the user inputs the variables 
+     varTail := drop( var, s );
+     y := apply( s+1 , i -> ( var_i ) );
+               
+     y = toList apply( 0..(s-1) , i -> ( y_i - x^(m^(s-i)) ) );
+     y = y|varTail;
+     N1 := sub( M , matrix{ y } );
+     y = toList apply( 0..(s-1) , i -> ( var_i + x^(m^(s-i)) ) );
+     y = y|varTail;
+     print y;
+     phi := (map(ring matrix{ y },ring M,matrix{ y }));
+     (N1,phi)
+)
+
+
+
 
 -- This computes a set of local solutions for a given unimodular row f.
 -- This still needs localSolution to be implemented.
