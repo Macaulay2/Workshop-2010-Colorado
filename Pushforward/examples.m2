@@ -1,8 +1,31 @@
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
+M = universalExtension({-2},{2})
+directImageComplex M
+
+kk=ZZ/101
+A=kk[x_0..x_3]
+S=A[s,t]
+n=ablock({-1,-2},{1,2},S)
+m=bblock({1,2},-2, S)
+n||m
+
+u
+res coker transpose (n||m)
+degrees source m
+
+degrees target m
+
+m=universalExtension({-1},{1,1})
+
 -- Example set 1
 -- 
-restart
-path = append(path, "/Users/david/src/Colorado-2010/PushForward")
-load "computingRpi_star.m2"
+
+
+
+
+
 
 
 kk = ZZ/101
@@ -100,16 +123,16 @@ restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 --load "computingRpi_star.m2"
 loadPackage "BGG"
-m=universalExtension 2
+m=universalExtension(-2,2,-2)
 S = ring m
 A = coefficientRing S
-coker m
-directImageComplex  (S^{{-1,0}}**coker m)
+M=coker m
+directImageComplex  (M)
 oo.dd
 
 --make the ground field be an option! maybe also A and S.
 
-
+universalExtension = method()
 universalExtension(ZZ,ZZ,ZZ) := (a,b,c) -> (
      --Let Fi be the direct sum of line bundles on P1
      --F1 = O(a), F2 = O(b)
@@ -137,11 +160,17 @@ restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 --load "computingRpi_star.m2"
 loadPackage "BGG"
+
 a =-1
 b=1
 c=-2
-     kk := ZZ/101;
-     A := kk[x_0..x_b-a-2];
-     S := A[y_0,y_1];
-numgens A
+     kk = ZZ/101
+     A = kk[x_0..x_(b-a-2)]
+     S = A[y_0,y_1]
 m=universalExtension( a, b, c)
+
+----------
+kk = ZZ/101
+A=kk[x]
+S=A[t]
+flattenRing S

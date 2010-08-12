@@ -20,7 +20,7 @@ export {
      symExt, bgg, tateResolution, 
      beilinson, cohomologyTable, 
      directImageComplex, universalExtension, Regularity, 
-     truncateMultiGraded, regularityMultiGraded
+     regularityMultiGraded
      }
 
 symExt = method()
@@ -206,7 +206,8 @@ directImageComplex Module := opts -> (M) -> (
           else opts.Regularity;
      degsM := degrees M/first;
      if max degsM > regM then error("regularity is higher than you think!");
-     N := if min degsM === regM then M else truncateMultiGraded(regM,M);
+     N := if min degsM === regM then M else truncate(regM,M);
+     --truncateMultiGraded(regM,M);
 
      xm = regM * degree(S_0);
      phi = symmetricToExteriorOverA(N ** S^{xm});
@@ -252,33 +253,11 @@ regularityMultiGraded (Module) := (M) -> (
      )
 
 universalExtension = method()
-universalExtension(ZZ,ZZ,ZZ) := (a,b,c) -> (
-     --Let Fi be the direct sum of line bundles on P1
-     --F1 = O(a), F2 = O(b)
-     --The script makes a module E representing the bundle that is
-     --the universal extension of F2 by F1 on P^1; (so the extension is
-     --  0 --> F1 --> E --> F2 --> 0.
-     --The answer is defined over A[y_0,y_1] representing 
-     -- P^1 x Ext(Sheaf F2,Sheaf F1).
-     -- The matrix obtained has relations in total degree {c,-1}
-     --assumes the existence of
---     kk := ZZ/101;
---     A := kk[x_0..x_(2*d-2)];
---     S := A[y_0,y_1];
-     map(S^{{a,0},(b-c):{c+1,0}}, S^{(b-c-1):{c,-1}}, (i,j)->(
-	       if i == 0 then
-	            (if j<= b-a-2 then (sub(A_j, S))*(S_1^(a-c)) else 0_S) 
-		         else
-	       if i == j+1 then S_0 else
-	       if i == j+2 then S_1 else
-	       0_S)
-     )
-)
 universalExtension(List,List) := (La,Lb) -> (
      --Let Fi be the direct sum of line bundles on P1
      --F1 = O(a), F2 = O(b)
      --The script makes a module E representing the bundle that is
-     --the universal extension of F2 by F1 on P^1; (so the extension is
+     --the universal extension of F2 by F1 on P^1; so the extension is
      --  0 --> F1 --> E --> F2 --> 0.
      --The answer is defined over A[y_0,y_1] representing 
      -- P^1 x Ext(Sheaf F2,Sheaf F1).
@@ -290,45 +269,47 @@ universalExtension(List,List) := (La,Lb) -> (
      kk := ZZ/101;
      la :=#La;
      lb :=#Lb;
-     N = sum(la, i->sum(lb, j->Lb#j-La#i-1));
-     A = kk[x_0..x_(N-1)];
-     S = A[y_0,y_1];
-       c := min La;
-       offset := 0;
-       matrix(apply(la, p ->
-		 apply(lb, q -> (
-       		      --universalExtension(La#p,Lb#q,c)
-                 mpq :=map(S^{{La#p,0},(Lb#q-c):{c+1,0}}, S^{(Lb#q-c-1):{c,-1}}, 
-		    (i,j)->(
-	               if i == 0 then
-	                  (if j<= Lb#q-La#p-2 then (sub(A_(offset+j), S))*(S_1^(La#p-c)) else 0_S) 
-		         else
-	       if i == j+1 then S_0 else
-	       if i == j+2 then S_1 else
-	       0_S));
-	       offset = offset+Lb#q-La#p-1;
-	       print p;print q;print mpq;
-	       mpq)
-     	          )
-             )
-	)
-   )
-     
-bblock=(b,c) ->(
-     map(S^{(b-c)*{c+1,0}}, S^{(b-c-1)*{c,0}, 
-	       (i,j)->
-	       if i == j+1 then S_0 else
-	       if i == j+2 then S_1 else 0_S
-	       )))
-///
-restart
-path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
-loadPackage "BGG"
-m=universalExtension({-1},{1,1})
+     c := min La;
+     N := sum(la, p-> sum(lb, q-> Lb#q-c-1));
+     A := kk[x_0..x_(N-1)];
+     S := A[y_0,y_1];
 
-///
+     m := bblock(Lb,c,S);
+     n := ablock(La, Lb, S);
+     coker (n||m)
+   )
+bblock = method()
+bblock(ZZ,ZZ, Ring) := (b,c,S) -> map(S^{(b-c):{c+1,-1}}, S^{(b-c-1):{c,-1}}, 
+	             (i,j)->
+	       if i == j then S_0 else
+	       if i == j+1 then S_1 else 0_S
+	       )
+	  
+bblock(List, ZZ,Ring) := (Lb, c, S) ->directSum apply(#Lb, i->bblock(Lb#i, c, S))
+
+ablock = method()
+{*ablock(ZZ,ZZ,ZZ,ZZ,Ring) := (a,b,c,offset, S) -> 
+     	  A:=coefficientRing S;
+           map(S^{{a,1}}, S^{(b-c-1):{c,0}},
+		(i,j) -> if j==0 then *S_1^(a-c) else 0_S)
+*}
+
+ablock(List, List, Ring) := (La,Lb,S) ->(
+     --works over a tower ring S = A[S_0,S_1], where a
+     --has at least #La*#Lb variables
+     A:=coefficientRing S;
+     c := min La;
+     offset := 0;
+     matrix apply(#La, p->apply(#Lb, q-> (
+     	  	    mpq := map(S^{{La#p, 0}}, S^{(Lb#q-c-1):{c, -1}}, (i,j)->(
+	       		      sub(A_(offset+j),S)*S_1^(La#q-c)));
+		    offset = offset+Lb#q-c-1;
+		    mpq)
+     		 ))
+     )
 
 beginDocumentation()
+
 
 document {
      Key => BGG, 
@@ -527,7 +508,92 @@ document {
 	  cohomologyTable(presentation F,E,-6,6)
      	  ///,
      SeeAlso => {symExt}
-     }, 
+     }
+doc ///
+   Key 
+     directImageComplex
+     (directImageComplex, Module)
+   Headline
+     Complex representing the direct image 
+   Usage
+     F = directImageComplex M
+   Inputs 
+     M: Module
+       graded over a tower ring S = A[y_0..y_n], representing a sheaf on ${\bf P}^n_A$.
+   Outputs
+     F: ChainComplex
+       complex of free modules over A. Homology in homological degree -i is 
+       $R^i \pi_* {\mathcal M}$, where ${\mathcal M}$ is the sheaf on ${\bf P}^n_A$ represented by M.
+   Description
+    Text
+      The computation is done by exterior algebra method described by Eisenbud and Schreyer,
+      in Eisenbud, David; Schreyer, Frank-Olaf 
+      ``Relative Beilinson monad and direct image for families of coherent sheaves.'' 
+      Trans. Amer. Math. Soc. 360 (2008), no. 10, 5367--5396.
+      
+      The following example can be used to study the loci in the family of extensions
+      of a pair of vector bundles on $\bf P^1$ where the extension bundle has a given 
+      splitting type: this type is calculated by the Fitting ideals of the
+      matrices defining the direct image complexes of various twists of the bundle.
+      See Section 5 in loc. cite. It is conjectured there that all the sums of
+      these Fitting ideals for the universal extension of 
+      $\mathcal O_{P^1}^{r-1}$ by $\mathcal O_{P^1}(d)$ are radical, 
+      as in the example below.
+      
+      First we examine the extensions of ${\mathcal O}_{P^1}(1)$ by ${\mathcal O}_{P^1}(-3)$.
+      There is a 3-dimensional vector space 
+      $$
+      Ext^1({\mathcal O}_{P^1}(1),{\mathcal O}_{P^1}(-3))
+      $$
+      of extensions. The ``universal extension'' is thus a bundle on
+      ${\bf P^1}\times Ext$. The locus where the extension
+      bundle splits as ${\mathcal O}_{P^1}(-2) \oplus {\mathcal O}_{P^1}$ is the
+      locus where the map in the direct image complex drops rank, and this is
+      the (cone over a) conic, defined by the determinant of this matrix.
+    Example
+      M=universalExtension({-3}, {1})
+      S = ring M
+      A = coefficientRing S
+      F = directImageComplex M
+      F.dd_0
+      det (F.dd_0)
+    Text
+      Here is a larger example, the extension of 
+      ${\mathcal O}_{P^1}^2$ by ${\mathcal O}_{P^1}(6)$
+    Example
+      r=3
+      d=6
+      M=universalExtension(splice {(r-1):0}, {d})
+      S = ring M
+      A = coefficientRing S
+      L = for i from -d to 0 list directImageComplex(S^{{i,0}}**M);
+      netList L
+      maps = apply(L, F-> F.dd_0)
+   Caveat
+   SeeAlso 
+     universalExtension
+///
+{*
+doc ///
+   Key 
+     universalExtension
+   Headline
+   Usage
+   Inputs
+   Outputs
+   Consequences
+    Item
+   Description
+    Text
+    Code
+    Pre
+    Example
+   Subnodes
+   Caveat
+   SeeAlso
+///
+*}
+
 
 TEST ///
           S = ZZ/32003[x_0..x_2]; 
@@ -637,3 +703,10 @@ time cohomologyTable(F,-5,5)
 
 betti tateResolution(presentation N, E, -5, 5)
 peek oo
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+uninstallPackage "BGG"
+installPackage "BGG"
+viewHelp 
+

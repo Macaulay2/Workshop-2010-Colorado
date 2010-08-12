@@ -1,0 +1,14 @@
+1 No need to to saturate the kernel of a map to a domain (sec 4.1)
+
+4.2: maybe avoid d' and use e or some such instead?
+
+How about code for circles tangent to 3 given circles (circle = conic through two given points, thought of
+as the "circular points" 1, i and 1, -1 on the line at infty.) 
+
+
+Name Chow rings (esp 4.43): A37 = A^*(G(3,7) for example.
+
+4.43: "zero locus of.." = nonsingular quadric
+
+4.44: needs text to explain
+
