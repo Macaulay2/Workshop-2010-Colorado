@@ -10,3 +10,5 @@ a = -7.481504637e-02
 lift(a,QQ) 
 a = -1.984139325e-01
 lift(a,QQ)
+
+-- Thanks, I've added this to my bug list.  -- Dan
