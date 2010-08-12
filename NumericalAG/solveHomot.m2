@@ -1,4 +1,3 @@
-needsPackage "NumericalAlgebraicGeometry"
 needsPackage "NumericalSchubertCalculus"
 
 isGaloisFullSymmetric = method()
@@ -17,7 +16,6 @@ isGaloisFullSymmetric(Sequence, List, List, ZZ) := (prblm, flgs, solns, mx) ->(
 end
 
 restart
-needsPackage "NumericalAlgebraicGeometry"
 needsPackage "NumericalSchubertCalculus"
 
 p = {toList(0..4)};

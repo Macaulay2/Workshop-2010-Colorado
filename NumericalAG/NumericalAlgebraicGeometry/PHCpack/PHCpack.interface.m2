@@ -29,7 +29,7 @@ refinePHCpack (List,List,HashTable) := List => (T,sols,o) -> (
 
 /// -- examples
 restart
-notify = true
+-- notify = true
 needsPackage "NumericalAlgebraicGeometry"
 --debug PHCpackInterface
 --debug NumericalAlgebraicGeometry
