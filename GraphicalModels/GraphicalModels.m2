@@ -75,7 +75,8 @@ newPackage(
 
 export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts, 
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
-       gaussRing, gaussMatrices, gaussIdeal, trekIdeal}
+       gaussRing, gaussMatrices, gaussIdeal, trekIdeal, 
+       Coefficients, VariableName}
      
 needsPackage"Graphs"
 
@@ -351,21 +352,21 @@ removeRedundants = (Ds) -> (
      
 markovRingList := new MutableHashTable;
 --the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
-markovRing = method(Dispatch=>Thing, Options=>{CoefficientRing=>QQ,Variable=>value "symbol p"})
+markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>value "symbol p"})
 markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
      kk:=QQ;
      p = value "symbol p";
-     if opts.CoefficientRing =!= QQ then kk = opts.CoefficientRing;
-     if opts.Variable =!= value "symbol p" then p = opts.Variable;
+     if opts.Coefficients =!= QQ then kk = opts.Coefficients;
+     if opts.VariableName =!= value "symbol p" then p = opts.VariableName;
      if (not markovRingList#?(d,kk,toString symbol p)) then (
      	  start := (#d):1;
      	  markovRingList#(d,kk,toString symbol p) = kk[p_start .. p_d]; --changed to kk option -Sonja 12aug10
-          markovRingList#(d,kk,toString symbol p).markov = d; --this is attached as info so that any poly ring can 
+          markovRingList#(d,kk,toString symbol p).markov = d; --this is attached as info 
+	  --so that for any poly ring R it can be tested if R is a markovRing
 	  );
-     --markovRingList#d
      markovRingList#(d,kk,toString symbol p)
      )
 
@@ -465,12 +466,12 @@ prob = (d,s) -> (
 -- Gaussian directed acyclic graphs    --
 -----------------------------------------
 
-gaussRing = method(Options=>{CoefficientRing=>QQ, Variable=>symbol s})
+gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>symbol s})
 gaussRing ZZ := opts -> (n) -> (
      -- s_{1,2} is the (1,2) entry in the covariance matrix.
      --this assumes r.v.'s are labeled by integers.
-     x := opts.Variable;
-     kk := opts.CoefficientRing;
+     x := opts.VariableName;
+     kk := opts.Coefficients;
      v := flatten apply(1..n, i -> apply(i..n, j -> x_(i,j)));
      R := kk[v, MonomialSize=>16];
      R#gaussRing = n;
@@ -482,8 +483,8 @@ gaussRing Digraph := opts -> (G) -> (
      --and I'm just gonna read off the list of labels from the keys.
      -- This is done to avoid any ordering confusion. 
      -- DO NOT make an option for inputting list of labels!
-     x := opts.Variable;
-     kk := opts.CoefficientRing;
+     x := opts.VariableName;
+     kk := opts.Coefficients;
      v := flatten apply(keys G, i -> apply(keys G, j -> x_(i,j)));
      R := kk[v, MonomialSize=>16];
      R#gaussRing = #keys G;
@@ -825,11 +826,11 @@ doc ///
   Key
     markovRing
     (markovRing,Sequence)
-    [markovRing, CoefficientRing, Variable]
+    [markovRing, Coefficients, VariableName]
   Headline
     ring of probability distributions on several discrete random variables
   Usage
-    markovRing(d) or markovRing(d,CoefficientRing=>Ring) or markovRing(d,Variable=>Symbol)
+    markovRing(d) or markovRing(d,Coefficients=>Ring) or markovRing(d,Variable=>Symbol)
   Inputs
     d:Sequence
       with positive integer entries (d1,...,dr)
@@ -861,7 +862,7 @@ doc ///
     Text 
       If we prefer to have a different base field, the following command can be used:
     Example
-      Rnew = markovRing (d,CoefficientRing=>CC); 
+      Rnew = markovRing (d,Coefficients=>CC); 
       coefficientRing Rnew
     Text
       We might prefer to give diferent names to our variables. The letter ''p'' suggests a joint probability, 
@@ -869,33 +870,60 @@ doc ///
       with the following option:
     Example
       d=(1,2);
-      markovRing (d,Variable=>q);
+      markovRing (d,VariableName=>q);
       vars oo --here is the list of variables.
     Text
       The LIST OF FNS USING THIS FUNCTION SHOULD BE INSERTED AS WELL.
   SeeAlso
 ///
 
---------------------------------------
---------------------------------------
-end
---------------------------------------
---------------------------------------
+
+doc ///
+  Key
+    Coefficients
+  Headline
+    optional input to choose the base field
+  Description
+    Text
+      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in the function markovRing or gaussRing
+  SeeAlso
+    markovRing
+    gaussRing
+///;
+
+
+doc ///
+  Key
+    VariableName
+  Headline
+    optional input to choose the letter for the variable name
+  Description
+    Text
+      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function markovRing or gaussRing
+  SeeAlso
+    markovRing
+    gaussRing
+///;
+
 
 doc ///
   Key 
     gaussRing
     (gaussRing,ZZ)
+    (gaussRing,Digraph)
+    [gaussRing, Coefficients, VariableName]
   Headline
     ring of gaussian correlations on n random variables
   Usage
-    R = gaussRing n
+    R = gaussRing n or R = gaussRing G or gaussRing(d,Coefficients=>Ring) or gaussRing(d,Variable=>Symbol)
   Inputs
     n:ZZ
       the number of random variables
+    G:Digraph
+      an acyclic directed graph 
   Outputs
     R:Ring
-      a ring with indeterminates s_(i,j), 1 <= i <= j <= n
+      a ring with indeterminates $s_(i,j)$ for $1 \leq i \leq j \leq n$
   Description
     Text
       The routines  {gaussIdeal} {gaussTrekIdeal} 
@@ -904,10 +932,6 @@ doc ///
       R = gaussRing 5;
       gens R
       genericSymmetricMatrix(R,5)
-    Text 
-      OPTIONAL INPUTS NEEDING DOCUMENTATION: 
-      CoefficientRing => "a coefficient field or ring",
-      Variable => "a symbol, the variables in the ring will be s_(1,1),..." 
   SeeAlso
     gaussIdeal
     trekIdeal
@@ -918,25 +942,6 @@ end
 --------------------------------------
 --------------------------------------
 
-doc ///
-  Key
-    Coefficients
-  Description
-    Text
-      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in the function markovRing
-  SeeAlso
-    markovRing
-///;
-
-doc ///
-  Key
-    VariableName
-  Description
-    Text
-      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function markovRing
-  SeeAlso
-    markovRing
-///;
 
 
 
@@ -984,6 +989,10 @@ restart
 installPackage ("GraphicalModels", RemakeAllDocumentation => true, UserMode=>true)
 viewHelp GraphicalModels
 installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
+
+
+
+
 
 
 
