@@ -45,6 +45,7 @@ newPackage(
 	     "keep files" => true
 	      },
     	DebuggingMode => true, 	-- DebuggingMode should be true while developing a package,  but false after it is done
+	AuxiliaryFiles=>true,
 	CacheExampleOutput => true
 	)
 
