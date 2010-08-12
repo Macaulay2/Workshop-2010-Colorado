@@ -22,7 +22,20 @@ export {fullMVT, relMVT, relevantNodes, projDimMVT, regMVT, lowerBettiMVT, upper
 -- v0: document methods
 -- v0: create relMVT
 -- v0: change output for all things to (monomial, dimension, position)
--- v1: make things fast!
+--
+-- Before first version
+-- v1: document methods well
+-- v1: consistency among output, naming conventions (in our program, in M2)
+-- v1: data types? 
+--     MVTs as hash tables
+-- v1: print MVTs, pseudoBettiMVTs nicely
+--     output MVT as tree in M2
+--     output for LaTeX
+--     output pseudoBettiMVTs like betti diagrams
+-- vN: Mapping cone resolution (MCR) with differentials <-- nice to have the M2 code for small examples
+-- vN: C version of MCR for the engine <-- for larger computations
+
+-- vInfinity: refine method that refines *everything* (gives minimal free res --> open problem)
 
 
  ----------------------------
@@ -312,9 +325,9 @@ pseudoBettiMVT(MonomialIdeal) := o -> I -> {
      return P
      }
 
-hilbertSeriesMVT = method(TypicalValue => RingElement); --returns the numerator of the multigraded Hilbert series of an ideal I
-hilbertSeriesMVT(MonomialIdeal) := I -> {
-     L:=relMVT(I);
+hilbertSeriesMVT = method(TypicalValue => RingElement, Options => {PivotStrategy => 1}); --returns the numerator of the multigraded Hilbert series of an ideal I
+hilbertSeriesMVT(MonomialIdeal) := o -> I -> {
+     L:=relMVT(I,PivotStrategy => o.PivotStrategy);
      L1:=apply(#L,i->{first entries L#i#0,L#i#1});
      Numerator:=sub(0,ring first first first L1);
      for i from 0 to #L1-1 do Numerator=Numerator+sum(L1#i#0)*(-1)^(L1#i#1);
