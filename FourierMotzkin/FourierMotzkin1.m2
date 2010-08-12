@@ -1,29 +1,29 @@
 -- -*- coding: utf-8 -*-
 --------------------------------------------------------------------------------
 -- Copyright 1998, 1999, 2000, 2006, 2008, 2010  Gregory G. Smith
--- 
+--
 -- You may redistribute this program under the terms of the GNU General Public
 -- License as published by the Free Software Foundation, either version 2 of the
 -- License, or any later version.
 --------------------------------------------------------------------------------
 
 ---------------------------------------------------------------------------
--- PURPOSE: compute the polar dual of a rational convex polyhedral cone 
+-- PURPOSE: compute the polar dual of a rational convex polyhedral cone
 --          using Fourier-Motzkin elimination
--- PROGRAMMER : Gregory G. Smith 
--- UPDATE HISTORY : 2 July 2000, 5 March 2006, 1 July 2008, 
+-- PROGRAMMER : Gregory G. Smith
+-- UPDATE HISTORY : 2 July 2000, 5 March 2006, 1 July 2008,
 --                  10 December 2008
 ---------------------------------------------------------------------------
 newPackage(
 	"FourierMotzkin1",
-    	Version => "1.2", 
+    	Version => "1.2",
     	Date => "11 August 2010",
     	Authors => {{
-		  Name => "Gregory G. Smith", 
+		  Name => "Gregory G. Smith",
 		  HomePage => "http://www.mast.queensu.ca/~ggsmith",
 		  Email => "ggsmith@mast.queensu.ca"}},
     	Headline => "polar dual of a rational cone",
-	Configuration => { "Algorithm" => "M2" },	     
+	Configuration => { "Algorithm" => "M2" },
     	DebuggingMode => true
     	)
 
@@ -31,7 +31,7 @@ export "fourierMotzkin"
 
 
 
--- Transposition along the antidiagonal; used to compute row-reduced 
+-- Transposition along the antidiagonal; used to compute row-reduced
 -- echelon form of a matrix
 rotateMatrix = method();
 rotateMatrix Matrix := Matrix => M -> (
@@ -40,9 +40,9 @@ rotateMatrix Matrix := Matrix => M -> (
      matrix table(n, m, (i,j) -> M_(m-j-1, n-i-1)))
 
 
--- Determine if an row vector/inequality is redundant; see Exercise 2.15 
+-- Determine if an row vector/inequality is redundant; see Exercise 2.15
 -- in Ziegler.
--- 'V' : a list of sets of integers.  Each entry contains indices of the 
+-- 'V' : a list of sets of integers.  Each entry contains indices of the
 --       original rays which do NOT vanish at the corresponding row vector.
 -- 'S' : a set of integers; the original rays for the row vector.
 isRedundant = method();
@@ -57,18 +57,18 @@ isRedundant (List, Set) := Boolean => (V, S) -> (
      flag === 1)
 
 
--- Eliminates the first variable in the inequalities 'A' using the double 
+-- Eliminates the first variable in the inequalities 'A' using the double
 -- description version of Fourier-Motzkin elimination
--- 'A' : a list of lists of integers.  Each entry is a corresponds to a 
+-- 'A' : a list of lists of integers.  Each entry is a corresponds to a
 --       row vector in the system of inequalities.
--- 'V' : a list of sets of integers.  Each entry contains indices of the 
---       original rays which do NOT vanish at the corresponding row vector;  
+-- 'V' : a list of sets of integers.  Each entry contains indices of the
+--       original rays which do NOT vanish at the corresponding row vector;
 --       the complement of the 'V_i' appearing in Exercise 2.15 in Ziegler.
 -- 's': an integer.  The index of the variable being eliminated
 -- Output is a list '{projA, projV}'.  'projA' a list of lists of integers;
--- each entry is a corresponds to a row vector in the projected system of 
--- inequalities.  'projV' is a list of sets of integers; each entry 
--- contains indices of the original rays which do NOT vanish at the 
+-- each entry is a corresponds to a row vector in the projected system of
+-- inequalities.  'projV' is a list of sets of integers; each entry
+-- contains indices of the original rays which do NOT vanish at the
 -- corresponding row vector in 'projA'
 fourierMotzkinElimination = method();
 fourierMotzkinElimination (List, List, ZZ) := List => (A, V, s) -> (
@@ -88,12 +88,12 @@ fourierMotzkinElimination (List, List, ZZ) := List => (A, V, s) -> (
 	  else (
 	       projA = append(projA, A#k);
 	       projV = append(projV, V#k));
-	  k = k+1);	  
+	  k = k+1);
      -- generate new inequalities.
-     scan(pos, i -> 
+     scan(pos, i ->
 	  scan(neg, j -> (
 		    vertices := V#i + V#j;
-		    if not isRedundant(projV, vertices) 
+		    if not isRedundant(projV, vertices)
 		    then (
 			 iRow := A#i;
 			 jRow := A#j;
@@ -105,18 +105,18 @@ fourierMotzkinElimination (List, List, ZZ) := List => (A, V, s) -> (
      -- don't forget the implicit inequalities '-t <= 0'.
      scan(pos, i -> (
 	  vertices := V#i + set{s};
-	  if not isRedundant(projV, vertices) 
+	  if not isRedundant(projV, vertices)
 	  then (
 	       projA = append(projA, A#i);
 	       projV = append(projV, vertices))));
-     -- remove the first column 
+     -- remove the first column
      projA = apply(projA, e -> primitive e_{1..(numCol-1)});
      -- remove redundant inequalities
-     irredundant := select(toList(0..#projA-1), 
+     irredundant := select(toList(0..#projA-1),
 	  i -> not isRedundant(delete(projV#i,projV),projV#i));
      projA = apply(irredundant, i -> projA#i);
-     projV = apply(irredundant, i -> projV#i);     
-     {projA, projV})   
+     projV = apply(irredundant, i -> projV#i);
+     {projA, projV})
 
 
 -- divides a list of integers by their gcd.
@@ -129,7 +129,7 @@ primitive List := List => L -> (
 	  n = n-1;
 	  g = gcd(g, L#n);
 	  if g === 1 then n = 0);
-     if g === 1 then L 
+     if g === 1 then L
      else apply(L, i -> i // g))
 
 
@@ -161,7 +161,7 @@ fourierMotzkin Matrix := Sequence => opt -> Z ->(
      else if alg==="gcdd" then return gcdd Z
      else error ("-- Invalid Algorithm option: " | alg |".")
      )
-     
+
 
 
 
@@ -169,12 +169,12 @@ fourierMotzkin Matrix := Sequence => opt -> Z ->(
 fourierMotzkinM2 = method();
 
 --   INPUT : 'Z' a matrix; the columns are the rays generating the cone
---	     'H' a matrix; the columns are the rays generaing the linear 
---               space in the cone.  
+--	     'H' a matrix; the columns are the rays generaing the linear
+--               space in the cone.
 --  OUTPUT : a sequence (A,E) :
---           'A' a matrix; the columns are the rays generating the polar 
+--           'A' a matrix; the columns are the rays generating the polar
 --               cone
---           'E' a matrix; the columns are the rays generating the linear 
+--           'E' a matrix; the columns are the rays generating the linear
 --               space in the polar cone
 -- COMMENT :  'cone(Z) + affine(H) = {x : A^t * x <= 0, E^t * x = 0}'
 fourierMotzkinM2 (Matrix, Matrix) := Sequence => (Z, H) -> (
@@ -187,7 +187,7 @@ fourierMotzkinM2 (Matrix, Matrix) := Sequence => (Z, H) -> (
      -- making 'QQ' versions of the input
      local Y;
      local B;
-     outputZZ := false; 
+     outputZZ := false;
      if (R === ZZ) then (
 	  outputZZ = true;
 	  Y = substitute(Z, QQ);
@@ -216,7 +216,7 @@ fourierMotzkinM2 (Matrix, Matrix) := Sequence => (Z, H) -> (
 	  i = i+1);
      -- computing the row-reduced echelon form of 'A'
      A = ((submatrix(A, pivotCol))^(-1)) * A;
-     -- converting 'A' into a list of integer row vectors 
+     -- converting 'A' into a list of integer row vectors
      A = entries A;
      A = apply(A, e -> primitive toZZ e);
      -- creating the vertex list 'V' for double description and listing the
@@ -232,11 +232,11 @@ fourierMotzkinM2 (Matrix, Matrix) := Sequence => (Z, H) -> (
      ineqnRow := {};
      scan(numRow, i -> (
 	       if (pivotCol#i >= n) then eqnRow = append(eqnRow, i)
-	       else ineqnRow = append(ineqnRow, i)));	  
+	       else ineqnRow = append(ineqnRow, i)));
      E := apply(eqnRow, i -> A#i);
      E = apply(E, e -> e_{n..(n+d-1)});
      A = apply(ineqnRow, i -> A#i);
-     A = apply(A, e -> e_(T | toList(n..(n+d-1)))); 
+     A = apply(A, e -> e_(T | toList(n..(n+d-1))));
      -- successive projections eliminate the remaining variables 'T'
      if (A =!= {}) then
      scan(T, t -> (
@@ -251,7 +251,7 @@ fourierMotzkinM2 (Matrix, Matrix) := Sequence => (Z, H) -> (
      if (E === {}) then E = map(ZZ^d, ZZ^0, 0)
      else E = transpose matrix E;
      if (outputZZ === false) then (
-	  A = substitute(A, QQ); 
+	  A = substitute(A, QQ);
 	  E = substitute(E, QQ));
      (sort A, sort E))
 
@@ -271,53 +271,52 @@ getFilename = () -> (
      filename)
 
 putMatrix = method()
-putMatrix (File, Matrix) := (F,A) ->(    
-	F << "polytope" << endl;
-	F << "H-representation" << endl;
-	F << "begin" << endl;
-	m := numColumns A;
-	n := numRows A;
-	A = matrix({toList(m:0)})||A;
-	F << m << " " << n+1 << " rational" << endl;	
-	L := entries transpose A;
-     	for i from 0 to m-1 do (
-	  for j from 0 to n do (
+putMatrix (File, Matrix) := (F,A) ->(
+     F << "polytope" << endl;
+     F << "H-representation" << endl;
+     F << "begin" << endl;
+     m := numColumns A;
+     n := numRows A;
+     A = matrix({toList(m:0)})||A;
+     F << m << " " << n+1 << " rational" << endl;
+     L := entries transpose A;
+     for i from 0 to m-1 do (
+     	  for j from 0 to n do (
 	       if (class L#i#j)===QQ then F << numerator L#i#j << "/" << denominator L#i#j << " "
-	       else F << L#i#j << " ";	      
+	       else F << L#i#j << " ";
 	       );
-	  F << endl;
-	  );
-	F << "end" << endl;
-	)
+     	  F << endl;
+     	  );
+     F << "end" << endl;
+     )
 putMatrix (File, Matrix, Matrix) := (F,C,B) -> (
-     	F << "polytope" << endl;
-	F << "H-representation" << endl;
-	F << "linearity " << numColumns B << " ";
-	apply(numColumns B, l-> F << l+1 << " ");
-	F << endl;
-	F << "begin" << endl;
-	A := B|C;
-	m := numColumns A;
-	n := numRows A;
-	A = matrix({toList(m:0)})||A;
-	F << m << " " << n+1 << " rational" << endl;
-	L := entries transpose A;
-        for i from 0 to m-1 do (
+     F << "polytope" << endl;
+     F << "H-representation" << endl;
+     F << "linearity " << numColumns B << " ";
+     apply(numColumns B, l-> F << l+1 << " ");
+     F << endl;
+     F << "begin" << endl;
+     A := B|C;
+     m := numColumns A;
+     n := numRows A;
+     A = matrix({toList(m:0)})||A;
+     F << m << " " << n+1 << " rational" << endl;
+     L := entries transpose A;
+     for i from 0 to m-1 do (
 	  for j from 0 to n do (
 	       if (class L#i#j)===QQ then F << numerator L#i#j << "/" << denominator L#i#j << " "
 	       else F << L#i#j << " ";
 	       );
-	  F << endl;
+ 	  F << endl;
 	  );
-	
-	F << "end" << endl;
-	)
-   
+     F << "end" << endl;
+     )
+
 getMatrix = method()
 getMatrix String := (filename) -> (
-     -- << get filename << endl;
+     if debugLevel > 2 then << get filename << endl;
      L := separateRegexp("linearity|begin|end", get filename);
-     if #L<3 then error "-- lrs or cdd failed to compute the dual cone."; 
+     if #L<3 then error "-- lrs or cdd failed to compute the dual cone.";
      local m, M;
      if #L==3 then (
 	  L = L#1;
@@ -327,7 +326,7 @@ getMatrix String := (filename) -> (
      ) else (
      	  lin := apply(drop(select(separateRegexp("[[:space:]]", L#1),m-> m=!=""),1), l-> (value l)-1);
 	  M = select(separateRegexp("[[:space:]]", L#2), m->m=!="");
-     	  m = value( M#1);	  
+     	  m = value( M#1);
      	  mat :=  pack_m apply(drop(M,3), o-> lift(promote(value replace("E\\+?","e",o),RR),QQ));
 	  linearity := sort transpose matrix apply(mat_lin, l-> drop(l,1));
 	  r := select(toList(0..#mat-1), n-> not member(n,lin));
@@ -339,54 +338,56 @@ getMatrix String := (filename) -> (
 lrs = method()
 lrs Matrix := Matrix => A ->(
      filename := getFilename();
-     << "using temporary file name " << filename << endl;
+     if debugLevel > 0 then << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
+     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+     if run execstr =!= 0 then error( "-- Error with lrs, for details see " | rootPath | filename | ".txt.");
      getMatrix (filename | ".ext")
      )
 lrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return lrs A else(
-      filename := getFilename();
-     << "using temporary file name " << filename << endl;
-     F := openOut(filename|".ine");
-     putMatrix(F,-A,B);
-     close F;
-     execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
-     getMatrix (filename | ".ext")
-     ))
+	  filename := getFilename();  
+	  if debugLevel > 0 then << "using temporary file name " << filename << endl;   
+	  F := openOut(filename|".ine");
+	  putMatrix(F,-A,B);
+	  close F;
+	  execstr = "lrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+	  if run execstr =!= 0 then error( "-- Error with lrs, for details see " | rootPath | filename | ".txt.");
+	  getMatrix (filename | ".ext")
+	  )
+     )
 
 cdd = method()
 cdd Matrix := Matrix => A ->(
      filename := getFilename();
-     << "using temporary file name " << filename << endl;
+     if debugLevel > 0 then << "using temporary file name " << filename << endl;
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
+     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+     if run execstr =!= 0 then error( "-- Error with cdd, for details see " | rootPath | filename | ".txt.");
      getMatrix (filename | ".ext")
      )
 cdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return cdd A else(
-       filename := getFilename();
-     << "using temporary file name " << filename << endl;
-     F := openOut(filename|".ine");
-     putMatrix(F,-A,B);
-     close F;
-     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
-     getMatrix (filename | ".ext")
-     ))
+	  filename := getFilename();
+	  if debugLevel > 0 then << "using temporary file name " << filename << endl;
+	  F := openOut(filename|".ine");
+	  putMatrix(F,-A,B);
+	  close F;
+	  execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+	  if run execstr =!= 0 then error( "-- Error with cdd, for details see " | rootPath | filename | ".txt.");
+	  getMatrix (filename | ".ext")
+	  )
+     )
 
 ggetMatrix = method()
 ggetMatrix String := (filename) -> (
-     -- << get filename << endl;
+     if debugLevel > 2 then << get filename << endl;
      L := separateRegexp("linearity|begin|end", get filename);
-     if #L<3 then error "-- lrs or cdd failed to compute the dual cone."; 
+     if #L<3 then error "-- lrs or cdd failed to compute the dual cone.";
      local m, M;
      if #L==3 then (
 	  L = L#1;
@@ -408,55 +409,57 @@ ggetMatrix String := (filename) -> (
 glrs = method()
 glrs Matrix := Matrix => A ->(
      filename := getFilename();
-     << "using temporary file name " << filename << endl;
+     if debugLevel > 0 then << "using temporary file name " << filename << endl;     
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
+     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+     if run execstr =!= 0 then error( "-- Error with glrs, for details see " | rootPath | filename | ".txt.");
      ggetMatrix (filename | ".ext")
      )
 glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      if B==0 then return glrs A else(
-      filename := getFilename();
-     << "using temporary file name " << filename << endl;
-     F := openOut(filename|".ine");
-     putMatrix(F,-A,B);
-     close F;
-     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
-     ggetMatrix (filename | ".ext")
-     ))
+	  filename := getFilename(); 
+	  if debugLevel > 0 then << "using temporary file name " << filename << endl;    
+	  F := openOut(filename|".ine");
+	  putMatrix(F,-A,B);
+	  close F;
+	  execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+	  if run execstr =!= 0 then error( "-- Error with glrs, for details see " | rootPath | filename | ".txt.");
+	  ggetMatrix (filename | ".ext")
+	  )
+     )
 
 gcdd = method()
 gcdd Matrix := Matrix => A ->(
      filename := getFilename();
-     << "using temporary file name " << filename << endl;
+     if debugLevel > 0 then << "using temporary file name " << filename << endl;   
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
+     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+     if run execstr =!= 0 then error( "-- Error with gcdd, for details see " | rootPath | filename | ".txt.");
      ggetMatrix (filename | ".ext")
      )
 gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
      if B==0 then return gcdd A else(
-       filename := getFilename();
-     << "using temporary file name " << filename << endl;
-     F := openOut(filename|".ine");
-     putMatrix(F,-A,B);
-     close F;
-     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext" ;
-     run execstr;
-     ggetMatrix (filename | ".ext")
-     ))    
+	  filename := getFilename();
+	  if debugLevel > 0 then << "using temporary file name " << filename << endl;
+	  F := openOut(filename|".ine");
+	  putMatrix(F,-A,B);
+	  close F;
+	  execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext > " | rootPath | filename |".txt 2>&1";
+	  if run execstr =!= 0 then error( "-- Error with gcdd, for details see " | rootPath | filename | ".txt.");
+	  ggetMatrix (filename | ".ext")
+	  )
+     )
 
 
 
 
 beginDocumentation()
 
-document { 
+document {
 	Key => FourierMotzkin1,
 	Headline => "for convex hull and vertex enumeration",
 
@@ -466,22 +469,22 @@ document {
 	combinations of a finite set of vectors.  The fundamental
 	theorem for cones states that a convex cone is polyhedral if
 	and only if it is finitely generated.  ",
-	
+
 	PARA{}, TT "FourierMotzkin", " is a Macaulay2 implementation of
 	the Double Description Method (of Fourier, Dines and Motzkin)
 	for converting between these two basic representations for
 	convex cones.  For polytopes, this allows one to convert
 	between the convex hull of a finite point set and the bounded
 	intersection of halfspaces.",
-	
+
 	PARA{}, "Here are some examples illustrating some uses of this
 	package.",
 	UL {
 	     {TO "Finding the facets of the cyclic polytope"},
 	     {TO "Finding the facets of the permutahedron"},
-	     {TO "Applications to multigraded polynomial rings"}	     
+	     {TO "Applications to multigraded polynomial rings"}
 	     },
-	
+
 	PARA{}, "This package is intended for use with relatively small
 	polyhedra.  For larger polyhedra, please consider ",
 	HREF("http://www.ifor.math.ethz.ch/~fukuda/cdd_home/cdd.html","cdd"),
@@ -500,14 +503,14 @@ document {
 	Schrijver's"), " ", EM "Theory of Linear and Integer
 	Programming", " Wiley-Interscience Series in Discrete
 	Mathematics, John Wiley and Sons, Chichester, 1986.",
-	
+
 	PARA{}, "We thank ",
 	HREF("http://page.mi.fu-berlin.de/rbirkner/indexen.htm", "Rene Birkner"),
 	" for help debugging the package."
-	     
+
 	}
 
-document {     
+document {
      Key => {fourierMotzkin, (fourierMotzkin,Matrix), (fourierMotzkin,Matrix,Matrix)},
      Headline => "interchange inequality/generator representation of a
      polyhedral cone",
@@ -520,27 +523,27 @@ document {
 	  "A'" => {"a ", TO Matrix, " with entries in ", TO ZZ, " or ", TO QQ},
 	  "B'" => {"a ", TO "Matrix", " with entries in ", TO ZZ, " or ", TO QQ}
 	  },
-     
+
      PARA{}, "The input pair ", TT "(A,B)", " describes a rational
      polyhedral cone generated by nonnegative linear combinations of
      the column vectors of ", TT "A", " and containing the linear
      space generated by the column vectors of ", TT "B", ".  Dually,
      the pair ", TT "(A,B)", " describes a rational polyhedral cone as
-     the intersection of closed halfspaces; the set of vectors ", 
-     TT "x", " satisfying ", TT "(transpose A) * x <= 0", " and ", 
+     the intersection of closed halfspaces; the set of vectors ",
+     TT "x", " satisfying ", TT "(transpose A) * x <= 0", " and ",
      TT "(transpose B) * x == 0", ".  If the convex cone spans its
      ambient affine space, then the input ", TT "B", " may be omitted.",
-     
+
      PARA{}, "The output pair ", TT "(A',B')", " is the dual description
-     of the same cone.  In particular, the output pair ", 
+     of the same cone.  In particular, the output pair ",
      TT "(A',B')", " is valid input.  If the convex cone spans its ambient
      affine space, then the output ", TT "B'", " will be zero.",
-     
+
      PARA{}, "For example, consider the convex cone generated by the 26
      columns of the following matrix.  Using Fourier-Motzkin
      elimination, we see that this cone is the intersection of 6
      halfspaces and spans 3-space.",
-     
+
      EXAMPLE {
 	  "rays = transpose matrix(QQ, {{1,1,6},{1,2,4},{1,2,5},
 	       {1,2,6},{1,3,4},{1,3,5},{1,3,6},{1,4,4},{1,4,5},
@@ -552,37 +555,37 @@ document {
 	  "extremalRays = fourierMotzkin halfspaces",
 	  "numgens source extremalRays#0"
 	  },
-     
+
      "Using Fourier-Motzkin elimination a second time, we see that
      this cone is in fact generated by 6 vectors.",
-     
+
      PARA{}, "Here are some further examples illustrating fourierMotzkin
      elimination.",
      UL {
 	  {TO "Finding the facets of the cyclic polytope"},
-	  {TO "Finding the facets of the permutahedron"},	     
+	  {TO "Finding the facets of the permutahedron"},
 	  }
      }
 
-document {     
+document {
      Key => "Finding the facets of the cyclic polytope",
-     
+
      "The ", EM "cyclic polytope", " is the convex hull of distinct
      points on the moment curve.  The function ", TT "cyclicPolytope",
-     " produces a matrix such that columns generate the cyclic ", 
+     " produces a matrix such that columns generate the cyclic ",
      TT "d", "-polytope with ", TT "n", " vertices.",
-        
+
      EXAMPLE {
 	  "cyclicPolytope = (d,n) -> map(ZZ^d, ZZ^n, (i,j) -> j^(i+1));",
 	  "vertices = cyclicPolytope(4,8)"
 	  },
-     
+
      PARA{}, "To find the halfspace representation for the convex hull
      of these points, we first pass from 4-space to 5-space.
      Specifically, we make the cyclic polytope into a polyhedral cone
      by placing it a height 1 (we make the extra coordinate the
      zeroeth coordinate).",
-	  
+
      EXAMPLE {
 	  "homogenizePolytope = V -> (
      R := ring V;
@@ -593,12 +596,12 @@ document {
 	  "halfspaces = H#0",
 	  "numgens source halfspaces"
 	  },
-     
+
      "Since ", TT "H#1", " is zero, the polyhedral cone spans 5-space.
      The columns in the matrix ", TT "halfspaces", " describe a
      complete minimal system of inequalities for the convex hull of
      these points.  In particular, this polytope has 20 facets.",
-          
+
      PARA{}, "To see the combinatorial structure of this polytope, we
      compute the facet-vertex incidence matrix.",
 
@@ -619,10 +622,10 @@ document {
      Texts in Mathematics 152, Springer-Verlag, New York, 1995."
      }
 
-document { 
+document {
      Key => "Applications to multigraded polynomial rings",
      Headline => "finding Heft",
-     
+
      "A vector configuration is ", EM "acyclic", " if it has a positive
      linear functional.  Using ", TT "fourierMotzkin", " we can
      determine if a vector configuration has a positive linear
@@ -632,7 +635,7 @@ document {
      of ", TO ZZ, " or ", TO QQ, "), the
      function ", TT "findHeft", " finds a ", TO List, "
      representing a positive linear functional.",
-     
+
      EXAMPLE {
           "findHeft = vectorConfig -> (
      A := transpose matrix vectorConfig;
@@ -643,7 +646,7 @@ document {
      if g > 1 then heft = apply(heft, h -> h //g);
      heft);"
      },
-     	  
+
      PARA{}, "If a polynomial ring as a multigrading determined by a
      vector configuration, then a positive linear functional plays the
      role of a ", TO Heft, " vector.",
@@ -659,7 +662,7 @@ document {
 	  "irrelevantIdeal = intersect(ideal(x_1,x_2), ideal(y_1,y_2))",
 	  "res (S^1/irrelevantIdeal)",
 	  },
-     
+
      "The Betti numbers correspond to the f-vector of the polytope
      associated to the second Hirzebruch surface.",
 
@@ -676,10 +679,10 @@ document {
      x_1*x_2*x_3*x_6,x_2*x_3*x_4*x_5,x_1*x_2*x_3*x_4)",
           "res (R^1/irrelevantIdeal)"
 	  },
-     
+
      "Again, the Betti numbers correspond to the f-vector of the
      polytope associated to this toric variety.",
-	  
+
      PARA{}, "For more information about resolutions of the irrelevant
      ideal of a toric variety, see subsection 4.3.6 in ",
      HREF("http://www.math.umn.edu/~ezra/", "Ezra Miller"), " and ",
@@ -694,20 +697,20 @@ document {
      Texts in Mathematics 152, Springer-Verlag, New York, 1995."
      }
 
-document {     
+document {
      Key => "Finding the facets of the permutahedron",
-     
+
      "The ", EM "permutahedron", " is the convex hull of all vectors
      that are obtained by permuting the coordinates of the vector ",
      TT "(1,2, ..., d)", ".  The function ", TT "permutahedron",
-     " produces a matrix such that columns generate the cyclic ", 
+     " produces a matrix such that columns generate the cyclic ",
      TT "d", " permutahedron in ", TT "(d+1)", "-space.",
-        
+
      EXAMPLE {
 	  "permutahedron = d -> transpose matrix permutations toList(1..d+1);",
 	  "vertices = permutahedron 3",
 	  },
-     
+
      PARA{}, "To find the halfspace representation for permutahedron, we
      first pass from 4-space to 5-space.  Specifically, we make the
      permutahedron into a polyhedral cone by placing it a height 1
@@ -723,17 +726,17 @@ document {
 	  "halfspaces = H#0;",
 	  "numgens source halfspaces",
 	  },
-     
+
      "Since ", TT "H#1", " has one column vector, the polyhedral cone
      spans a 4-dimensional subspace of 5-space.  Indeed, the sum of
      the components for each vertex is 10.  The columns in the matrix
      ", TT "halfspaces", " describe a complete minimal system of
      inequalities for permutahedron.  In particular, this polytope has
      14 facets.",
-          
+
      PARA{}, "To see the combinatorial structure of this polytope, we
      compute the facet-vertex incidence matrix.",
-     
+
      EXAMPLE {
 	  "inequalityMatrix = transpose submatrix(halfspaces,{1..4},)",
 	  "M = inequalityMatrix * vertices",
@@ -748,7 +751,7 @@ document {
      "Gunter M. Ziegler's"), " ", EM "Lectures on Polytopes", ",
      Graduate Texts in Mathematics 152, Springer-Verlag, New York,
      1995."  }
-     
+
 TEST ///
 C = transpose matrix{{1,1,1,1}}
 assert(C == (fourierMotzkin fourierMotzkin C)#0)
@@ -756,7 +759,7 @@ assert(C == (fourierMotzkin fourierMotzkin C)#0)
 
 TEST ///
 C = transpose matrix(QQ, {{0,0,1}, {1,0,1}, {0,1,1}})
-assert( (entries transpose C) == 
+assert( (entries transpose C) ==
      (entries transpose ((fourierMotzkin fourierMotzkin C)#0)) )
 ///
 
@@ -779,7 +782,7 @@ assert(P#1 == H)
 
 TEST ///
 M =  matrix{{1,1,1,1,1,1,1,1},{ -1,1,-2,2,1,-2,2,-1},{2,2,1,-1,-2,-1,1,-2}}
-dualM =  matrix {{ -2, -2, -2, -3, -3, -2, -3, -3}, 
+dualM =  matrix {{ -2, -2, -2, -3, -3, -2, -3, -3},
      { -1, 1, 0, -1, 1, 0, -1, 1}, {0, 0, -1, -1, -1, 1, 1, 1}}
 assert( (fourierMotzkin M)#0 == dualM)
 assert( (fourierMotzkin M_{4..7,0..3})#0 == dualM)
@@ -788,13 +791,13 @@ assert( (fourierMotzkin M_{7,0..6})#0 == dualM)
 
 TEST ///
 crossPoly = transpose matrix {{1, 1, 1, 1, -1}, {1, -1, -1, 1, -1},
-     {1, -1, 1, -1, -1}, {1,-1, 1, 1, -1}, {1, 1, -1, -1, 1}, 
-     {1, 1, -1, 1, 1}, {1, 1, 1, -1, 1}, {1, 1, 1, 1, 1}, 
-     {1, -1, -1, -1, 1}, {1, -1, -1, 1, 1}, {1, -1, 1, -1, 1}, 
-     {1, -1, 1, 1, 1}, {1, 1, -1, -1, -1}, {1, 1, -1, 1, -1}, 
+     {1, -1, 1, -1, -1}, {1,-1, 1, 1, -1}, {1, 1, -1, -1, 1},
+     {1, 1, -1, 1, 1}, {1, 1, 1, -1, 1}, {1, 1, 1, 1, 1},
+     {1, -1, -1, -1, 1}, {1, -1, -1, 1, 1}, {1, -1, 1, -1, 1},
+     {1, -1, 1, 1, 1}, {1, 1, -1, -1, -1}, {1, 1, -1, 1, -1},
      {1, 1, 1, -1, -1}, {1, -1, -1, -1, -1}}
-cube =   matrix {{ -1, -1, -1, -1, -1, -1, -1, -1}, 
-     { -1, 1, 0, 0, 0, 0, 0, 0}, {0, 0, -1, 1, 0, 0, 0, 0}, 
+cube =   matrix {{ -1, -1, -1, -1, -1, -1, -1, -1},
+     { -1, 1, 0, 0, 0, 0, 0, 0}, {0, 0, -1, 1, 0, 0, 0, 0},
      {0, 0, 0, 0, -1, 1, 0, 0}, {0, 0, 0, 0, 0, 0, -1, 1}}
 assert( (fourierMotzkin crossPoly)#0 == cube)
 ///
@@ -805,24 +808,24 @@ diamond = transpose matrix{
      {1/2, -1,  1},
      {1/2,  1, -1},
      {1/2,  1,  1}}
-dualDiamond = sort transpose matrix {{ -2/1, -1/1, 0/1}, { -2/1, 0/1, -1/1}, 
+dualDiamond = sort transpose matrix {{ -2/1, -1/1, 0/1}, { -2/1, 0/1, -1/1},
       { -2/1,1/1, 0/1}, { -2/1, 0/1, 1/1}}
 assert( (fourierMotzkin diamond)#0 == dualDiamond)
 ///
 
 TEST ///
-avisIn2 = transpose matrix {{1, -1, 0, -1, 0, 0}, {1, -1, 0, 0, 0, -1}, 
+avisIn2 = transpose matrix {{1, -1, 0, -1, 0, 0}, {1, -1, 0, 0, 0, -1},
      {1, 0, -1, -1, 0, 0}, {1, 0, -1, 0, -1, 0}, {1, 0, 0, 0, -1, -1},
-     {0, -1, 1, 0, 0, 1}, {0, 1, -1, 0, 1, 0}, {0, 0, 0, -1, 1, 1}, 
-     {0, 0, 1, 1, -1, 0}, {0, 1, 0, 1, 0, -1}, {2, -1, -1, -1, -1, -1}, 
-     {0, 1, 0, 0, 0, 0}, {0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0}, 
+     {0, -1, 1, 0, 0, 1}, {0, 1, -1, 0, 1, 0}, {0, 0, 0, -1, 1, 1},
+     {0, 0, 1, 1, -1, 0}, {0, 1, 0, 1, 0, -1}, {2, -1, -1, -1, -1, -1},
+     {0, 1, 0, 0, 0, 0}, {0, 0, 1, 0, 0, 0}, {0, 0, 0, 1, 0, 0},
      {0, 0, 0, 0, 1, 0}, {0, 0, 0, 0, 0, 1}}
-avisExt2 = sort transpose matrix {{ -1, 0, 0, 0, 0, 0}, { -1, -1, -1, 0, 0, 0}, 
+avisExt2 = sort transpose matrix {{ -1, 0, 0, 0, 0, 0}, { -1, -1, -1, 0, 0, 0},
      { -2, 0, -1, 0, -1, 0}, { -1, 0, 0, -1, -1, 0}, { -2, 0, -1, -1, -1, 0},
-     { -2, -1, -1, 0, -1, 0}, { -2, -1, 0, 0, 0, -1}, { -1, 0, 0, -1, 0, -1}, 
-     { -2, -1, 0, -1, 0, -1}, { -2, -1, -1, 0, 0, -1}, { -2, -1, -1, 0, -1, -1}, 
-     { -4, -2, -3, 0, -1, -2}, { -4, -3, -2, 0, -2, -1}, { -2, -1, 0, -1, -1, -1}, 
-     { -2, 0, 0, -1, -1, -1}, { -3, -1, 0, -1, -1, -2}, { -2, 0, -1, -1, -1, -1}, 
+     { -2, -1, -1, 0, -1, 0}, { -2, -1, 0, 0, 0, -1}, { -1, 0, 0, -1, 0, -1},
+     { -2, -1, 0, -1, 0, -1}, { -2, -1, -1, 0, 0, -1}, { -2, -1, -1, 0, -1, -1},
+     { -4, -2, -3, 0, -1, -2}, { -4, -3, -2, 0, -2, -1}, { -2, -1, 0, -1, -1, -1},
+     { -2, 0, 0, -1, -1, -1}, { -3, -1, 0, -1, -1, -2}, { -2, 0, -1, -1, -1, -1},
      { -3, 0, -1, -1, -2, -1}}
 assert( (fourierMotzkin avisIn2)#0 == avisExt2)
 ///
@@ -841,10 +844,10 @@ getFilename = () -> (
      filename := temporaryFileName();
      while fileExists(filename) or fileExists(filename|".ine") or fileExists(filename|".out") do filename = temporaryFileName();
      filename)
-	 
+
 putMatrix = method()
 putMatrix (File, Matrix) := (F,A) ->(
-    
+
 	F << "polytope" << endl;
 	F << "H-representation" << endl;
 	F << "begin" << endl;
@@ -852,7 +855,7 @@ putMatrix (File, Matrix) := (F,A) ->(
 	n := numRows A;
 	A = matrix({toList(m:0)})||A;
 	F << m << " " << n+1 << " rational" << endl;
-	
+
 	L := entries transpose A;
      for i from 0 to m-1 do (
 	  for j from 0 to n do (
@@ -860,7 +863,7 @@ putMatrix (File, Matrix) := (F,A) ->(
 	       );
 	  F << endl;
 	  );
-	
+
 	F << "end" << endl;
 )
 apply(10, l -> <<l+1<<" ")<<endl
@@ -881,7 +884,7 @@ putMatrix (File, Matrix, Matrix) := (F,C,B) -> (
 	       );
 	  F << endl;
 	  );
-	
+
 	F << "end" << endl;
 	)
 
@@ -943,7 +946,7 @@ primitive List := List => L -> (
 	  n = n-1;
 	  g = gcd(g, L#n);
 	  if g === 1 then n = 0);
-     if g === 1 then L 
+     if g === 1 then L
      else apply(L, i -> i // g))
 
 -- Converts a list of 'QQ' to 'ZZ' by multiplying by a common denominator
@@ -979,9 +982,9 @@ getMatrix String := (filename) -> (
      m := value( M#1);
      transpose matrix sort pack_m apply(drop(M,3), m-> lift(promote(value replace("E\\+?","e",m),RR),QQ))
 )
-	
 
-	 
+
+
 lrs = method()
 lrs Matrix := Matrix => A ->(
      filename := getFilename();
