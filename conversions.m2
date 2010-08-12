@@ -83,7 +83,7 @@ S = R[y]
 x
 new S from x
 new R from oo
-new S from 3
+new S from 3 --charleyc says: requires new RingElement from Number conversion above
 new R from oo
 new QQ from 3
 new ZZ from oo
@@ -106,17 +106,35 @@ new ZZ from ooo
 
 -- Charley Crissman
 -- Extend syntax to allow expressions like:
--- make Matrix of S from X
--- which will make a matrix of elements of S from X by applying the coercion "make S from e"
+-- new Matrix of S from X
+-- which will make a matrix of elements of S from X by applying the coercion "new S from e"
 -- for each entry e of X (while also dealing correctly with gradings)
+--
+--code:
+-- new Matrix of RingElement from Matrix := (Matrix, R, m) -> (
+--     try promote(m,R) else try lift(m,R) else error("conversion to type ",toString R," not possible.")
 --
 -- Example of where this would be nice:
 -- R = ZZ/32003
 -- M = matrix(R,{{1,2},{3,4}})
--- make Matrix of ZZ from X
+-- new Matrix of ZZ from X
 --
--- This would also give a suitable replacement for the current nasty coercion behaviour of
+-- This syntax would also give a suitable replacement for the current nasty coercion behaviour of
 -- sub over QQ, which causes sub((1/2)*x, {x=>2}) to return 2, not 1
+
+new Matrix from Number :=
+new Matrix from RingElement := (Matrix, x) -> matrix {{x}}
+{*
+new Matrix from 3
+R = QQ[x]
+new Matrix from x+1
+*}
+
+new List from BasicList := (List, L) -> toList L
+{*
+L = (1,2,3,4,5)
+new List from L
+*}
 
 -- Alex Diaz
 
