@@ -1,0 +1,68 @@
+Lex Order of (I+FP):	2.14811 
+GRevLex Order of (I+FP):	1.86219 
+Lex order from GRevLex basis of (I+FP):	.924467 
+
+Quotient Ring Lex Order, Sugarless:	23.4714 
+Quotient Ring GRevLex Order, Sugarless:	4.65047 
+Quotient Ring Lex order from GRevLex basis, Sugarless:	13.9036 
+
+gbBoolean:	3.79197 
+
+
+Lex Order of (I+FP):	.015361 
+GRevLex Order of (I+FP):	.015564 
+Lex order from GRevLex basis of (I+FP):	.005736 
+
+Quotient Ring Lex Order, Sugarless:	.074735 
+Quotient Ring GRevLex Order, Sugarless:	.073204 
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.036985 
+
+gbBoolean:	.013319 
+
+
+Lex Order of (I+FP):	.017394 
+GRevLex Order of (I+FP):	.013834 
+Lex order from GRevLex basis of (I+FP):	.003478 
+
+Quotient Ring Lex Order, Sugarless:	.017958 
+Quotient Ring GRevLex Order, Sugarless:	.033557 
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.001141 
+
+gbBoolean:	.002345 
+
+
+Lex Order of (I+FP):	15.6199 
+GRevLex Order of (I+FP):	.55045 
+Lex order from GRevLex basis of (I+FP):	.002034 
+
+Quotient Ring Lex Order, Sugarless:	.254568 
+Quotient Ring GRevLex Order, Sugarless:	.074677 
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.000229 
+
+gbBoolean:	.457083 
+
+
+Lex Order of (I+FP):	.008945 
+GRevLex Order of (I+FP):	.009496 
+Lex order from GRevLex basis of (I+FP):	.001715 
+
+Quotient Ring Lex Order, Sugarless:	.034573 
+Quotient Ring GRevLex Order, Sugarless:	.029147 
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.000854 
+
+gbBoolean:	.001909 
+
+
+Lex Order of (I+FP):	.049008 
+GRevLex Order of (I+FP):	.046336 
+Lex order from GRevLex basis of (I+FP):	.005629 
+
+Quotient Ring Lex Order, Sugarless:	.115214 
+Quotient Ring GRevLex Order, Sugarless:	.08881 
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.007996 
+
+gbBoolean:	.01682 
+
+
+
+
