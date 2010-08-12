@@ -126,16 +126,37 @@ relNodesGens(List) := L -> {
      return sort flatten for i from 0 to length(L)-1 list 
      for j from 0 to numcols (L#i#0)-1 list (entries L#i#0_j,L#i#1,L#i#2); --(monomial,dimension,position)
      }
- 
+
+refineUndecided = method(TypicalValue=> List);
+refineUndecided(List,List):= (Und,Dec)-> {
+    M:=apply(Und, i->{i#1,i#2});
+    T:= new MutableHashTable from apply(Und,i->{i#0,{}});
+    for i from 0 to #Und-1 do T#(Und#i#0)= append(T#(Und#i#0),Und#i#1);    
+    W:=new HashTable from T;
+    Y:=new MutableHashTable from applyValues(W, tally);
+    L:=#(keys Y);
+    for i from 0 to L-1 do
+    {
+      if (#Y#((keys Y)#i)==1) then 
+        {
+         dec=positions(Und,k->first k == (keys Y)#i);   --last parenthesis was omitted!
+         Dec=append(Dec,take(Und,{first dec, last dec}));
+         Und=drop(Und,{first dec, last dec});
+        }
+      else null;
+    };
+    return {Und, flatten Dec}
+};
+
 splitNodes = method();  --returns a list of "good" and "bad" generators that affect homological invariants
 splitNodes(List) := (myList) -> {
    myTally := tally apply(myList, i -> i#0);
    uniqueList := apply(select(pairs myTally, p -> p#1 == 1), first);
    nonUniqueList  := apply(select(pairs myTally, p -> p#1 > 1), first);
-   repList := select(myList, p -> member(p#0,uniqueList));
-   nonRepList := select(myList, p -> member(p#0,nonUniqueList));
-   return {repList,nonRepList}
- }
+   nonRepList := select(myList, p -> member(p#0,uniqueList));
+   repList := select(myList, p -> member(p#0,nonUniqueList));
+   return {nonRepList,repList};
+   }
 
 maxDim = method(); 
 maxDim(List) := L -> {
@@ -158,7 +179,6 @@ pseudoBettiHelper(BettiTally,BettiTally) := (lowBetti,highBetti) -> {
 	P := new List from sort (pairs (lowBetti) | pairs (highBetti));
 	P = unique P;
 	myTally = tally apply(P, i -> i#0);
-	print myTally;
 	--to start, check if first entries of the hash table are the same
 	--uniqueList := unique P;
         hasBoundsList := apply(select(pairs myTally, p -> p#1 > 1), first);
@@ -192,28 +212,7 @@ pseudoBettiHelper(BettiTally,BettiTally) := (lowBetti,highBetti) -> {
  	outPut = {tally printEntireList, peek totals}
 	}
 
-refineUndecided = method(TypicalValue=> List);
-refineUndecided(List,List):=(U,D)-> {
-    Und:=U;
-    Dec:=D;
-    M:=apply(Und, i->{i#1,i#2});
-    T:= new MutableHashTable from apply(U,i->{i#0,{}});
-    for i from 0 to #U-1 do T#(U#i#0)= append(T#(U#i#0),U#i#1);    
-    W:=new HashTable from T;
-    Y:=new MutableHashTable from applyValues(W, tally);
-    L:=#(keys Y);
-    for i from 0 to L-1 do
-    {
-      if (#Y#((keys Y)#i)==1) then 
-        {
-         dec=positions(Und,k->first k == (keys Y)#i);   --last parenthesis was omitted!
-         Dec=append(Dec,take(Und,{first dec, last dec}));
-         Und=drop(Und,{first dec, last dec});
-        }
-      else null;
-    };
-    return {Und, flatten Dec}
-};
+
 
 
  ----------------------
@@ -267,7 +266,8 @@ regMVT(MonomialIdeal) := o -> (I) -> {
 
 lowerBettiMVT = method(Options => {PivotStrategy => 1}); --returns lower bounds on the Betti numbers of a monomial ideal I
 lowerBettiMVT(MonomialIdeal) := o -> I -> {
-     L := (splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#0;
+     S := splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy);
+     L := (refineUndecided(S#1,S#0))#1;
      M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
      for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
@@ -283,7 +283,8 @@ lowerBettiMVT(MonomialIdeal) := o -> I -> {
 
 undecidedBettiMVT = method(Options => {PivotStrategy => 1}); --returns upper bounds on the Betti numbers of a monomial ideal I
 undecidedBettiMVT(MonomialIdeal) := o -> I -> {
-     L := ((splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy))#1);
+     S := splitNodes relNodesGens relMVT(I,PivotStrategy => o.PivotStrategy);
+     L := (refineUndecided(S#1,S#0))#0;
      M := apply(L, i->{i#1,i#0});
      T := new MutableHashTable from apply(L,i->{i#1,{}});
      for i from 0 to #M-1 do T#(M#i#0)= append(T#(M#i#0),first degree first(M#i#1));
