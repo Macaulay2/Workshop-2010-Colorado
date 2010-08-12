@@ -2,6 +2,7 @@
 restart
 
 loadPackage "BenchmarkGb"
+installPackage "BenchmarkGb"
 
 
 -- Computations for Shidoku with Boolean polynomials.  J are the shidoku polynomials and K is a set of initial clues to give a unique answer.
@@ -126,18 +127,16 @@ testgb II3
 
 restart
 load "benchmarks.m2"
+testgb II2
+I = II0;
+timing gbBoolean I
 
 I = II2
+testgb I
+
 timing ideal gens gb I
 timing gbBoolean I
 
-testgb = method()
-testgb Ideal := Bool => I -> (
-  G := ideal gens gb I;
-  print toString G;
-  GG := gbBoolean I;
-  G == GG
-)
 
 I = ideal (x + y*z )
 
@@ -147,7 +146,12 @@ I = ideal (x*y+z)
 
 
 
+R = ZZ/5[x,y,z,w]
+F = matrix(R, {{x+y, x, 3, y+5}})
+G := F
+sub( G,F)
+sub( matrix {{0,1,1,0}},F)
+sub( F, matrix {{0,1,1,0}})
 
 
-
-
+ P

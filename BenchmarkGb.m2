@@ -10,9 +10,15 @@ newPackage(
     )
 
 loadPackage "gbHelper"
-export {runBenchmark, makeBooleanNetwork}
+export {runBenchmark, makeBooleanNetwork, testgb}
 
--- Code here
+testgb = method()
+testgb Ideal := Bool => I -> (
+  G := ideal gens gb I;
+  print toString G;
+  GG := time gbBoolean I;
+  G == GG
+)
 
 -- function generates random boolean networks
 makeBooleanNetwork = method()
