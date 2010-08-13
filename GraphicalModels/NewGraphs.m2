@@ -4,7 +4,8 @@ newPackage("Graphs",
 	  {Name => "Amelia Taylor"},
 	  {Name => "Augustine O'Keefe"}
 	  },
-     ---- Also Doug Torrance.  Current role of Amelia and Tina?
+     ---- Also Doug Torrance --- clearly a current author.  Current role of Amelia and Tina?
+     ---- Shaowei Lin and Alex Diaz contributed mixedGraph
      DebuggingMode => true,
      Headline => "Data types, visualization, and basic funcitons for graphs",
      Version => "0.1"
