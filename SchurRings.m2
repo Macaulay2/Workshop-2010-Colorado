@@ -14,7 +14,10 @@ newPackage(
     	)
 
 export {schurRing, SchurRing, symmRing, toS, toE, toP, toH, 
-     plethysm, jacobiTrudi, Partitions, Schur,
+     plethysm, jacobiTrudi, Partitions, Schur, Memoize, EorH, CoeffRing,
+     zee, symToChar, charToSym, scalarProd, intProd, chi,
+     cauchy, wedge,
+     PtoE,HtoE,PtoH,EtoH,EtoP,HtoP,HtoETable,EtoHTable,PtoETable,EtoPTable,HtoPTable,PtoHTable,mapToE,mapToP, --take these out
      SchurRingIndexedVariableTable}
 -- Improve the names/interface of the following:
 --, symmRing, plethysmMap, jacobiTrudi, plethysm, cauchy, bott}
@@ -110,7 +113,6 @@ newSchur := (R,M,p) -> (
      	  (cc,mm) := rawPairs(raw R, raw f);
      	  toList apply(cc, mm, (c,m) -> (rawmonom2schur m, new R from c)));
      SR.generators = apply(M.generators, m -> SR#(toString m) = SR#0 + m);
-     scan(keys R,k -> if class k === String then SR#k = promote(R#k,SR));
      SR.use = x -> (
 	  M + M := (m,n) -> R#1 * m + R#1 * n;
 	  M - M := (m,n) -> R#1 * m - R#1 * n;
@@ -135,14 +137,15 @@ newSchur := (R,M,p) -> (
 SchurRingIndexedVariableTable = new Type of IndexedVariableTable
 SchurRingIndexedVariableTable _ Thing := (x,i) -> x#symbol _ i
 
-schurRing = method ()
-schurRing(Thing,ZZ) := SchurRing => (p,n) -> (
+schurRing = method (Options => {CoeffRing => ZZ})
+schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
      try p = baseName p else error "schurRing: can't use provided thing as variable";
-     if class p === Symbol then schurRing(p,n)
+     if class p === Symbol then schurRing(p,n,opts)
      else error "schurRing: can't use provided thing as variable"
      );
-schurRing(Symbol,ZZ) := SchurRing => (p,n) -> (
-     R := ZZ;
+schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
+--     R := ZZ;
+     R := opts.CoeffRing;
      x := local x;
      prune := v -> drop(v, - # select(v,i -> i === 0));
      M := monoid[x_1 .. x_n];
@@ -153,7 +156,7 @@ schurRing(Symbol,ZZ) := SchurRing => (p,n) -> (
      Mgens := M.generators;
      t := new SchurRingIndexedVariableTable from p;
      t.SchurRing = S;
-     t#symbol _ = a -> ( m := schur2monom(a,Mgens); new S from rawTerm(S.RawRing, raw 1, m.RawMonomial));
+     t#symbol _ = a -> ( m := schur2monom(a,Mgens); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
      S.use = S -> (globalAssign(p,t); S);
      S.use S;
      S)
@@ -173,31 +176,38 @@ symmRing = (n) -> (
      	  S := schurRing(symbol s, n);
      	  R.Schur = S;
      	  R.dim = n;
-     	  R.mapToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
-     	  R.mapToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
-     	  R.mapToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
+	  
+	  degsEHP = toList(1..n);
+     	  blocks = {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
+     	  locVarsE := apply(blocks#0,i->R_i);
+     	  locVarsP := apply(blocks#1,i->R_i);
+     	  locVarsH := apply(blocks#2,i->R_i);
+          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex];
+     	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
+     	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
+     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex];
+     	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
+     	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
+     	  PtoE(n,R);
+     	  HtoE(n,R);
+     	  EtoH(n,R);
+     	  PtoH(n,R);
+     	  EtoP(n,R);
+     	  HtoP(n,R);
+     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
+     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
+     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
+     	  collectGarbage();
+     	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
+     	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
+     	  R.mapSymToH = (f) -> f%R.grbH;
+--	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
+--     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
+--     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
      	  R.plethysmMaps = new MutableHashTable;
 	  symmRings#n = R;
 	  );
      symmRings#n)
-
-symmRing0 = (n) -> (
-     if not symmRings#?n then (
-     	  e := global e;
-     	  h := global h;
-     	  p := global p;
-	  Se := QQ[e_1..e_n,Degrees=>toList(1..n)];
-	  Sp := QQ[p_1..p_n,Degrees=>toList(1..n)];
-     	  Ss := schurRing(symbol s, n);
-     	  R.Schur = S;
-     	  R.dim = n;
-     	  R.mapToE = map(Se,Sp,flatten splice {apply(n, i -> PtoE(i+1,R))});
-     	  R.mapToP = map(Sp,Se,flatten splice {apply(n, i -> EtoP(i+1,R))});
-     	  R.plethysmMaps = new MutableHashTable;
-	  symmRings#n = R;
-	  );
-     symmRings#n)
-
 
 ---------------------------------------------------------------
 --------------Jacobi-Trudi-------------------------------------
@@ -206,25 +216,58 @@ symmRing0 = (n) -> (
 ----local variables for jacobiTrudi
 auxR = local auxR;
 auxn = local auxn;
+auxEH = local auxEH;
 ----
-jacobiTrudi = method()
-jacobiTrudi(List,Ring) := (lambda,R) ->
+jacobiTrudi = method(Options => {Memoize => true, EorH => "H"})
+jacobiTrudi(Partition,Ring) := opts -> (lambda,R) ->
 (
-     if not R.?S then R.S = new MutableHashTable;
-     auxR = R;
-     auxn = R.dim;
-     jT(lambda)
+     lam := lambda;
+     rez := local rez;
+     local u;
+     if opts.EorH == "H" then u = h else (u = e;lam = conjugate lam;);
+     if opts.Memoize then
+     (
+	  if not R.?S then R.S = new MutableHashTable;
+	  if opts.EorH == "E" then
+	  (
+     	       -----S#0 records S-functions in terms of e
+	       -----S#1 records S-functions in terms of h
+	       if not R.S#?0 then R.S#0 = new MutableHashTable;
+	       auxEH = 0;
+	       )
+	  else
+	  (
+	       if not R.S#?1 then R.S#1 = new MutableHashTable;
+	       auxEH = 1;
+	       );
+     	  auxR = R;
+     	  auxn = R.dim;
+     	  rez = jT(lam);
+	  )
+     else
+     (
+     	  n := #lam;
+     	  rez = det map(R^n, n, (i,j) -> 
+	       (
+	       	    aux := lam#i-i+j;
+	       	    if aux < 0 then 0_R
+	       	    else if aux == 0 then 1_R else u_aux)
+	       )
+	  );
+     rez
      )
+jacobiTrudi(List,Ring) := opts -> (lambda,R) -> jacobiTrudi(new Partition from lambda,R,opts);
 
 jT = (lambda) ->
 (
+     lambda = toList lambda;
      rez := local rez;
-     if auxR.S#?lambda then rez = auxR.S#lambda
+     if auxR.S#auxEH#?lambda then rez = auxR.S#auxEH#lambda
      else
      (
      ll := #lambda;
      if ll == 0 then rez = 1_auxR else
-     if ll == 1 then rez = auxR_(2*auxn-1+lambda#0) else
+     if ll == 1 then rez = auxR_(2*auxEH*auxn-1+lambda#0) else
      (
 	  l1 := drop(lambda,-1);
      	  l2 := {};
@@ -232,14 +275,14 @@ jT = (lambda) ->
 	  sgn := 1;
 	  for i from 0 to ll-1 do
 	  (
-     	       rez = rez + sgn*auxR_(2*auxn-1+lambda#(ll-1-i)+i)*jT(l1|l2);
+     	       rez = rez + sgn*auxR_(2*auxEH*auxn-1+lambda#(ll-1-i)+i)*jT(l1|l2);
 	       sgn = - sgn;
 	       l1 = drop(l1,-1);
 	       if lambda#(ll-1-i)>1 then
 	       l2 = {lambda#(ll-1-i)-1} | l2;
 	       );
 	  );
-     auxR.S#lambda = rez;
+     auxR.S#auxEH#lambda = rez;
      );
      rez
      )
@@ -278,8 +321,8 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      phi := map(R,Rf,flatten splice {N:0_R,apply(1..N, j -> (plethysmMap(j,R)) g),N:0_R});
      phi f)
 
-plethysm(List,RingElement) := (lambda,g) -> (
-     d := sum lambda;
+plethysm(BasicList,RingElement) := (lambda,g) -> (
+     d := sum toList lambda;
      Rf := symmRing d;
      f := jacobiTrudi(lambda,Rf);
      plethysm(f,g))
@@ -291,29 +334,53 @@ plethysm(List,RingElement) := (lambda,g) -> (
 ---------------------------------------------------------------
 ----Transition between various types of symmetric functions----
 ---------------------------------------------------------------
-toE = (f) -> (ring f).mapToE f
-toP = (f) -> (ring f).mapToP f
-toH = (f) -> (ring f).mapToH f
-toS = (f) -> (
+toE = (f) -> (ring f).mapSymToE f
+toP = (f) -> (ring f).mapSymToP f
+toH = (f) -> (ring f).mapSymToH f
+
+toS = method(Options => {Memoize=>true})
+toS(RingElement) := opts -> (f) -> (
      -- f is a polynomial in 'symmRing n', of degree d<=n
+     local hf;
      R := ring f;
-     d := first degree f;
-     n := R.dim;
-     if d>n then error"need symmetric ring of higher dimension";
-     hf := toH(f);
      rez := 0_(R.Schur);
-     while (hf!=0) do
+     n := R.dim;
+     d := first degree f;
+     use R.Schur;
+     if d>n then error"need symmetric ring of higher dimension";
+     if opts.Memoize then
      (
-     	  lt := leadTerm hf;
-     	  (mon,coe) := coefficients lt;
-     	  degs := (flatten exponents mon_0_0)_{(2*n)..(3*n-1)};
-     	  par := {};
-     	  for i from 0 to n-1 do
-	      par = par | splice{degs#i:(i+1)};
-	  par = reverse par;
-	  hf = hf - coe_0_0*(jacobiTrudi(par,R));
-	  rez = rez + lift(coe_0_0,ZZ)*s_par;
-     );
+     	  hf = toH(f);
+     	  while (hf!=0) do
+     	  (
+     	       lt := leadTerm hf;
+     	       (mon,coe) := coefficients lt;
+     	       degs := (flatten exponents mon_0_0)_{(2*n)..(3*n-1)};
+     	       par := {};
+     	       for i from 0 to n-1 do
+	           par = par | splice{degs#i:(i+1)};
+	       par = reverse par;
+	       hf = hf - coe_0_0*(jacobiTrudi(par,R));
+	       rez = rez + lift(coe_0_0,coefficientRing R.Schur)*s_par;
+     	       );
+     )
+     else
+     (
+	  hf = toH(f);
+	  ef := toE(f);
+	  le := #terms(ef);
+	  lh := #terms(hf);
+	  if le<lh then 
+	  (
+	       mtos = map(R.Schur,R,apply(splice{1..n},i->s_(splice{i:1})) | splice{2*n:0});
+     	       rez = mtos(ef);
+	       )
+	  else 	  
+	  (
+	       mtos = map(R.Schur,R,splice{2*n:0} | apply(splice{1..n},i->s_{i}));
+     	       rez = mtos(hf);
+	       );
+	  );
      rez
      )
 
@@ -327,12 +394,18 @@ PtoE = (m,R) -> (
      	  R.PtoETable = new MutableHashTable;
      PE := R.PtoETable;
      s := #(keys PE);
+--     if (s<m) then
+--     (
      for i from s+1 to m do (
-	  f := if i > n then 0_R else -i*R_(i-1); -- R_(i-1) IS e_i
+	  f := if i > n then 0 else -i*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
 	  for r from max(1,i-n) to i-1 do 
-	       f = f + (-1)^(r-1) * R_(i-r-1) * PE#r; -- R_(i-r-1) IS e_(i-r)
+	       f = f + (-1)^(r-1) * (R.symRingForE)_(2*n+i-r-1) * PE#r; -- R_(i-r-1) IS e_(i-r)
 	  PE#i = if i%2 == 0 then f else -f;
 	  );
+--     initSymR(R);
+--     R.grbPE = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToE(R_(n-1+i)-R.PtoETable#i)})};
+--     collectGarbage();
+--     );
      PE#m
      )
 
@@ -346,12 +419,18 @@ HtoE = (m,R) -> (
      	  R.HtoETable = new MutableHashTable;
      HE := R.HtoETable;
      s := #(keys HE);
+--     if (s<m) then
+--     (
      for i from s+1 to m do (
-	  f := if i > n then 0_R else (-1)^(i-1)*R_(i-1); -- R_(i-1) IS e_i
+	  f := if i > n then 0 else (-1)^(i-1)*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
 	  for r from 1 to min(i-1,n-1) do 
-	       f = f + (-1)^(r-1) * R_(r-1) * HE#(i-r); -- R_(r-1) IS e_r
+	       f = f + (-1)^(r-1) * (R.symRingForE)_(2*n+r-1) * HE#(i-r); -- R_(r-1) IS e_r
 	  HE#i = f;
 	  );
+--     initSymR(R);
+--     R.grbHE = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToE(R_(2*n-1+i)-R.HtoETable#i)})};
+--     collectGarbage();
+--     );
      HE#m
      )
 
@@ -366,12 +445,18 @@ EtoH = (m,R) -> (
      EH := R.EtoHTable;
      s := #(keys EH);
      if m > n then return 0_R;
+--     if (s<m) then
+--     (
      for i from s+1 to m do (
 	  f := R_(2*n-1+i); -- R_(2*n-1+i) IS h_i
 	  for r from 1 to i-1 do 
 	       f = f + (-1)^r * EH#r * R_(2*n-1+i-r); -- R_(2*n-1+i-r) IS h_(i-r)
 	  EH#i = if i%2 == 1 then f else -f;
 	  );
+--     initSymR(R);
+--     R.grbEH = forceGB matrix{flatten apply(splice{1..m},i->{R_(-1+i)-R.EtoHTable#i})};
+--     collectGarbage();
+--     );
      EH#m
      )
 
@@ -383,17 +468,23 @@ EtoP = (m,R) -> (
      n := R.dim;
      if not R.?EtoPTable then (
      	  R.EtoPTable = new MutableHashTable;
-	  R.EtoPTable#0 = 1_R;
+	  R.EtoPTable#0 = 1;
 	  );
      EP := R.EtoPTable;
      s := #(keys EP); -- keys includes 0,1,2,...
      if m > n then return 0_R;
+--     if (s<=m) then
+--     (
      for i from s to m do (
-	  f := 0_R;
+	  f := 0;
 	  for r from 1 to i do 
-	       f = f + (-1)^(r-1) * EP#(i-r) * R_(n-1+r); -- R_(n-1+r) IS p_r
+	       f = f + (-1)^(r-1) * EP#(i-r) * (R.symRingForP)_(2*n-1+r); -- R_(n-1+r) IS p_r
 	  EP#i = (1/i) * f;
 	  );
+--     initSymR(R);
+--     R.grbEP = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToP(R_(-1+i)-R.EtoPTable#i)})};
+--     collectGarbage();
+--     );
      EP#m
      )
 
@@ -405,17 +496,23 @@ HtoP = (m,R) -> (
      n := R.dim;
      if not R.?HtoPTable then (
      	  R.HtoPTable = new MutableHashTable;
-	  R.HtoPTable#0 = 1_R;
+	  R.HtoPTable#0 = 1;
 	  );
      HP := R.HtoPTable;
      s := #(keys HP); -- keys includes 0,1,2,...
      if m>n then error("need symmetric ring of higher dimension");
+--     if (s<=m) then
+--     (
      for i from s to m do (
-	  f := 0_R;
+	  f := 0;
 	  for r from 1 to i do 
-	       f = f + HP#(i-r) * R_(n-1+r); -- R_(n-1+r) IS p_r
+	       f = f + HP#(i-r) * (R.symRingForP)_(2*n-1+r); -- R_(n-1+r) IS p_r
 	  HP#i = (1/i) * f;
 	  );
+--     initSymR(R);
+--     R.grbHP = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToP(R_(2*n-1+i)-R.HtoPTable#i)})};
+--     collectGarbage();
+--     );
      HP#m
      )
 
@@ -427,23 +524,143 @@ PtoH = (m,R) -> (
      n := R.dim;
      if not R.?PtoHTable then (
      	  R.PtoHTable = new MutableHashTable;
-	  R.PtoHTable#0 = 1_R;
+	  R.PtoHTable#0 = 1;
 	  );
      PH := R.PtoHTable;
      s := #(keys PH); -- keys includes 0,1,2,...
      if m>n then error("need symmetric ring of higher dimension");
+--     if (s<=m) then
+--     (
      for i from s to m do (
 	  f := i*R_(2*n-1+i);  -- R_(2*n-1+i) IS h_i
 	  for r from 1 to i-1 do 
 	       f = f - PH#r * R_(2*n-1+i-r); -- R_(2*n-1+i-r) IS h_(i-r)
 	  PH#i = f;
 	  );
+--     initSymR(R);
+--     R.grbPH = forceGB matrix{flatten apply(splice{1..m},i->{R_(n-1+i)-R.PtoHTable#i})};
+--     collectGarbage();
+--     );
      PH#m
      )
 ---------------------------------------------------------------
 --------------End transition-----------------------------------
 ---------------------------------------------------------------
 
+---------------------------------------------------------------
+--------------Characters of Symmetric Group--------------------
+---------------------------------------------------------------
+
+seqToMults = method()
+seqToMults(List) := (lambda) ->
+(
+     lam := new Partition from lambda;
+     aux := toList(conjugate lam)|{0};
+     rez := {};
+     for j from 0 to #aux-2 do
+     (
+     	  dif := aux#j-aux#(j+1);
+       	  rez = rez | {dif};
+	  );
+     rez 
+     )
+
+multsToSeq = method()
+multsToSeq(List) := (mults) ->
+(
+     n := #mults;
+     par := {};
+     for i from 0 to n-1 do
+         par = par | splice{mults#i:(i+1)};
+     reverse par
+     )
+
+zee = method()
+zee(List) := lambda ->
+(
+     product for i from 0 to #lambda-1 list((i+1)^(lambda#i)*(lambda#i)!)
+     )
+
+symToChar = method()
+symToChar(RingElement) := (f)->
+(
+     R := ring f;
+     n := R.dim;
+     pf := toP f;
+     (mon,coe) := apply(coefficients pf,i->flatten entries i);
+--     exps := apply(exponents pf,i->i_{n..(2*n-1)});
+     ch := new MutableHashTable;
+     for j from 0 to #mon-1 do
+     (
+     	  degs := (flatten exponents mon#j)_{(n)..(2*n-1)};
+     	  par := multsToSeq(degs);
+	  ch#par = coe#j * zee(degs);
+	  );
+     new HashTable from ch
+     )
+
+charToSym = method()
+charToSym(HashTable,Ring) := (ch,R)->
+(
+     rez := 0_R;
+     n := R.dim;
+     for lam in keys ch do
+     	  rez = rez + ch#lam * (product for i from 0 to #lam-1 list R_(n-1+lam#i)) / zee(seqToMults lam);
+     rez
+     )
+
+scalarProd = method()
+scalarProd(HashTable,HashTable) := (ch1,ch2)->
+(
+     scProd := 0;
+     chProd := intProd(ch1,ch2);
+     for i in keys(chProd) do
+     	  scProd = scProd + chProd#i / zee(seqToMults i);
+     scProd
+     )
+
+scalarProd(RingElement,RingElement) := (f1,f2)->
+(
+     ch1 = symToChar f1;
+     ch2 = symToChar f2;
+     scalarProd(ch1,ch2)
+     )
+
+intProd = method()
+intProd(HashTable,HashTable) := (ch1,ch2)->
+(
+     iProd := new MutableHashTable;
+     l1 := sum((keys ch1)#0);
+     l2 := sum((keys ch2)#0);
+     if l1 != l2 then error("The symmetric functions/characters must have the same degree");
+     for i in keys(ch1) do
+     	  if ch2#?i then iProd#i = ch1#i * ch2#i;
+     new HashTable from iProd
+     )
+
+intProd(RingElement,RingElement) := (f1,f2)->
+(
+     R := ring f1;
+     ch1 = symToChar f1;
+     ch2 = symToChar f2;
+     charToSym(intProd(ch1,ch2),R)
+     )
+
+chi = method()
+chi(List,List) := (lambda, rho) ->
+(
+     ll := sum lambda;
+     if ll != sum(rho) then error"Partitions must have the same size.";
+     R := symmRing ll;
+     sl := jacobiTrudi(lambda,R);
+     pr := 1_R;
+     for i from 0 to #rho-1 do pr = pr * R_(ll-1+rho#i);
+     scalarProd(sl,pr)
+     )
+
+---------------------------------------------------------------
+--------------End characters-----------------------------------
+---------------------------------------------------------------
 
 ---------------------------------------------------------------
 -----------Partitions related functions------------------------
@@ -498,6 +715,91 @@ Partitions(Set,Partition) := (S,L)-> Partitions(S,toList L)
 ---------------------------------------------------------------
 --------End partitions related functions-----------------------
 ---------------------------------------------------------------
+
+
+---------------------------------------------------------------
+--------Old stuff----------------------------------------------
+---------------------------------------------------------------
+cauchy = (i,f,g) -> (
+     -- f and g are elements of symmRing's (possibly different)
+     -- compute the i th exterior power of the representation f ** g
+     P := partitions i;
+     n := (ring f).dim;
+     n' := (ring g).dim;
+     A = schurRing(s,
+     result := apply(P, lambda -> (
+	       --if #lambda > n or lambda#0 > n' then null
+	       --else 
+	       (
+		   a := toS plethysm(lambda,f);
+		   if a == 0 then null
+		   else (
+			b := toS plethysm(conjugate lambda, g);
+			if b == 0 then null else (a,b)
+		    ))));
+     select(result, x -> x =!= null)
+     )
+
+compositions1 = (r,n) -> (
+     -- return a list of all of the n-compositions of r.
+     -- i.e. ways to write r as a sum of n nonnegative integers
+     if n === 1 then {{r}}
+     else if r === 0 then {toList(n:0)}
+     else (
+	  flatten for i from 0 to r list (
+	       w := compositions1(r-i,n-1);
+	       apply(w, w1 -> prepend(i,w1)))))
+
+
+pairProduct = L -> (
+     -- L is a list of lists of (f,g), f,g both in symm rings.
+     -- result: a list of pairs (f,g).
+     if #L === 1 then first L
+     else (
+	  L' := drop(L,1);
+	  P' := pairProduct L';
+	  flatten apply(L#0, fg -> (
+	       (f,g) := fg;
+	       apply(P', pq -> (
+		    (p,q) := pq;
+		    (f*p, g*q)))))
+     ))
+----e.g. L = {{(h_2,e_3)},{(h_1,e_3),(p_2,e_2)}}
+----pairProduct L = {(h_1*h_2,e_3^2), (p_2*h_2,e_2*e_3)}
+
+wedge = method()		    
+wedge(List,List) := (C,L) -> (
+     -- MES MES: we are working on this function now.  It is fucked up.
+     -- the plethysmMap seems messed up.  We really need to make a routine
+     -- plethysm(partition,representation)
+     -- MES MES
+     -- C is a composition of 0..n-1, n == #L
+     -- form the product of the exterior powers of the corresponding representations.
+     result := {}; -- each entry will be of the form (f,g)
+     C0 := positions(C, x -> x =!= 0);
+     wedgeL := flatten apply(C0, i -> (
+	       apply(L#i, fg -> cauchy(C#i,fg#0,fg#1))));
+     pairProduct wedgeL     
+     )
+
+wedge(ZZ,List,List) := (r,L,ranks) -> (
+     -- r is an integer >= 1
+     -- L is a list of pairs (f,g), f,g are in (possibly different) symm rings.
+     -- returns wedge(r)(L), as a sum of irreducible representations of GL(m) x GL(n)
+     n := #L;
+     p := compositions1(r,n);
+     p = select(p, x -> all(ranks-x, i -> i>=0));
+     join apply(p, x -> wedge(x,L))
+     )
+--this computes the r-th wedge power of the direct sum of
+--V_i\tensor W_i where V_i, W_i are GL(V) and GL(W) modules
+--corresponding to pairs of symmetric functions (f_i,g_i)
+
+
+---------------------------------------------------------------
+--------End old stuff----------------------------------------------
+---------------------------------------------------------------
+end
 
 beginDocumentation()
 
@@ -615,29 +917,9 @@ cauchy = (i,f,g) -> (
      select(result, x -> x =!= null)
      )
 
-bott = (QRreps) -> (
-     -- returns a list of either: null, or (l(w), w.((Qrep,Rrep)+rho) - rho)
-     s := QRreps; -- join(Qrep,Rrep);
-     rho := reverse toList(0..#s-1);
-     s = s + rho;
-     len := 0;
-     s = new MutableList from s;
-     n := #s;
-     for i from 0 to n-2 do
-     	  for j from 0 to n-i-2 do (
-	       if s#j === s#(j+1) then return null;
-	       if s#j < s#(j+1) then (
-		    tmp := s#(j+1);
-		    s#(j+1) = s#j;
-		    s#j = tmp;
-		    len = len+1;
-		    )
-	       );
-     (len, toList s - rho)
-     )
-
 compositions1 = (r,n) -> (
      -- return a list of all of the n-compositions of r.
+     -- i.e. ways to write r as a sum of n nonnegative integers
      if n === 1 then {{r}}
      else if r === 0 then {toList(n:0)}
      else (
@@ -659,6 +941,9 @@ pairProduct = L -> (
 		    (p,q) := pq;
 		    (f*p, g*q)))))
      ))
+----e.g. L = {{(h_2,e_3)},{(h_1,e_3),(p_2,e_2)}}
+----pairProduct L = {(h_1*h_2,e_3^2), (p_2*h_2,e_2*e_3)}
+
 wedge = method()		    
 wedge(List,List) := (C,L) -> (
      -- MES MES: we are working on this function now.  It is fucked up.
@@ -683,6 +968,28 @@ wedge(ZZ,List,List) := (r,L,ranks) -> (
      p = select(p, x -> all(ranks-x, i -> i>=0));
      join apply(p, x -> wedge(x,L))
      )
+
+bott = (QRreps) -> (
+     -- returns a list of either: null, or (l(w), w.((Qrep,Rrep)+rho) - rho)
+     s := QRreps; -- join(Qrep,Rrep);
+     rho := reverse toList(0..#s-1);
+     s = s + rho;
+     len := 0;
+     s = new MutableList from s;
+     n := #s;
+     for i from 0 to n-2 do
+     	  for j from 0 to n-i-2 do (
+	       if s#j === s#(j+1) then return null;
+	       if s#j < s#(j+1) then (
+		    tmp := s#(j+1);
+		    s#(j+1) = s#j;
+		    s#j = tmp;
+		    len = len+1;
+		    )
+	       );
+     (len, toList s - rho)
+     )
+
 preBott = (i,L,ranks) -> (
      R1 := ring L#0#0#0;
      R2 := ring L#0#0#1;
@@ -1060,3 +1367,68 @@ exponents oo
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
 -- End:
+
+------Claudiu
+restart
+loadPackage "SchurRings"
+time R = symmRing 30
+
+
+----wedge powers over GL(V) x GL(W)
+A = symmRing 12
+B = symmRing 15
+cauchy(3,A_3,B_32)
+wedge(3,{{(A_2,B_3)},{(A_1,B_2)}},{4,4})
+
+use B
+wedge(3,{{(h_2,e_3)},{(e_1,e_2)},{(h_2,h_2)}},{4,4,4})
+----end wedge powers
+
+----Scalar products
+s_{3,3,3}*s_{4,2,1}
+scalarProd(jacobiTrudi({6,4,3,2,1},R),jacobiTrudi({3,3,3},R)*jacobiTrudi({4,2,1},R))
+scalarProd(jacobiTrudi({6,4,3,2,1},R),jacobiTrudi({4,3,3,3,2,1},R))
+
+s_{6,4,4,2}*s_{3,3,3,2,1,1,1}
+time scalarProd(jacobiTrudi({6,4,4,2},R)*jacobiTrudi({3,3,3,2,1,1,1},R),jacobiTrudi({6,6,5,3,3,2,2,1,1,1},R))
+-----end scalar products
+
+-----characters
+time for lam in partitions(5) do
+     print (lam,symToChar(jacobiTrudi(lam,R)))
+chi({2,1,1,1},{2,1,1,1})
+chi({3,1,1},{1,1,1,1,1})
+chi({3,2},{3,1,1})
+chi({2,2,1},{3,1,1})
+chi({3,1,1},{2,2,1})
+-------end characters
+
+
+-----transition to s-functions, J-Trudi
+use R
+time toS(h_1^20,Memoize=>true);
+time toS(h_1^20,Memoize=>false);
+
+time toS(plethysm(h_5,h_4),Memoize=>true);
+time toS(plethysm(h_5,h_4),Memoize=>false);
+
+time jacobiTrudi({7,7,5,4,3,2,2},R,Memoize=>true);
+time jacobiTrudi({7,7,5,4,3,2,2},R,Memoize=>false);
+
+time toS(plethysm(h_5,h_6),Memoize=>true);
+time toS(plethysm(h_5,h_6),Memoize=>false);
+
+time toS(e_30,Memoize=>true)
+time toS(e_30,Memoize=>false)
+
+time toS(h_30,Memoize=>true)
+time toS(h_30,Memoize=>false)
+
+time jacobiTrudi(splice{30:1},R);
+-----end transition to s-functions, J-Trudi
+
+restart
+loadPackage "SchurRings"
+time R = symmRing 10
+S = schurRing(y,10,CoeffRing => R)
+h_3*y_{4}^2+h_2*y_{2,1}*y_{3}
