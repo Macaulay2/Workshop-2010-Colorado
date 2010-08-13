@@ -1,5 +1,5 @@
 -- -*- coding: utf-8 -*-
-newPackage("Graphs",
+newPackage("NewGraphs",
      Authors => {
 	  {Name => "Amelia Taylor"},
 	  {Name => "Augustine O'Keefe"}
@@ -72,7 +72,10 @@ Graph = new Type of Digraph
      -- simpleGraph is an internal conversion function. 
 
 MixedGraph = new Type of HashTable
-     -- a mixed graph is a HashTable of Digraphs whose keys (vertex sets) are the same.
+     -- a mixed graph is a HashTable of one Graph, one Digraph and
+     -- another Graph.  The second Graph is interpreted to be a
+     -- bigraph, while the first Graph is a traditional, undirected
+     -- Graph. 
      
 LabeledGraph = new Type of HashTable
    
@@ -131,19 +134,19 @@ graph List := opts -> (g) -> (
 ------- Definitely need descendents.  
 
 mixedGraph = method()
-mixedGraph HashTable := (g) -> (
+mixedGraph (Graph,Digraph,Graph) := (g,d,b) -> (
     -- Input: A hashtable of digraphs.
     -- Output: A hashtable of digraphs with the same vertex set,
-    --         which is the union of the vertex sets of the input digraphs.
-	scanKeys(g, i-> if not instance(g#i, Digraph) then error "expected HashTable of Digraphs");
-	vertices := toList sum(apply(keys(g),i->set keys(g#i)));
-	new MixedGraph from applyValues(g, i->(
-	  hh := new MutableHashTable;
-	  scan(vertices,j->if i#?j then hh#j=i#j else hh#j={});
-	  new class(i) from hh
-	))
-)     
-
+    --         which is the union of the vertex sets of the input
+    --         digraphs.
+    if not instance(g, Graph) then error "expected first argument to be a Graph";
+    if not instance(d, Digraph) then error "expected first argument to be a Digraph";
+    if not instance(b, Graph) then error "expected first argument to be a Graph";
+    h := new MutableHashTable;
+    h#graph = g;
+    h#digraph = d;
+    h#bigraph = b;
+    new MixedGraph from h)
 
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
