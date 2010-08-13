@@ -1004,5 +1004,34 @@ doc ///
 
 end
 
+TEST /// ---- family members, neighbors and non-neighbors. 
+G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
+H = digraph{{a,{b,c}},{b,{c,d}},{c,{d}},{c,{}}}
+assert(neighbors(G,a) === {b,c})
+assert(nonneighbors(G,b) === {d})
+assert(parents(H,a) === {})
+assert(parents(H,c) === {a,b})
+assert(children(H,a) === {b,c})
+assert(descendents(H,a) === {b,c,d})
+assert(nondescendents(H,c) === {a,b})
+assert(foreFathers(H,c) === {a,b})
+///
+
+TEST /// ---- display?
+
+///
+
+TEST /// ---- Functions on Graphs. 
+
+///
+
+
+Graph, Digraph, MixedGraph, LabeledGraph, graph, digraph,
+     mixedGraph, labeledGraph, Singletons, descendents, nondescendents, 
+     parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
+     simpleGraph, removeNodes, inducedSubgraph, completeGraph,
+     cycleGraph, writeDotFile, SortedDigraph, topSort, DFS,
+     adjacencyMatrix, edgeSet, incidenceMatrix}
+exportMutable {dotBinary,jpgViewer 
 
 break
