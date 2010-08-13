@@ -83,7 +83,6 @@ digraph HashTable := (g) -> (
      -- Output: A hash table of type Digraph.
      --         If a value of the hash table g is a List, Sequence or Array, it is converted into a set.
      --         If a value x of the hash table g is not a Set or VisibleList, it is converted into a set {x}.
-
      G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
      nullVertices := toList (sum(values G) - keys G);
      new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus))
@@ -128,77 +127,6 @@ graph List := opts -> (g) -> (
      H := new MutableHashTable from G;
      scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
      new Graph from H)
-
-
--- (Shaowei) Below are the old implementations of graph and digraph constructors:
---
--- union := S -> (
---     -- Input:  A list of lists of sets, in particular the list of the
---     --         sets of individual neighbors of nodes, and the position of
---     --         a particular node.
---     -- Output:  A set of all the neighbors of a particular node.
---     x = new MutableHashTable;
---     for t in S do scanKeys(t, z -> x#z = 1);
---     new Set from x)  
---
--- graph List := opts -> (g) -> (
---     -- Input:  A list of lists with two elements which describe the 
---     --         edges of the graph. 
---     -- Output:  A hash table with keys the names of the nodes and the 
---     --          values are the neighbors corresponding to that node. 
---     ---- Note to Selves --- this code should also nicely build
---     ---- hypergraphs as hash tables with again, nodes as keys and
---     ---- neighbors as values. 
---     h := new MutableHashTable;
---     vertices := toList set flatten g;
---     if opts.Singletons === null then (
---	  neighbors := for j to #vertices-1 list( 
---	       for k to #g-1 list (if member(vertices#j, set g#k) 
---		    then set g#k - set {vertices#j} 
---		    else continue)
---	       );
---	  neighbors = apply(neighbors, i -> union i);
---	  )
---     else (vertices = join(vertices, opts.Singletons);
---	  newEdges := apply(for i to #opts.Singletons - 1 list {}, i -> set i);
---	  neighbors = for j to #vertices-1 list( 
---	       for k to #g-1 list (if member(vertices#j, set g#k) 
---		    then set g#k - set {vertices#j} 
---		    else continue)
---	       );
---	  neighbors = apply(neighbors, i -> union i);
---	  neighbors = join(neighbors,newEdges);
---	  );
---     apply(#vertices, i -> h#(vertices#i) = neighbors#i);
---     new Graph from h
---     )
---
--- graph MutableHashTable := opts -> (g) -> (
---     new Graph from h)
---
--- graph HashTable := opts -> (g) -> (
---     -- Input:  A hash table with keys the names of the nodes of 
---     --         the graph and the values the neighbors of that node. 
---     -- Output: A hash table of type Graph. 
---     new Graph from g)
---
--- digraph = method()
--- digraph List := (g) -> (
---     -- Input:  A list of pairs where the first element of the pair is the 
---     --         name of a node and the second is the list of 
---     --         children for that node. If a node has no children,
---     --         then the second element of the pair should be empty. 
---     -- Output:  A hashtable with keys the names of the nodes 
---     --          with values the children.
---     h := new MutableHashTable;
---     scan(#g, i -> h#(g#i#0) = set g#i#1);
---     new Digraph from h)
---     
--- digraph HashTable := (g) -> (
---     -- Input:  A hash table with keys the names of the nodes of 
---     --         and the values the children of that node. 
---     -- Output: A hash table of type Diraph. 
---     new Digraph from g)
 
 
 mixedGraph = method()
@@ -453,7 +381,7 @@ nonneighbors = method()
      -- Input: A graph and the key for the vertex of interest.
      -- Output: The set of vertices that are not neighbors of the vertex 
      --	    	of interest.
-nonneighbors(Graph, Thing) := (G,v) -> keys G - neighbors(G,v)-set{v}
+nonneighbors(Graph, Thing) := (G,v) -> set keys G - neighbors(G,v)-set{v}
 
 removeNodes = method()
      -- Input: A digraph and the list of nodes you want to remove.
@@ -1004,17 +932,20 @@ doc ///
 
 end
 
+restart
+loadPackage"Graphs"
+
 TEST /// ---- family members, neighbors and non-neighbors. 
 G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
 H = digraph{{a,{b,c}},{b,{c,d}},{c,{d}},{c,{}}}
-assert(neighbors(G,a) === {b,c})
-assert(nonneighbors(G,b) === {d})
-assert(parents(H,a) === {})
-assert(parents(H,c) === {a,b})
-assert(children(H,a) === {b,c})
-assert(descendents(H,a) === {b,c,d})
-assert(nondescendents(H,c) === {a,b})
-assert(foreFathers(H,c) === {a,b})
+assert(neighbors(G,a) === set {b,c})
+assert(nonneighbors(G,b) === set {d,e})
+assert(parents(H,a) === set {})
+assert(parents(H,c) === set {a,b})
+assert(children(H,a) === set {b,c})
+assert(descendents(H,a) === set {b,c,d})
+assert(nondescendents(H,c) === set {a,b})
+assert(foreFathers(H,c) === set {a,b})
 ///
 
 TEST /// ---- display?
@@ -1026,9 +957,8 @@ TEST /// ---- Functions on Graphs.
 ///
 
 
-Graph, Digraph, MixedGraph, LabeledGraph, graph, digraph,
-     mixedGraph, labeledGraph, Singletons, descendents, nondescendents, 
-     parents, children, neighbors, nonneighbors, foreFathers, displayGraph,
+
+     mixedGraph, labeledGraph, displayGraph,
      simpleGraph, removeNodes, inducedSubgraph, completeGraph,
      cycleGraph, writeDotFile, SortedDigraph, topSort, DFS,
      adjacencyMatrix, edgeSet, incidenceMatrix}
