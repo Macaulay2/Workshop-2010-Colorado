@@ -13,30 +13,35 @@ newPackage(
    export{cayleyFactor}
    
    
-    ------------------------------------------------------------------- 
+------------------------------------------------------------------- 
 -------------------  the main function -------------------------
- ------------------------------------------------------------------- 
+------------------------------------------------------------------- 
 
+	   
 -- INPUT:  P, a multilinear bracket expression, i.e. an element of coord. ring of Gr(d,n)
 --     	      where each element of 0..n appears exactly once in each monomial
 -- OUTPUT:  null, if P is not Cayley-factorable.  Otherwise, output the Cayley factorization.
 --     	    (,) denotes "meet" and {,} denotes "join"
 -- WARNING:  We assume is P is already an element of the coordinate ring of Gr(d,n)
 
-cayleyFactor = method();
-cayleyFactor(RingElement, ZZ, ZZ) := Expression => (P,d,n) -> (
+cayleyFactor = method(     
+     TypicalValue => Expression, 
+     Options => { 
+     	  OnlineStraightening => true
+	  });
+cayleyFactor(RingElement, ZZ, ZZ) := Expression => o -> (P,d,n) -> (
      cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
      )
-cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) -> (
+cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => o -> (P,d,n,partialAtoms) -> (
      if((degree P)#0 <= 0) then (return(P));
      knownFactors := null;
-     atoms := toList listAtoms(P, partialAtoms, d, n); -- Step 1
+     atoms := toList listAtoms(P, partialAtoms, d, n,o); -- Step 1
      if(#select(atoms, a -> #a >= d+1) <= 0 and (max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
 --	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
 --	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  ); 
-     pureFactors := factorBrackets(P,d,n,atoms); -- Step 2
+     pureFactors := factorBrackets(P,d,n,atoms, o); -- Step 2
      if(#pureFactors#0 > 0) then (
     	  knownFactors = flatten sequence apply(pureFactors#0, a -> sort toList a);
        	  P = pureFactors#1;
@@ -46,7 +51,7 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
 	       return(knownFactors);
 	       )
        	  );
-     pairFactor := findPairFactor(P,d,n,atoms); -- Steps 3 and 4
+     pairFactor := findPairFactor(P,d,n,atoms, o); -- Steps 3 and 4
      if(pairFactor === null) then (
 --	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
 	  return(null);
@@ -73,7 +78,6 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => (P,d,n,partialAtoms) ->
 	  );
      )
            
-	   
 	   
 	   
  ------------------------------------------------------------------- 
@@ -104,14 +108,14 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
      ideal apply(subsets(0..n,d+1),s-> (p_(toSequence(sort toList s)))_GC0*product(apply(toList(e_0..e_d), ee->ee_GC0))- product apply(s, i-> (a_i)_GC0));
      GC := GC0/I;
       
-     meet(GC, GC, ZZ,ZZ) := (A,B, d, n) -> (
+     meet(GC, GC) := (A,B) -> (
       termsA := terms A;
       termsB := terms B;
       if(#termsA > 1) then (
-	   return(meet(termsA#0, B,d,n) + meet(sum drop(termsA, {0,0}),B, d,n)); 
+	   return(meet(termsA#0, B) + meet(sum drop(termsA, {0,0}),B)); 
 	   );
       if(#termsB > 1) then (
-      	   return(meet(A, termsB#0,d,n) + meet(A, sum drop(termsB, {0,0}), d,n)); 
+      	   return(meet(A, termsB#0) + meet(A, sum drop(termsB, {0,0}))); 
 	   );
       monoA := termsA#0;
       monoB := termsB#0;
@@ -151,9 +155,12 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
  -----------------Step 1 functions ---------------------
    ----------------------------------------------------
 
-   listAtoms = method()
+   listAtoms = method(     
+	Options => { 
+     	  OnlineStraightening => true
+	  })
      
-   listAtoms(RingElement, ZZ, ZZ) := (P, d, n) ->(
+   listAtoms(RingElement, ZZ, ZZ) := o-> (P, d, n) ->(
 	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, d, n
 	--OUTPUT: AtomicExt = list of equivalence classes of points.  Each equivalence class is an atomic extensor.
        	--Jessica Sidman, August 9, 2010
@@ -176,7 +183,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	     numPoints = #points;
 	     
 	     for i from 0 to (#points-1) do(
-		  if isAtom(currentPoint, points#i, P, d,n) then atomicClass=atomicClass+set{points#i}
+		  if isAtom((currentPoint, points#i), P, d,n, o) then atomicClass=atomicClass+set{points#i}
 		  );
 	     points = new MutableList from toList ((set toList points) -atomicClass);
 	     AtomicExt = append(AtomicExt, atomicClass);
@@ -184,7 +191,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	AtomicExt
 		)
 
- listAtoms(RingElement, List, ZZ, ZZ) := (P, partialAtomsInput, d, n) ->(
+ listAtoms(RingElement, List, ZZ, ZZ) := o-> (P, partialAtomsInput, d, n) ->(
 	--INPUT:  P = bracket polynomial of rank d+1 in n+1 points, partialAtoms = MutableList whose elements are sets of points already known to be in the same equivalence class, d, n
 	--OUTPUT: AtomicExt = list of equivalence classes of points (consisting of unions of the elements in partialAtoms.  Each equivalence class is an atomic extensor.
        	--Jessica Sidman, August 9, 2010
@@ -211,7 +218,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	     --each element in the partialAtoms list
 	     temporaryAtoms := partialAtoms; 
 	     for i from 0 to (#temporaryAtoms-1) do(
-		  if isAtom((toList currentAtom)_0, ((toList temporaryAtoms#i))_0, P, d,n) then (
+		  if isAtom(((toList currentAtom)_0, ((toList temporaryAtoms#i))_0), P, d,n,o) then (
 		       atomicClass=atomicClass+temporaryAtoms#i;
 		       partialAtoms = new MutableList from toList( (set toList partialAtoms) - {temporaryAtoms#i});
 		  );
@@ -225,51 +232,56 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	   
    rep = (a,b,L)-> (for x in L list (if x==a then b else x))
    
-   isAtom = (a,b,P,d,n) ->(
+   isAtom = method(     
+	Options => { 
+     	  OnlineStraightening => true
+	  })
+   isAtom(Sequence,RingElement,ZZ,ZZ) := Boolean => o-> (pair,P,d,n) -> (
 	--INPUT: a,b = distinct numbers between 1 and n,
 	--P = bracket polynomial of rank d+1 in n+1 points, d, n
 	--OUTPUT: 1 if a join b is an atomic extensor, 0 otherwise	
 	R := ring P;	
-	--list the subcripts of all of the variables in order
-{*	S:=new MutableList from apply(flatten entries vars R , p ->(baseName p)#1);
-	SLength:=#S;
-	for i from 0 to (SLength-1) do (
-	     --replace S_i by 0_R if a and b are in
-	     if isSubset({a,b}, S#i) then S#i = 0_R
-	     --replace b by a in S_i and then replace S_i by sign of permutation* p_(S_i)
-	     else if isSubset({b}, S#i) then 
-	       ( tempR := rep(a,b,S#i);
-	      	S#i= sign(tempR)*sub(value (((baseName R_0)#0)_(toSequence sort(tempR))), R))
-	     else S#i=sub(value ((baseName R_0)#0)_(S#i), R) ;
-	     );
-	*}
-   points:= toList (0..n);
-   points = replace(a,b,points);
-   permutePoints(P,d,n,points) == 0_R --straightening used to check for 0
-)	     
+	(a,b) := pair;
+   	points:= toList (0..n);
+   	points = replace(a,b,points);
+   	if(o.OnlineStraightening)then(
+	     return(straighten(permutePoints(P,d,n,points),d,n) == 0_R)
+	     )else(return(permutePoints(P,d,n,points) == 0_R));
+	)	     
 
  
  ------------------- Step 2 ------------------------------------------------ 
-  
-  factorBrackets = (P, d, n, L) -> (
+  factorBrackets=method(     
+       Options => { 
+     	  OnlineStraightening => true
+	  })
+  factorBrackets(RingElement,ZZ,ZZ,List) := List => o-> (P, d, n, L) -> (
        -- INPUT: P is a polynomial in Grassmannian(d,n);
        --     	 L is a list of atomic extensors of P; 
        --        each element of L is a list of indices.
        -- Output: {L', P'} where L' is the list of step d+1 extensors of P, 
        --         and P' is the result of factoring out elements of L' from P
+       R := ring P;
        topExtensors := select(L, ll -> (#ll == d+1)); -- list all step d+1 extensors 
-       productFactors := product apply(topExtensors , l -> ( indicesToRingElement(ring P, d, n, sort toList(l))) ); -- convert them into variables in ring of P and take product
- --      if(P % productFactors == 0) then ( -- it takes too long to check
-        {topExtensors, P/productFactors}--straightening is used
- --      ) else (
- --        print("error: the input polynomial is not divisible by the given bracket variables");
- --      	 null
- --      )
-      )
+       productFactors := product apply(topExtensors , l -> ( indicesToRingElement(R, d, n, sort toList(l))) ); -- convert them into variables in ring of P and take product
+       if(o.OnlineStraightening) then (
+	    allFactoredAtoms := sort flatten apply(topExtensors, l->sort toList(l));
+	    newOrder := inversePermutation(allFactoredAtoms | sort toList( set(0..n) - allFactoredAtoms ) );
+	    {topExtensors, straighten( lift( permutePoints(
+		 straighten(permutePoints(P, d, n, newOrder),d,n)/permutePoints(productFactors, d, n, newOrder), 
+		 d, n, allFactoredAtoms | sort toList( set(0..n) - allFactoredAtoms )), R),d,n)}
+	    ) else (
+       	    {topExtensors, P/productFactors}--straightening is used
+       	    )
+       )
 
    ------------------- Step 3 and 4 ------------------------------ 
 
- findPairFactor = (P, d, n, L) -> (
+findPairFactor = method(     
+     Options => { 
+     	  OnlineStraightening => true
+	  })
+ findPairFactor(RingElement,ZZ,ZZ,List) := List => o -> (P, d, n, L) -> (
       -- INPUT: P is a polynomial in Grassmannian(d,n);
       --     	 L is a list of atomic extensors of P; 
       -- OUTPUT: A pair (E,F) such that E ^ F is a primitive factor of P
@@ -281,6 +293,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 		if(#E + #F > d+1) then (
 		     newOrder := inversePermutation(sort(E) | sort(F) | sort toList(set(0..n) - (E|F))); 
 		     PermP := permutePoints(P, d,n, newOrder); -- permute the indices so that E and F comes first
+		     if(o.OnlineStraightening) then (PermP = straighten(PermP,d,n););
 		     found := 1;
 		     scan(terms PermP, monomial -> (
 			  supp := (support(monomial))_{0,1};
@@ -309,7 +322,13 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 			       )
 		     	  ), a -> a =!= null);
 		     	  inverseNewOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F));
-		     	  break({{E,F}, permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder), sort apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
+			  Psub := 0;
+			  if(o.OnlineStraightening) then (
+			       Psub = straighten(permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder),d,n);
+			       ) else (
+			       Psub = permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder);
+			       );
+		     	  break({{E,F}, Psub , sort apply(toList(0..(#E + #F - d -2)), i -> inverseNewOrder_i)});    
 		     )
 	  	)
       )
@@ -320,8 +339,21 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
   
    -------------------- Auxiliary functions ---------------------------------
 
-  permutePoints = method();
-  permutePoints(Ring, ZZ, ZZ, List) := List => (R,d, n, sigma) -> (
+
+  permutePoints =  (P, d, n, sigma) -> (
+   	-- INPUT:  P is a polynomial in coordinate ring of Grassmannian(d,n), sigma as above
+	-- OUTPUT:  another polynomial in same variables, after substitution
+	-- This one does substitutions only for the variables appearing in the polynomial P
+      if(isConstant P) then (return P);
+      sub(P, apply(unique flatten ((terms P) / support), v -> (
+			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))--uses straightening when it returns a ring element
+     	       	    	       )
+      			  )
+       )
+  )
+
+{* useless?
+  permutePoints :=  (R,d, n, sigma) -> (
        -- INPUT: R is coordinate ring of Grassmannian(d,n)
        --     	 sigma is a list of length of n, containing elements from {0,..,d}, with repetition allowed
        -- OUTPUT: list of "permuted variable"s, can be used to make a ring map
@@ -330,18 +362,9 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 	 ) 
 	 )
        )
-  permutePoints (RingElement, ZZ, ZZ, List) := RingElement => (P, d, n, sigma) -> (
-   	-- INPUT:  P is a polynomial in coordinate ring of Grassmannian(d,n), sigma as above
-	-- OUTPUT:  another polynomial in same variables, after substitution
-	-- This one does substitutions only for the variables appearing in the polynomial P
-      sub(P, apply(unique flatten ((terms P) / support), v -> (
-			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))--uses straightening when it returns a ring element
-     	       	    	       )
-      			  )
-       )
-  )
+  }
+*}
 
-  
  ------------------------------------------------------------------- 
 
   indicesToRingElement = (R, d, n, indexList) -> (
@@ -373,6 +396,14 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 
 --------------------Straightening without a full Groebner basis--------
 
+straighten = (P,d,n) ->(
+     if(isConstant P) then (return(P););
+     p :=(baseName(first support(first terms P)))#0;
+     I := sub(Grassmannian(d,n, Variable => p), ring P);
+     return(P % I);     
+     )
+{*
+
 straighten(P,d,n) ->(
      R:= ring P;
      L:= terms P;
@@ -380,7 +411,8 @@ straighten(P,d,n) ->(
      )
  
  
-  ------------------------------------------------------------------- 
+ *}
+ ------------------------------------------------------------------- 
   ----------------------Documentation--------------------------------
    ------------------------------------------------------------------- 
 
@@ -446,7 +478,7 @@ TEST ///
  ------------------------------------------------------------------- 
 
 
----- Josephie's tests
+---- Josephine's tests
 end
 
 restart
@@ -454,18 +486,32 @@ uninstallPackage("CayleyFactorization")
 installPackage("CayleyFactorization", RemakeAllDocumentation => true )
 debug loadPackage "CayleyFactorization"
 
-GrassmannCayleyAlgebra(2,5)
+d=2;n=5;
+S = ring( Grassmannian(d,n))
+P = p_(0,3,4)_S*p_(1,2,5)_S
 
+straighten(P,d,n)
+
+R = GrassmannCayleyAlgebra(2,5)
+meet(a_1*a_2+a_3, a_3*a_4+a_5)
+     
 viewHelp CayleyFactorization
 d = 2; n=5;
 Grassmannian(d,n);
-R = (ring oo) / oo;
+R = ring oo;
+R = (ring oo)/oo ;
 partialAtoms = toList apply(0..n, i->set {i})
 P = -p_(0,1,2)*p_(0,3,4)*p_(1,3,5)*p_(2,4,5)+p_(0,1,3)*p_(0,2,4)*p_(1,2,5)*p_(3,4,5)
  P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
   P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
  P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
 cayleyFactor(P,d,n)
+cayleyFactor(P,d,n, OnlineStraightening => true)
+cayleyFactor(P,d,n, OnlineStraightening => false)
+permutePoints(P, d, n, {5,4,3,2,1,0})
+
+L = toList listAtoms(P, d, n, OnlineStraightening => true)
+factorBrackets(P,d,n,L,OnlineStraightening => true)
 
 d=2; n=5;
 Grassmannian(d,n);
@@ -506,7 +552,10 @@ cayleyFactor(P,d,n)
 abcdef
 
 d=2;n=8;
-Grassmannian(d,n);
+I = Grassmannian(d,n);
+R = ring I;
+S = R/I;
+use(S)
 use((ring oo) / oo);
 partialAtoms = toList apply(0..n, i->set {i})
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
@@ -515,6 +564,11 @@ P =  -p_(0,7,8);
 P = -p_(0,4,6)*p_(5,7,8)+p_(0,4,5)*p_(6,7,8);
 P = permutePoints(P, d, n, {5, 6, 7, 8, 0, 1, 2, 3, 4}); -- -p_(0,2,4)*p_(1,3,5)+p_(0,1,4)*p_(2,3,5)+p_(0,2,3)*p_(1,4,5)-p_(0,1,3)*p_(2,4,5)+2*p_(0,1,2)*p_(3,4,5);
 cayleyFactor(P,d,n)
+
+L = toList listAtoms(P, d, n, OnlineStraightening => true)
+L = toList listAtoms(P, d, n, OnlineStraightening => false)
+L = {set {0, 1}, set {2, 3}, set {8, 7}, set {4}, set {5, 6}}
+findPairFactor(P,d,n,L,OnlineStraightening => true)
 
 P = p_(0,2,4)*p_(1,3,5)-2*p_(0,1,4)*p_(2,3,5)-p_(0,2,3)*p_(1,4,5)+p_(0,1,3)*p_(2,4,5)-2*p_(0,1,2)*p_(3,4,5)+2*p_(0,1,2);
 partialAtoms = {set {7}, set {6}, set {8}, set {1, 2}, set {0}};
