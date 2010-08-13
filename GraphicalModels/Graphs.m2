@@ -121,8 +121,13 @@ graph List := opts -> (g) -> (
      --          values are the neighbors corresponding to that node. 
      ---- Note to Selves --- this code should also nicely build
      ---- hypergraphs as hash tables with again, nodes as keys and
-     ---- neighbors as values.      
-     graph digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}})))
+     ---- neighbors as values.
+     
+     G := digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}}));
+     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
+     H := new MutableHashTable from G;
+     scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     new Graph from H)
 
 
 -- (Shaowei) Below are the old implementations of graph and digraph constructors:
