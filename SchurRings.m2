@@ -137,7 +137,7 @@ newSchur := (R,M,p) -> (
 SchurRingIndexedVariableTable = new Type of IndexedVariableTable
 SchurRingIndexedVariableTable _ Thing := (x,i) -> x#symbol _ i
 
-schurRing = method (Options => {CoeffRing => ZZ})
+schurRing = method (Options => {CoefficientRing => ZZ})
 schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
      try p = baseName p else error "schurRing: can't use provided thing as variable";
      if class p === Symbol then schurRing(p,n,opts)
@@ -145,7 +145,7 @@ schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
      );
 schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
 --     R := ZZ;
-     R := opts.CoeffRing;
+     R := opts.CoefficientRing;
      x := local x;
      prune := v -> drop(v, - # select(v,i -> i === 0));
      M := monoid[x_1 .. x_n];
@@ -726,7 +726,6 @@ cauchy = (i,f,g) -> (
      P := partitions i;
      n := (ring f).dim;
      n' := (ring g).dim;
-     A = schurRing(s,
      result := apply(P, lambda -> (
 	       --if #lambda > n or lambda#0 > n' then null
 	       --else 
@@ -735,7 +734,7 @@ cauchy = (i,f,g) -> (
 		   if a == 0 then null
 		   else (
 			b := toS plethysm(conjugate lambda, g);
-			if b == 0 then null else (a,b)
+			if b == 0 then null else (a,b);
 		    ))));
      select(result, x -> x =!= null)
      )
@@ -748,7 +747,7 @@ compositions1 = (r,n) -> (
      else (
 	  flatten for i from 0 to r list (
 	       w := compositions1(r-i,n-1);
-	       apply(w, w1 -> prepend(i,w1)))))
+	       apply(w, w1 -> prepend(i,w1);))))
 
 
 pairProduct = L -> (
@@ -1429,6 +1428,8 @@ time jacobiTrudi(splice{30:1},R);
 
 restart
 loadPackage "SchurRings"
-time R = symmRing 10
-S = schurRing(y,10,CoeffRing => R)
-h_3*y_{4}^2+h_2*y_{2,1}*y_{3}
+time R = symmRing 5
+S = schurRing(y,5,CoefficientRing => R)
+
+map(S,R,apply(gens R,i-> promote(i,S))) --error "inappropriate number of degrees"
+map(S,R) --error "inappropriate number of degrees"
