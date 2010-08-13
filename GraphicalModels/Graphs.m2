@@ -73,7 +73,7 @@ Graph = new Type of Digraph
 MixedGraph = new Type of HashTable
      -- a mixed graph is a HashTable of Digraphs whose keys (vertex sets) are the same.
      
-LabeledGraph = new Type of Graph 
+LabeledGraph = new Type of HashTable
    
 
 digraph = method()
@@ -214,7 +214,9 @@ mixedGraph HashTable := (g) -> (
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
      -- Input:  A graph and a list of lists with two elements one of
-     --         which is a list giving an edge and the other is the lables. 
+     --         which is a list giving an edge and the other is the labels. 
+     --         The list of labels are of the form {{A,B},edgeName} for the directed edge A->B.
+     --         For undirected graphs,  
      -- Output:  A list of two hash tables, the first of which is the
      --      	 base graph and the second of which has for keys edges of the
      --      	 graph whose values are the name of the edge.  
@@ -224,10 +226,26 @@ labeledGraph (Digraph,List) := (g,L) -> (
      lg := new MutableHashTable;
      lg#graphData = g;
      label := new MutableHashTable;
-     apply(L, i -> label#(i#0) = i#1);	   
+     if (class g) === Graph then (
+       sg := simpleGraph g;
+       scan(L, i -> (
+  	 if (sg#(i#0#0))#?(i#0#1) then
+	   label#(i#0) = i#1
+	 else if (sg#(i#0#1))#?(i#0#0) then
+	   label#({i#0#1,i#0#0}) = i#1
+	 else
+	   error (toString(i#0)|" is not an edge of the graph");
+       ));
+     ) else (
+       scan(L, i -> (
+	 if (g#(i#0#0))#?(i#0#1) then
+	   label#(i#0) = i#1
+	 else
+	   error (toString(i#0)|" is not an edge of the graph");
+       ));
+     );
      lg#labels = new HashTable from label;
-     new LabeledGraph from lg
-     )
+     new LabeledGraph from lg)
 
      
 -----------------------------
