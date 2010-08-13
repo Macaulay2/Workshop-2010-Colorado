@@ -10,7 +10,7 @@ newPackage("SEM",
 
 
 
-export {directedEdges, bidirectedEdges, pos, bigraph, identify, trekSeparation, trekIdeal}
+export {directedEdges, bidirectedEdges, Bigraph, pos, bigraph, identify, trekSeparation, trekIdeal}
 
 needsPackage "Graphs"
 
