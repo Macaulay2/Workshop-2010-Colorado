@@ -1,6 +1,8 @@
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
-loadPackage "BGG"
+uninstallPackage "BGG"
+installPackage "BGG"
+
 M = universalExtension({-2},{2})
 directImageComplex M
 

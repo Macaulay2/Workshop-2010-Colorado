@@ -1,4 +1,6 @@
 1 No need to to saturate the kernel of a map to a domain (sec 4.1)
+perhaps mention the realization of the Pluecker ideal for the 
+G(1, n) as 4x4 pfaffians of a generic nxn skew matrix
 
 4.2: maybe avoid d' and use e or some such instead?
 

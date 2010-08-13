@@ -513,13 +513,15 @@ doc ///
    Key 
      directImageComplex
      (directImageComplex, Module)
+     [directImageComplex, Regularity]
    Headline
      Complex representing the direct image 
    Usage
      F = directImageComplex M
    Inputs 
      M: Module
-       graded over a tower ring S = A[y_0..y_n], representing a sheaf on ${\bf P}^n_A$.
+       graded over a ring of the form S = A[y_0..y_n], representing a sheaf on ${\bf P}^n_A$.
+     
    Outputs
      F: ChainComplex
        complex of free modules over A. Homology in homological degree -i is 
@@ -530,6 +532,11 @@ doc ///
       in Eisenbud, David; Schreyer, Frank-Olaf 
       ``Relative Beilinson monad and direct image for families of coherent sheaves.'' 
       Trans. Amer. Math. Soc. 360 (2008), no. 10, 5367--5396.
+      
+      The computation requires knowing the Castelnuovo-Mumford regularity of M 
+      in the variables y_i. If not provided by the user,
+      it is computed by the function. The default is Regularity => null, 
+      which means it must be computed.
       
       The following example can be used to study the loci in the family of extensions
       of a pair of vector bundles on $\bf P^1$ where the extension bundle has a given 
@@ -573,26 +580,44 @@ doc ///
    SeeAlso 
      universalExtension
 ///
-{*
+
 doc ///
    Key 
      universalExtension
    Headline
+     Universal extension of vector bundles on P^1
    Usage
+     E = universalExtension(La, Lb)
    Inputs
-   Outputs
-   Consequences
-    Item
+     La: List 
+       of integers
+     Lb: List 
+       of integers
+   Outputs 
+     E: Module 
+       representing the extension
    Description
     Text
-    Code
-    Pre
+     Every vector bundle E on ${\mathbb P}^1$ splits as a sum of line bundles 
+     OO(a_i). If La is a list of integers, we write E(La) for the direct sum of the
+     line bundle OO(La_i).  Given two such bundles specified by the lists
+     La and Lb this script constructs a module representing the universal
+     extension of E(Lb) by E(La). It is defined on the product variety
+     Ext^1(E(La), E(Lb)) x ${\mathbb P}^1$, and represented here by
+     a graded module over the coordinate ring S = A[y_0,y_1] of this variety;
+     here A is the coordinate ring of Ext^1(E(La), E(Lb)), which is a polynomial
+     ring.
     Example
-   Subnodes
-   Caveat
+     M = universalExtension({-2}, {2})
+     M = universalExtension({-2,-3}, {2,3})
+    Text
+     It is interesting to consider the loci in Ext where the extension has
+     a particular splitting type. See the documentation for directImageComplex
+     for a conjecture about the equations of these varieties.
    SeeAlso
+    directImageComplex
 ///
-*}
+
 
 
 TEST ///
