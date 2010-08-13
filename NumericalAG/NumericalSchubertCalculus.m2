@@ -16,7 +16,8 @@ export {
 	 trackSimpleSchubert,
 	 findGaloisElement,
 	 isFullSymmetric,
-	 isGaloisFullSymmetric 
+	 isGaloisFullSymmetric,
+         Memoize
    }
 
 -------------------------
@@ -423,7 +424,7 @@ doc ///
       	 skewSchubertVariety( (3,7),{2,1},{1,1} )
    SeeAlso
          solveSimpleSchubert
-///
+///;
 
 doc ///
    Key
@@ -450,7 +451,7 @@ doc ///
       	 createRandomFlagsForSimpleSchubert((3,7),{2,1,0},{1,1,0})
    SeeAlso
          solveSimpleSchubert
-///
+///;
 
 doc ///
    Key
@@ -489,7 +490,7 @@ doc ///
    SeeAlso
          createRandomFlagsForSimpleSchubert 
          skewSchubertVariety
-///	
+///;
 
 doc ///
     Key
@@ -542,7 +543,59 @@ doc ///
    SeeAlso
          solveSimpleSchubert
          createRandomFlagsForSimpleSchubert
-///
+///;
+
+doc ///
+   Key
+      findGaloisElement
+   Headline
+      computes a permutation from a loop of an instance of a simple Schubert problem.
+   Usage
+      findGaloisElement(pblm, flag, solns)
+   Inputs
+      pblm:Sequence
+         a sequence (l,m,k,n) that contains two partitions l,m and two integers k,n that define the simple Schubert problem l,m in the Grassmannian Gr(k,n)
+      flag:List
+         a list of numerical matrices that define an instance of the simple Schubert Problem
+      solns:List
+         solutions of the specific instance
+   Outputs
+      :List
+         a permutation that lie in the Galois group
+   Description
+      Text
+         Given a simple Schubert problem $(l,m)$ in $Gr(k,n)$. Fix a 
+	 set of flags $F_1,...,F_d$ and let $S$ be the set of solutions of
+	 the intance of the Schubert problem given by the flags $\{F_i\}$.
+	 We compute a loop in the problem space based on the solution $S$
+	 by deforming one of the flags $F_i$ using Homotopy continuation. 
+	 This  generates a loop in the problem space, which corresponds to 
+	 a permutation in the Galois group.
+      Example
+         l={1,1}
+	 m={2,1}
+	 (k,n) = (3,7)
+	 d = k*(n-k)-sum(l)-sum(m);
+	 ---
+	 --- Generate a random set of flags
+	 --- to compute an instance of the problem	 
+	 G = createRandomFlagsForSimpleSchubert((k,n),l,m)	 
+	 ---------------------------------
+	 ---  Solve the problem
+	 S = solveSimpleSchubert((k,n),l,m,G);
+	 --------------------------------
+	 -- This is a problem with 77 solutions
+	 #S
+	 --
+	 -- an element of the Galois group is:
+	 --
+	 findGaloisElement((l,m,k,n), G, S)
+   SeeAlso
+      isFullSymmetric
+      isGaloisFullSymmetric 
+      solveSimpleSchubert
+      createRandomFlagsForSimpleSchubert
+///;
 
 TEST ///
 -- test code and assertions here
