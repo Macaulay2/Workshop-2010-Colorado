@@ -15,8 +15,10 @@ export {Graph,
      Digraph,
      MixedGraph,
      LabeledGraph,
+     Bigraph,
      graph,
      digraph,
+     bigraph,
      mixedGraph,
      labeledGraph,
      Singletons,
@@ -71,6 +73,11 @@ Graph = new Type of Digraph
      -- version removes the redunancy of each edge appearing twice. 
      -- simpleGraph is an internal conversion function. 
 
+Bigraph = new Type of HashTable
+     -- a bigraph is a hash table in the form { A => set {B,C, ...}, 
+     -- where the set consists of the neighbors of A. This in only
+     -- used in GraphicalModels and MixedGraph.  
+
 MixedGraph = new Type of HashTable
      -- a mixed graph is a HashTable of one Graph, one Digraph and
      -- another Graph.  The second Graph is interpreted to be a
@@ -87,9 +94,13 @@ digraph HashTable := (g) -> (
      -- Output: A hash table of type Digraph.
      --         If a value of the hash table g is a List, Sequence or Array, it is converted into a set.
      --         If a value x of the hash table g is not a Set or VisibleList, it is converted into a set {x}.
-     G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
-     nullVertices := toList (sum(values G) - keys G);
-     new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus))
+     if g === (new HashTable) then new Digraph from g else (
+     	  G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
+     	  nullVertices := toList (sum(values G) - keys G);
+     	  new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus)
+     	  )
+     )
+     	       
 
 digraph List := (g) -> (
      -- Input:  A list of pairs where the first element of the pair is the 
@@ -98,10 +109,13 @@ digraph List := (g) -> (
      --         then the second element of the pair should be empty. 
      -- Output:  A hashtable with keys the names of the nodes 
      --          with values the children.
-     G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
-     H := new MutableHashTable from apply(G,x->{x#0,set {}});     
-     scan(G, x -> H#(x#0) = H#(x#0) + x#1);
-     digraph (new HashTable from H))
+     if g === {} then new Digraph from new HashTable else (
+     	  G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
+     	  H := new MutableHashTable from apply(G,x->{x#0,set {}});     
+     	  scan(G, x -> H#(x#0) = H#(x#0) + x#1);
+     	  digraph (new HashTable from H)
+	  )
+     )
      
 
 
@@ -110,12 +124,13 @@ graph HashTable := opts -> (g) -> (
      -- Input:  A hash table with keys the names of the nodes of 
      --         the graph and the values the neighbors of that node. 
      -- Output: A hash table of type Graph. 
-     
      G := digraph g;
      -- make sure that for every edge A-B, B appears in the value of A and vice versa.
-     H := new MutableHashTable from G;
-     scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     new Graph from H)
+     if G === digraph({}) then new Graph from G else (
+     	  H := new MutableHashTable from G;
+     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     	  new Graph from H)
+     )
 
 graph List := opts -> (g) -> (
      -- Input:  A list of lists with two elements which describe the 
@@ -127,27 +142,106 @@ graph List := opts -> (g) -> (
      ---- neighbors as values.
      G := digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}}));
      -- make sure that for every edge A-B, B appears in the value of A and vice versa.
-     H := new MutableHashTable from G;
-     scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     new Graph from H)
+     if G === digraph({}) then new Graph from G else (
+     	  H := new MutableHashTable from G;
+     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     	  new Graph from H)
+     )
 
+
+bigraph = method()
+bigraph HashTable := (g) -> (
+     -- Input:  A hash table with keys the names of the nodes of 
+     --         the graph and the values the neighbors of that node. 
+     -- Output: A hash table of type Bigraph. 
+     -- Caveat: The final object looks just like a Graph.  Thus the
+     -- purpose of this code and the type Bigraph is to have clear
+     -- constructions and interpretations in GraphicalModels. 
+     G := digraph g;
+     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
+     if G === digraph({}) then new Bigraph from G else (
+     	  H := new MutableHashTable from G;
+     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     	  new Bigraph from H)
+     )
+
+bigraph List := (g) -> (
+     -- Input:  A list of lists with two elements which describe the 
+     --         edges of the graph. 
+     -- Output:  A hash table with keys the names of the nodes and the 
+     --          values are the neighbors corresponding to that node. 
+     -- Caveat: The final object looks just like a Graph.  Thus the
+     -- purpose of this code and the type Bigraph is to have clear
+     -- constructions and interpretations in GraphicalModels. 
+     G := digraph g;
+     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
+     if G === digraph({}) then new Bigraph from G else (
+     	  H := new MutableHashTable from G;
+     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     	  new Bigraph from H)
+     )
+     
 ------- Definitely need descendents.  
 
 mixedGraph = method()
-mixedGraph (Graph,Digraph,Graph) := (g,d,b) -> (
+mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
     -- Input: A hashtable of digraphs.
     -- Output: A hashtable of digraphs with the same vertex set,
     --         which is the union of the vertex sets of the input
     --         digraphs.
     if not instance(g, Graph) then error "expected first argument to be a Graph";
-    if not instance(d, Digraph) then error "expected first argument to be a Digraph";
-    if not instance(b, Graph) then error "expected first argument to be a Graph";
+    if not instance(d, Digraph) then error "expected second argument to be a Digraph";
+    if not instance(b, Bigraph) then error "expected third argument to be a Bigraph";
     h := new MutableHashTable;
-    h#graph = g;
-    h#digraph = d;
-    h#bigraph = b;
+    h#(class g) = g;
+    h#(class d) = d;
+    h#(class b) = b;
     new MixedGraph from h)
 
+--mixedGraph = method()
+--mixedGraph HashTable := (g) -> (
+    -- Input: A hashtable of digraphs.
+    -- Output: A hashtable of digraphs with the same vertex set,
+    --         which is the union of the vertex sets of the input digraphs.
+--	scanKeys(g, i-> if not instance(g#i, Digraph) then error "expected HashTable of Digraphs");
+--	vertices := toList sum(apply(keys(g),i->set keys(g#i)));
+--	new MixedGraph from applyValues(g, i->(
+--	  hh := new MutableHashTable;
+--	  scan(vertices,j->if i#?j then hh#j=i#j else hh#j={});
+--	  new class(i) from hh
+--	))
+--)     
+
+///
+restart
+loadPackage"NewGraphs"
+G = graph({{a,{b,c}},{b,{c,d}},{c,{a,d}},{d,{b,c}}})
+B = bigraph({{a,{d}}, {b, {c,d}}, {c, {e,f,d}}, {d, {a, b, c}}, {e, {c}}, {f, {c}}})
+D = digraph({{a,{b,c}}, {b, {c,d}},{c,{d,e}}, {d, {}}, {e, {}}})
+mixedGraph(D,B)
+///
+
+mixedGraph (Digraph, Bigraph) := (d,b) -> (
+    -- Input: A hashtable of digraphs.
+    -- Output: A hashtable of digraphs with the same vertex set,
+    --         which is the union of the vertex sets of the input
+    --         digraphs.
+    mixedGraph(graph {},d,b))
+
+mixedGraph (Graph, Digraph) := (g,d) -> (
+    -- Input: A hashtable of digraphs.
+    -- Output: A hashtable of digraphs with the same vertex set,
+    --         which is the union of the vertex sets of the input
+    --         digraphs.
+    mixedGraph(g,d,bigraph {}))
+
+mixedGraph (HashTable) := (d) -> (
+    -- Input: A hashtable of digraphs.
+    -- Output: A hashtable of digraphs with the same vertex set,
+    --         which is the union of the vertex sets of the input
+    --         digraphs.
+    mixedGraph(graph {},d, bigraph {}))
+    
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
      -- Input:  A graph and a list of lists with two elements one of
