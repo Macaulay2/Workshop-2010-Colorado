@@ -218,7 +218,7 @@ loadPackage"NewGraphs"
 G = graph({{a,{b,c}},{b,{c,d}},{c,{a,d}},{d,{b,c}}})
 B = bigraph({{a,{d}}, {b, {c,d}}, {c, {e,f,d}}, {d, {a, b, c}}, {e, {c}}, {f, {c}}})
 D = digraph({{a,{b,c}}, {b, {c,d}},{c,{d,e}}, {d, {}}, {e, {}}})
-mixedGraph(D,B)
+mixedGraph(D)
 ///
 
 mixedGraph (Digraph, Bigraph) := (d,b) -> (
