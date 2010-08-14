@@ -221,6 +221,7 @@ B = bigraph({{a,{d}}, {b, {c,d}}, {c, {e,f,d}}, {d, {a, b, c}}, {e, {c}}, {f, {c
 D = digraph({{a,{b,c}}, {b, {c,d}},{c,{d,e}}, {d, {}}, {e, {}}})
 H = mixedGraph(G,D,B)
 vertices H
+descendents(H,b)
 ///
 
 mixedGraph (Digraph, Bigraph) := (d,b) -> (

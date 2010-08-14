@@ -112,6 +112,8 @@ digraph List := (g) -> (
      	  digraph (new HashTable from H)
 	  )
      )
+
+digraph MixedGraph := (g) -> g#Digraph
      
 graph = method(Options => {Singletons => null})
 graph HashTable := opts -> (g) -> (
@@ -411,11 +413,8 @@ descendents(Digraph,Thing) := (G,v) -> (
 	  );
      dE)
 
---descendent(MixedGraph, Thing) := (G,v) -> (
-    -- Input: A digraph and the key for the vertex of interest.
-     -- Output: The set of vertices that are descendents of the vertex 
-     --         of interest.
-     
+descendents(MixedGraph,Thing) := (G,v) -> (
+     descendents(digraph(G), v))   
      
      
 --     result := G#v;
