@@ -89,9 +89,12 @@ digraph HashTable := (g) -> (
      -- Output: A hash table of type Digraph.
      --         If a value of the hash table g is a List, Sequence or Array, it is converted into a set.
      --         If a value x of the hash table g is not a Set or VisibleList, it is converted into a set {x}.
-     G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
-     nullVertices := toList (sum(values G) - keys G);
-     new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus))
+     if g === (new HashTable) then new Digraph from g else (
+     	  G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
+     	  nullVertices := toList (sum(values G) - keys G);
+     	  new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus)
+     	  )
+     )
 
 digraph List := (g) -> (
      -- Input:  A list of pairs where the first element of the pair is the 
@@ -100,24 +103,26 @@ digraph List := (g) -> (
      --         then the second element of the pair should be empty. 
      -- Output:  A hashtable with keys the names of the nodes 
      --          with values the children.
-     G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
-     H := new MutableHashTable from apply(G,x->{x#0,set {}});     
-     scan(G, x -> H#(x#0) = H#(x#0) + x#1);
-     digraph (new HashTable from H))
+     if g === {} then new Digraph from new HashTable else (
+     	  G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
+     	  H := new MutableHashTable from apply(G,x->{x#0,set {}});     
+     	  scan(G, x -> H#(x#0) = H#(x#0) + x#1);
+     	  digraph (new HashTable from H)
+	  )
+     )
      
-
-
 graph = method(Options => {Singletons => null})
 graph HashTable := opts -> (g) -> (
      -- Input:  A hash table with keys the names of the nodes of 
      --         the graph and the values the neighbors of that node. 
      -- Output: A hash table of type Graph. 
-     
      G := digraph g;
      -- make sure that for every edge A-B, B appears in the value of A and vice versa.
-     H := new MutableHashTable from G;
-     scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     new Graph from H)
+     if G === digraph({}) then new Graph from G else (
+     	  H := new MutableHashTable from G;
+     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     	  new Graph from H)
+     )
 
 graph List := opts -> (g) -> (
      -- Input:  A list of lists with two elements which describe the 
@@ -375,7 +380,8 @@ showTikZ(Digraph) := opt -> G -> (
 vertices = method()
      -- Input: A digraph
      -- Output:  A list of vertices
-vertices(Digraph) := G -> keys(G)     
+vertices(Digraph) := G -> keys(G)    
+vertices(MixedGraph) := G ->  toList sum(apply(keys(G),i->set keys(G#i)));
 
 edges = method()
      -- Input: A graph
@@ -385,11 +391,10 @@ edges(Graph) := G -> edges simpleGraph G
 
 
 descendents = method()
+descendents(Digraph,Thing) := (G,v) -> (
      -- Input: A digraph and the key for the vertex of interest.
      -- Output: The set of vertices that are descendents of the vertex 
      --         of interest.
-descendents(Digraph,Thing) := (G,v) -> (
-     -- returns a set of vertices
      notDone := true;
      cC := children(G,v);
      dE := cC;
@@ -401,6 +406,12 @@ descendents(Digraph,Thing) := (G,v) -> (
 	       )
 	  );
      dE)
+
+--descendent(MixedGraph, Thing) := (G,v) -> (
+    -- Input: A digraph and the key for the vertex of interest.
+     -- Output: The set of vertices that are descendents of the vertex 
+     --         of interest.
+     
      
      
 --     result := G#v;
