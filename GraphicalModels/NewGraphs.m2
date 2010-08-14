@@ -216,10 +216,11 @@ mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
 restart
 loadPackage"NewGraphs"
 loadPackage"Graphs"
-G = graph({{a,{b,c}},{b,{c,d}},{c,{a,d}},{d,{b,c}}})
+G = graph({{a,{b,c}},{b,{c,d}},{c,{a,d}},{d,{b,c}},{g,{c}}})
 B = bigraph({{a,{d}}, {b, {c,d}}, {c, {e,f,d}}, {d, {a, b, c}}, {e, {c}}, {f, {c}}})
 D = digraph({{a,{b,c}}, {b, {c,d}},{c,{d,e}}, {d, {}}, {e, {}}})
-mixedGraph(D)
+H = mixedGraph(G,D,B)
+vertices H
 ///
 
 mixedGraph (Digraph, Bigraph) := (d,b) -> (

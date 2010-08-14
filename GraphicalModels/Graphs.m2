@@ -13,10 +13,12 @@ newPackage("Graphs",
 
 export {Graph,
      Digraph,
+     Bigraph,
      MixedGraph,
      LabeledGraph,
      graph,
      digraph,
+     bigraph,
      mixedGraph,
      labeledGraph,
      Singletons,
@@ -134,9 +136,11 @@ graph List := opts -> (g) -> (
      ---- neighbors as values.
      G := digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}}));
      -- make sure that for every edge A-B, B appears in the value of A and vice versa.
-     H := new MutableHashTable from G;
-     scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     new Graph from H)
+     if G === digraph({}) then new Graph from G else (
+     	  H := new MutableHashTable from G;
+     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
+     	  new Graph from H)
+     )
 
 bigraph = method()
 bigraph HashTable := (g) -> (
