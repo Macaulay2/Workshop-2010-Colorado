@@ -704,7 +704,7 @@ doc ///
   Key
     Graph
   Headline
-    The data type for an undirected graph
+    The data type for an undirected graph.
   Description
     Text    
 ///
@@ -713,9 +713,31 @@ doc ///
   Key
     Digraph
   Headline
-    The data type for a directed graph
+    The data type for a directed graph.
   Description
     Text
+///
+
+doc ///
+  Key
+    MixedGraph
+  Headline
+    The data type for a mixed graph consisting of a Graph, Digraph, Bigraph.
+  Description
+    Text  
+       The Graph or the Bigraph may be empty. 
+///  
+    
+doc ///
+  Key
+    Bigraph
+  Headline
+    The data type for a bigraph.
+  Description
+    Text    
+       We note that this type is typically only used in modeling and
+       was primarily necessary to design the data type MixedGraph
+       appropriately. 
 ///
 
 doc ///
@@ -782,7 +804,34 @@ doc ///
   	  {f, {}}, {g, {}}, {h, {}}})
 ///
 
-
+doc ///
+  Key
+    mixedGraph
+  Headline
+    The function that creates a mixed graph
+  Usage
+    H = mixedGraph(G,D,B) or H = digraph(G,D) or H = digraph(D,B) or H
+    = digraph(D)
+  Inputs
+    G:Graph
+    D:Digraph
+    B:Bigraph
+  Outputs
+    H:MixedGraph
+  Description
+    Text
+      A mixed graph is stored as a HashTable whose keys are the types
+      Graph, Digraph, and Bigraph.  The values are the corresponding
+      graphs.   The order of the imput matters.  An error is issued if
+      the first argument is not a graph, the second a Digraph and the
+      third a Bigraph.  
+   Example
+      D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
+  	  {f, {}}, {g, {}}, {h, {}}})
+      G = graph({{a,b},{c,d},{a,c},{d,h},{b,h}})
+      B = bigraph({{c,d},{e,f}})
+      H = mixedGraph(G,D,B)
+///
 
 doc ///
   Key
@@ -800,25 +849,32 @@ doc ///
   Key
     descendents
   Headline 
-    Returns the descendents of a node in a digraph
+    Returns the descendents of a node in a digraph.
   Usage
     dE = descendents(D,v)
   Inputs
     D:Digraph
     v:Thing
-      representing a node in the digraph
+      representing a node in the digraph or the mixed graph.
   Outputs
     dE:Set
        consisting of the descendents of v.
   Description
     Text
-      This is a function which takes as input a @TO digraph@ and the key
-      from its hash table for the node of interest.  It returns a set 
-      of the keys for the descendents of that node.
+      This is a function which takes as input a @TO digraph@ or a @TO
+      mixedGraph@ and a symbol giving the node of interest.  It returns a set 
+      of the keys for the descendents of that node.  
     Example
       D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
   	  {f, {}}, {g, {}}, {h, {}}})
-      dE = descendents(D,c)
+      descendents(D,c)
+    Text
+      In the case of a @TO mixedGraph@ the set is the descendents of
+      the node as a node in the digraph part of the mixed graph. 
+    Example
+      H = mixedGraph(graph{{a,b},{a,f},{c,f}}, D)
+      descendents(H,c)
+      descendents(H,e)
 ///
 
 
@@ -900,6 +956,7 @@ doc ///
       cH = children(D,e)
 ///
 
+end
 
 doc ///
          Key
@@ -954,7 +1011,7 @@ doc ///
 	     S:String     
      ///
 
-end
+
 
 
 doc ///
@@ -969,7 +1026,6 @@ doc ///
     Text
 ///
 
-end
 
 doc ///
   Key

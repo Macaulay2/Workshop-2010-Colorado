@@ -794,6 +794,34 @@ doc ///
   	  {f, {}}, {g, {}}, {h, {}}})
 ///
 
+doc ///
+  Key
+    mixedGraph
+  Headline
+    The function that creates a mixed graph
+  Usage
+    H = mixedGraph(G,D,B) or H = digraph(G,D) or H = digraph(D,B) or H
+    = digraph(D)
+  Inputs
+    G:Graph
+    D:Digraph
+    B:Bigraph
+  Outputs
+    H:MixedGraph
+  Description
+    Text
+      A mixed graph is stored as a HashTable whose keys are the types
+      Graph, Digraph, and Bigraph.  The values are the corresponding
+      graphs.   The order of the imput matters.  An error is issued if
+      the first argument is not a graph, the second a Digraph and the
+      third a Bigraph.  
+   Example
+      D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
+  	  {f, {}}, {g, {}}, {h, {}}})
+      G = graph({{a,b},{c,d},{a,c},{d,h},{b,h}})
+      B = bigraph({{c,d},{e,f}})
+      H = mixedGraph(G,D,B)
+///
 
 
 doc ///
