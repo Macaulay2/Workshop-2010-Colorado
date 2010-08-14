@@ -386,8 +386,8 @@ showTikZ(Digraph) := opt -> G -> (
 vertices = method()
      -- Input: A digraph
      -- Output:  A list of vertices
-vertices(Digraph) := G -> keys(G)    
-vertices(MixedGraph) := G ->  toList sum(apply(keys(G),i->set keys(G#i)));
+vertices(Digraph) := G -> keys G   
+vertices(MixedGraph) := G -> toList sum(apply(keys(G),i->set keys(G#i)));
 
 edges = method()
      -- Input: A graph
@@ -980,8 +980,8 @@ doc ///
   Description
     Text
     Example
-      D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
-  	  {f, {}}, {g, {}}, {h, {}}})
+      D = digraph({{c, {e,h}}, {a, {b,c}}, {d, {f}}, {e, {f,g}},
+  	  {f, {}}, {g, {}}, {b,{d,e}}, {h, {}}})
      vertices D 
 ///
 
