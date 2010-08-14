@@ -140,11 +140,29 @@ trekSeparation MixedGraph := (G) -> (
 	    A := toList ((pC*(set aVertices)) + set CA);
 	    Alist = Alist - (set subsetsBetween(minA,A));
 	    B := toList ((set bVertices) - pC);
+
 	    if #CA+#CB < min{#A,#B} then (
 	    if not ((CAbin==CBbin) and (setToBinary(aVertices,A) > setToBinary(bVertices,B))) then (
-              statements = append(statements,{
-                apply(A,i->i#1),apply(B,i->i#1),
-                apply(CA,i->i#1),apply(CB,i->i#1)});
+     	      nS := {apply(A,i->i#1),apply(B,i->i#1),apply(CA,i->i#1),apply(CB,i->i#1)};
+	      appendnS := true;
+	      statements = select(statements, cS->
+		if cS#0===nS#0 and cS#1===nS#1 then (
+		  if isSubset(cS#2,nS#2) and isSubset(cS#3,nS#3) then 
+		    (appendnS = false; true)
+		  else if isSubset(nS#2,cS#2) and isSubset(nS#3,cS#3) then 
+		    false
+		  else
+		    true)
+		else if cS#2===nS#2 and cS#3===nS#3 then (
+		  if isSubset(cS#0,nS#0) and isSubset(cS#1,nS#1) then 
+		    false
+		  else if isSubset(nS#0,cS#0) and isSubset(nS#1,cS#1) then 
+		    (appendnS = false; true)
+		  else
+		    true)		  
+		else true		
+	      );
+              if appendnS then statements = append(statements, nS);
             ););
      	  );
         );
