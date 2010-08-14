@@ -207,7 +207,7 @@ mixedGraph (Graph, Digraph) := (g,d) -> (
     --         digraphs.
     mixedGraph(g,d,bigraph {}))
 
-mixedGraph (HashTable) := (d) -> (
+mixedGraph (Digraph) := (d) -> (
     -- Input: A hashtable of digraphs.
     -- Output: A hashtable of digraphs with the same vertex set,
     --         which is the union of the vertex sets of the input
@@ -743,20 +743,18 @@ doc ///
 doc ///
   Key
     graph
+    (graph, HashTable)
+    (graph, List)
   Headline
-    The function that creates a graph
+    The function that creates a graph.
   Usage
-    G = graph(L) or G = graph(L, Singletons => K) or G = graph(H)
+    graph(L)
   Inputs
     L:List 
-      of edges of the graph
-    K:List 
-      of isolated nodes of the graph
-    H:HashTable 
-      whose keys are the nodes of the graphs and whose values are the
-      neighbors of the nodes
+      of edges of the graph or @ofClass HashTable@ with keys the nodes
+      and values the neighbors of that node. 
   Outputs
-    G:Graph
+    :Graph
   Description
     Text
       The graph is stored as a hash table whose keys are the nodes and
@@ -777,18 +775,19 @@ doc ///
 doc ///
   Key
     digraph
+    (digraph, HashTable)
+    (digraph, List)
   Headline
     The function that creates a digraph
   Usage
-    D = digraph(L) or D = digraph(H)
+    digraph(L) 
   Inputs
     L:List
-      of pairs consisting of a node and its children
-    H:HashTable
-      whose keys are the nodes of the digraph and whose values are the
-      children of the nodes
+      of pairs consisting of a node and its children or @ofClass
+      HashTable @ with keys the nodes and values the children of that
+      node.  
   Outputs
-    D:Digraph
+    :Digraph
   Description
     Text
       The digraph is stored as a hash table whose keys are the names
@@ -807,17 +806,23 @@ doc ///
 doc ///
   Key
     mixedGraph
+    (mixedGraph, Graph, Digraph, Bigraph)
+    (mixedGraph, Graph, Digraph)
+    (mixedGraph, Digraph, Bigraph)
+    (mixedGraph, Digraph)
   Headline
-    The function that creates a mixed graph
+    The function that creates a mixed graph.
   Usage
-    H = mixedGraph(G,D,B) or H = digraph(G,D) or H = digraph(D,B) or H
-    = digraph(D)
+    mixedGraph(G,D,B) 
+    digraph(G,D) 
+    digraph(D,B) 
+    digraph(D)
   Inputs
     G:Graph
     D:Digraph
     B:Bigraph
   Outputs
-    H:MixedGraph
+    :MixedGraph
   Description
     Text
       A mixed graph is stored as a HashTable whose keys are the types
@@ -848,16 +853,19 @@ doc ///
 doc ///
   Key
     descendents
+    (descendents, Digraph, Thing)
+    (descendents, MixedGraph, Thing)
   Headline 
-    Returns the descendents of a node in a digraph.
+    Returns the descendents of a node in a digraph or mixed graph. 
   Usage
-    dE = descendents(D,v)
+    descendents(D,v)
   Inputs
-    D:Digraph
+    D:Digraph 
+      or @ofClass MixedGraph@ 
     v:Thing
       representing a node in the digraph or the mixed graph.
   Outputs
-    dE:Set
+    :Set
        consisting of the descendents of v.
   Description
     Text
@@ -876,8 +884,6 @@ doc ///
       descendents(H,c)
       descendents(H,e)
 ///
-
-
 
 doc ///
   Key
@@ -955,6 +961,30 @@ doc ///
   	  {f, {}}, {g, {}}, {h, {}}})
       cH = children(D,e)
 ///
+
+doc ///
+  Key
+    vertices
+    (vertices, Digraph)
+    (vertices, MixedGraph)
+  Headline 
+    Returns the vertices of any type of grpah.  . 
+  Usage
+    vertices H
+  Inputs
+    H:Digraph 
+      or @ofClass MixedGraph@ or @ofClass Graph@ or @ofClass Bigraph@
+  Outputs
+    :Set
+       consisting of the vertices of v.
+  Description
+    Text
+    Example
+      D = digraph({{a, {b,c}}, {b,{d,e}}, {c, {e,h}}, {d, {f}}, {e, {f,g}},
+  	  {f, {}}, {g, {}}, {h, {}}})
+     vertices D 
+///
+
 
 end
 
