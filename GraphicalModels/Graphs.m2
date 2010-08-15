@@ -1,5 +1,5 @@
 -- -*- coding: utf-8 -*-
-newPackage("NewGraphs",
+newPackage("Graphs",
      Authors => {
 	  {Name => "Amelia Taylor"},
 	  {Name => "Augustine O'Keefe"}
@@ -122,8 +122,6 @@ digraph List := (g) -> (
      	  digraph (new HashTable from H)
 	  )
      )
-
-digraph MixedGraph := (g) -> g#Digraph
      
 graph = method(Options => {Singletons => null})
 graph HashTable := opts -> (g) -> (
@@ -369,7 +367,13 @@ graph Digraph := opts -> g -> g#graph
 graph Bigraph := opts -> g -> g#graph
 graph MixedGraph := opts -> g -> g#graph
 graph LabeledGraph := opts -> g -> g#graph
-     
+
+digraph MixedGraph := (g) -> g#graph#Digraph    
+bigraph MixedGraph := (g) -> g#graph#Bigraph
+---graph MixedGraph := opts -> g -> g#graph#Graph
+--- this is the obvious function here, but until we can write the
+--- functions above as hashTable rather than graph, we will have a
+--- conflict, so I am commenting it out for now. 
 
 -----------------------------
 -- Graph Display Functions --
@@ -555,15 +559,15 @@ descendents(Digraph,Thing) := (G,v) -> (
 --    )   
   
   descendents(MixedGraph, Thing) := (G,v) -> (
-     G1 = graph G;
-     if G1#Digraph.cache#?descendents and G1#Digraph.cache#descendents#?v then G1#Digraph.cache#descendents#?v
+     G1 = digraph G;
+     if G1.cache#?descendents and G1.cache#descendents#?v then G1.cache#descendents#?v
      else (
 	  C := descendents(G1#Digraph,v);
-	  if G1#Digraph.cache#?descendents then G1#Digraph.cache#descendents#v = C
+	  if G1.cache#?descendents then G1.cache#descendents#v = C
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G#graph#Digraph.cache#descendents = h);
+	       G1.cache#descendents = h);
 	  C)
      )
      
