@@ -541,7 +541,13 @@ doc ///
 
 TEST ///
 
-
+d=2; n=5;
+R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
+time cayleyFactor(P,d,n, OnlineStraightening => true)
+I = Grassmannian(d,n);
+S = ring(I) / I;
+time cayleyFactor(P,d,n, OnlineStraightening => false)
 
 ///
 
