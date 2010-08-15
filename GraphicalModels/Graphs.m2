@@ -550,19 +550,12 @@ descendents(Digraph,Thing) := (G,v) -> (
 	       G.cache#descendents = h);
      	  dE)
      )
-
---descendents(MixedGraph,Thing) := (G,v) -> (
---     if G#graph#Digraph#cache#?descendents then G#graph#Digraph#cache#descendents else(
---	  D := descendents(digraph(G), v);
---	  G#graph#Digraph#cache#descendents = D;
---	  D)
---    )   
   
-  descendents(MixedGraph, Thing) := (G,v) -> (
-     G1 = digraph G;
+   descendents(MixedGraph, Thing) := (G,v) -> (
+     G1 := digraph G;
      if G1.cache#?descendents and G1.cache#descendents#?v then G1.cache#descendents#?v
      else (
-	  C := descendents(G1#Digraph,v);
+	  C := descendents(G1,v);
 	  if G1.cache#?descendents then G1.cache#descendents#v = C
 	  else (
 	       h = new MutableHashTable;
@@ -571,27 +564,64 @@ descendents(Digraph,Thing) := (G,v) -> (
 	  C)
      )
      
-  
 --     result := G#v;
 --     scan(keys(G), i -> (
 --	  if member(i,result) then result = result + G#i;
 --     ));
 --     result)
 
-
 nondescendents = method()
      -- Input: A digraph and the key for the vertex of interest.
      -- Output: The set of vertices that are not descendents of 
      --	        the vertex of interest.
-nondescendents(Digraph,Thing) := (G,v) -> set keys G - descendents(G,v) - set {v}
+nondescendents(Digraph,Thing) := (G,v) -> (
+     if G.cache#?nondescendents and G.cache#nondescendents#?v then G.cache#nondescendents#v else(
+     	  C := set keys G - descendents(G,v) - set {v};
+	  if G.cache#?nondescendents then G1.cache#nondescendents#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G.cache#nondescendents = h);
+	  C)
+     )
+nondescendents(MixedGraph,Thing) := (G,v) -> (
+     G1 := digraph G;
+     if G1.cache#?nondescendents and G1.cache#nondescendents#?v then G1.cache#nondescendents#v else(
+     	  C := set keys G1 - descendents(G1,v) - set {v};
+	  if G1.cache#?nondescendents then G1.cache#nondescendents#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G1.cache#nondescendents = h);
+	  C)
+     )
 
 parents = method()
      -- Input: A digraph and the key for the vertex of interest.
      -- Output: The set of vertices that are the parents of the vertex 
      --	    	of interest.
-parents(Digraph,Thing) := (G,v) -> set select(keys(G), i -> member(v,
-G#i))
-
+parents(Digraph,Thing) := (G,v) -> (
+     if G.cache#?parents and G.cache#parents#?v then G.cache#parents#v else(
+     	  C := set select(keys(G), i -> member(v, G#i));
+	  if G.cache#?parents then G.cache#parents#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G.cache#parents = h);
+	  C)
+     )
+parents(MixedGraph,Thing) := (G,v) -> (
+     G1 := digraph G;
+     if G1.cache#?parents and G1.cache#parents#?v then G1.cache#parents#v else(
+     	  C := set select(keys(G1), i -> member(v, G1#i));
+	  if G1.cache#?parents then G1.cache#parents#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G1.cache#parents = h);
+	  C)
+     )
+     	  
 foreFathers = method()
      -- Input: A digraph and the key for the vertex of interest.
      -- Output: The set of vertices that are the ancestors of the vertex 
@@ -625,15 +655,15 @@ children(Digraph,Thing) := (G,v) -> (
      )
 
 children(MixedGraph, Thing) := (G,v) -> (
-     G1 = graph G;
-     if G1#Digraph.cache#?children and G1#Digraph.cache#children#?v then G1#Digraph.cache#children#?v
+     G1 := digraph G;
+     if G1.cache#?children and G1.cache#children#?v then G1.cache#children#?v
      else (
-	  C := children(G1#Digraph,v);
-	  if G1#Digraph.cache#?children then G1#Digraph.cache#children#v = C
+	  C := children(G1,v);
+	  if G1.cache#?children then G1.cache#children#v = C
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G#graph#Digraph.cache#children = h);
+	       G1.cache#children = h);
 	  C)
      )
      
@@ -642,13 +672,37 @@ neighbors = method()
      -- Input: A graph and the key for the vertex of interest.
      -- Output: The set of vertices that are neighbors of the vertex 
      --	    	of interest.
-neighbors(Graph,Thing) := (G,v) -> G#v  
-
+neighbors(Graph,Thing) := (G,v) -> (
+     if G.cache#?neighbors then G.cache.neighbors else (
+	  n := (graph G)#v;
+	  G.cache#neighbors = n;
+	  n)
+     )
+neighbors(MixedGraph,Thing) := (G,v) -> (
+     G1 := (graph G)#Graph;
+     if G1.cache#?neighbors then G1.cache.neighbors else (
+	  n := (graph G1)#v;
+	  G1.cache#neighbors = n;
+	  n)
+     )
+	 
 nonneighbors = method()
      -- Input: A graph and the key for the vertex of interest.
      -- Output: The set of vertices that are not neighbors of the vertex 
      --	    	of interest.
-nonneighbors(Graph, Thing) := (G,v) -> set keys G - neighbors(G,v)-set{v}
+nonneighbors(Graph, Thing) := (G,v) -> (
+     if G.cache#?nonneighbors then G.cache.nonneighbors else (
+     	  n := set keys (graph G1) - neighbors(G,v)-set{v}
+	  G.cache#nonneighbors = n; 
+	  n)
+     )
+neighbors(MixedGraph,Thing) := (G,v) -> (
+     G1 := (graph G)#Graph;
+     if G1.cache#?nonneighbors then G1.cache.nonneighbors else (
+	  n := nonneighbors(G1, v);
+	  G1.cache#neighbors = n;
+	  n)
+     )
 
 removeNodes = method()
      -- Input: A digraph and the list of nodes you want to remove.
