@@ -315,6 +315,12 @@ net LabeledGraph := g -> (
 	  "}" 
      	  ))
 
+expression Graph := (I) -> new FunctionApplication from { graph,
+unsequence apply(toSequence edges I, expression) }
+
+net Ideal := (I) -> net expression I
+toString Ideal := toExternalString Ideal := (I) -> toString expression I
+
 toString Digraph := g -> (
      concatenate(
 	  "new ", toString class g#graph,
@@ -358,12 +364,13 @@ toString LabeledGraph := g -> (
 	  demark(", ", apply(pairs g#graph, (k,v) -> toString k | " => " | toString v))
 	  else "",
 	  "}"))     
+
+graph Digraph := opts -> g -> g#graph
+graph Bigraph := opts -> g -> g#graph
+graph MixedGraph := opts -> g -> g#graph
+graph LabeledGraph := opts -> g -> g#graph
      
-graph Digraph := g -> g#graph
-graph Bigraph := g -> g#graph
-graph MixedGraph := g -> g#graph
-graph LabeledGraph := g -> g#graph
-     
+
 -----------------------------
 -- Graph Display Functions --
 -----------------------------
@@ -378,13 +385,16 @@ simpleGraph(Graph) := H -> (
      -- Input: A Graph.
      -- Output: A new Graph in which the keys are still the nodes but
      --         the values are the lists of neighbors so that if an
-     --         edge has already appeared before, it will not appear again.
+     --         edge has already appeared before, it will not appear
+     --         again.
+     --if (H#cache)#?simpleGraph then H#cache#simpleGraph else 
+     H = graph H;
      pairH := new MutableList from pairs H;
      for k from 1 to #pairH-1 do (
 	  testVertices := set for i to k-1 list pairH#i#0;
       	  pairH#k = (pairH#k#0, pairH#k#1-testVertices)
 	  );
-     new Digraph from hashTable pairH)
+     digraph hashTable pairH)
 
 
  
@@ -481,14 +491,35 @@ showTikZ(Digraph) := opt -> G -> (
 vertices = method()
      -- Input: A digraph
      -- Output:  A list of vertices
-vertices(Digraph) := G -> keys G   
-vertices(MixedGraph) := G -> toList sum(apply(keys(G),i->set keys(G#i)));
+vertices(Digraph) := G -> (
+     if G#cache#?vertices then G#cache#vertices else(
+     	  G1 := graph G;
+     	  V := keys G1;
+     	  G#cache#vertices = V;
+     	  V))   
+vertices(MixedGraph) := G -> (
+     if G#cache#?vertices then G#cache#vertices else(
+	  G1 := graph G;
+	  V := toList sum(apply(keys(G),i->set keys(G#i)));
+	  G#cache#vertices = V;
+	  V))
 
 edges = method()
      -- Input: A graph
      -- Output: A list of sets of order 2, each corresponding to an edge
-edges(Digraph) := G -> flatten apply(keys(G),i->apply(toList G#i,j->{i,j}))
-edges(Graph) := G -> edges simpleGraph G 
+edges(Digraph) := G -> (
+     if G#cache#?edges then G#cache#edges else (
+     	  G1 = graph G;
+     	  E := flatten apply(keys(G1),i->apply(toList G1#i,j->{i,j}));
+	  G#cache#edges = E;
+	  E)
+     )
+edges(Graph) := G -> (
+     if G#cache#?edges then G#cache#edges else (
+     	  E := edges simpleGraph G;
+	  G#cache#edges = E;
+	  E)
+     )
 
 
 descendents = method()
@@ -496,22 +527,47 @@ descendents(Digraph,Thing) := (G,v) -> (
      -- Input: A digraph and the key for the vertex of interest.
      -- Output: The set of vertices that are descendents of the vertex 
      --         of interest.
-     notDone := true;
-     cC := children(G,v);
-     dE := cC;
-     while notDone === true do(
-	  if (toList cC) === {} then notDone = false
+     if G.cache#?descendents and G.cache#descendents#?v then G.cache#descendents#v else(
+--	  G1 = graph G;
+     	  notDone := true;
+     	  cC := children(G,v);
+     	  dE := cC;
+     	  while notDone === true do(
+	       if (toList cC) === {} then notDone = false
+	       else (
+	       	    cC = set flatten apply(toList cC, i -> toList children(G,i));
+	       	    dE = dE + cC;
+	       	    )
+	       );
+	  if G.cache#?descendents then G.cache#descendents#v = dE
 	  else (
-	       cC = set flatten apply(toList cC, i -> toList children(G,i));
-	       dE = dE + cC;
-	       )
-	  );
-     dE)
+	       h := new MutableHashTable;
+	       h#v = dE;
+	       G.cache#descendents = h);
+     	  dE)
+     )
 
-descendents(MixedGraph,Thing) := (G,v) -> (
-     descendents(digraph(G), v))   
+--descendents(MixedGraph,Thing) := (G,v) -> (
+--     if G#graph#Digraph#cache#?descendents then G#graph#Digraph#cache#descendents else(
+--	  D := descendents(digraph(G), v);
+--	  G#graph#Digraph#cache#descendents = D;
+--	  D)
+--    )   
+  
+  descendents(MixedGraph, Thing) := (G,v) -> (
+     G1 = graph G;
+     if G1#Digraph.cache#?descendents and G1#Digraph.cache#descendents#?v then G1#Digraph.cache#descendents#?v
+     else (
+	  C := descendents(G1#Digraph,v);
+	  if G1#Digraph.cache#?descendents then G1#Digraph.cache#descendents#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G#graph#Digraph.cache#descendents = h);
+	  C)
+     )
      
-     
+  
 --     result := G#v;
 --     scan(keys(G), i -> (
 --	  if member(i,result) then result = result + G#i;
@@ -553,7 +609,30 @@ children = method()
      -- Input: A digraph and the key for the vertex of interest.
      -- Output: The set of vertices that are the children of the vertex 
      --	    	of interest.
-children(Digraph,Thing) := (G,v) -> G#v
+children(Digraph,Thing) := (G,v) -> (
+     if G.cache#?children and G.cache#children#?v then G.cache#children#v else (
+	  C := (graph G)#v;
+	  if G.cache#?children then G.cache#children#v = C
+	  else(
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G.cache#children = h);
+	  C)
+     )
+
+children(MixedGraph, Thing) := (G,v) -> (
+     G1 = graph G;
+     if G1#Digraph.cache#?children and G1#Digraph.cache#children#?v then G1#Digraph.cache#children#?v
+     else (
+	  C := children(G1#Digraph,v);
+	  if G1#Digraph.cache#?children then G1#Digraph.cache#children#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G#graph#Digraph.cache#children = h);
+	  C)
+     )
+     
 
 neighbors = method()
      -- Input: A graph and the key for the vertex of interest.
