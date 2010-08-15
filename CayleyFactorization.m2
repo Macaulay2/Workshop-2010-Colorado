@@ -558,7 +558,10 @@ debug loadPackage "CayleyFactorization"
 
 d=2;n=5;
 S = ring( Grassmannian(d,n))
-P = p_(0,3,4)_S*p_(1,2,5)_S
+S = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))]
+
+P = p_(0,3,4)*p_(1,2,5)
+
 
 straightenPoly(P,d,n)
 straightenQuick(P,d,n)
