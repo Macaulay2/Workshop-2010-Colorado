@@ -51,11 +51,12 @@ newPackage(
 --   hideMap(R,i) : R --> S
 --
 --  Markov Ideals:
---   markovMatrices (Ring R, List S)  -- S is a list of independence statements
---   markovIdeal (Ring R, List S)  -- S is a list of independence statements
+--   markovMatrices (Ring R, Digraph G, List S)  -- S is a list of independence statements
+--   markovIdeal (Ring R, Digraph G, List S)  -- S is a list of independence statements
 --   cartesian -- [internal routine used in MarkovMatrices and MarkovIdeal]
 --   possibleValues -- [internal routine used in MarkovMatrices and MarkovIdeal]
 --   prob -- [internal routine used in MarkovMatrices and MarkovIdeal]
+--   getPositionofKeys (Digraph G, list D) -- [internal routine]
 --   
 --  Gaussian directed acyclic graphs:
 --   gaussRing (Integer n)
@@ -64,7 +65,6 @@ newPackage(
 --   gaussMatrices (Digraph G, Matrix M, List S)
 --   gaussIdeal (Ring R, Digraph G, List S) 
 --   trekIdeal (Ring R, Digraph D)
---   getPositionofKeys (Digraph G, list D, Integer i) -- [internal routine]
 --    
 -- Gaussian mixed graphs (DAG + Bidirected)
 --
@@ -76,28 +76,11 @@ newPackage(
 export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts, 
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
        gaussRing, gaussMatrices, gaussIdeal, trekIdeal, 
-       Coefficients, VariableName}
+       Coefficients, VariableName} 
      
-needsPackage"Graphs"
+needsPackage "Graphs"
 
--- Luis Garcia wants to remove comments
--- FROM HERE
-
----- List from Board at AIM.
----- a)  Discrete   b) Gaussian
-----
----- (0) CI models   (3.1) 
----- (1) Undirected Graph  (3.2)
----- (2) DAG    (3.2) 
----- (3) Chain Graphs (DAG & undirected)   (3.2)
-----
-----  Local and Global Markov properties  (3.2)
-----  use, when appropriate thms that say local <=> global based on conditions
-----  
-
--- TO HERE
-
-----  parametrizations and for toric varieties the corresponding matrix. 
+----  parameterizations and for toric varieties the corresponding matrix. 
 ----  In the case of toric varieties the matrix is easy.  Here is the code, 
 ----  commented out to be used later when we are ready. 
 ---- 
@@ -357,14 +340,12 @@ markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
-     kk:=QQ;
-     p = value "symbol p";
-     if opts.Coefficients =!= QQ then kk = opts.Coefficients;
-     if opts.VariableName =!= value "symbol p" then p = opts.VariableName;
+     kk := opts.Coefficients;
+     p = opts.VariableName;
      if (not markovRingList#?(d,kk,toString symbol p)) then (
      	  start := (#d):1;
-     	  markovRingList#(d,kk,toString symbol p) = kk[p_start .. p_d]; --changed to kk option -Sonja 12aug10
-          markovRingList#(d,kk,toString symbol p).markov = d; --this is attached as info 
+     	  markovRingList#(d,kk,toString symbol p) = kk[p_start .. p_d]; 
+          markovRingList#(d,kk,toString symbol p).markov = d; 
 	  --so that for any poly ring R it can be tested if R is a markovRing
 	  );
      markovRingList#(d,kk,toString symbol p)
@@ -413,17 +394,16 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 -- Markov ideals --
 -------------------
 
------- sonja: documented everything up to here. some notes remaining to be done for marginMap and hideMap.
-
 markovMatrices = method()
-markovMatrices(Ring,List) := (R, Stmts) -> (
-     -- R should be a Markov ring, and Stmts is a list of
+markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
+     -- R should be a markovRing, G a digraph 
+     -- and Stmts is a list of
      -- independence statements
      d := R.markov;
      flatten apply(Stmts, stmt -> (
-     	       Avals := possibleValues(d,stmt#0);
-     	       Bvals := possibleValues(d,stmt#1);
-     	       Cvals := possibleValues(d,stmt#2);
+     	       Avals := possibleValues(d,getPositionOfKeys(G,stmt#0));
+     	       Bvals := possibleValues(d,getPositionOfKeys(G,stmt#1));
+     	       Cvals := possibleValues(d,getPositionOfKeys(G,stmt#2));
      	       apply(Cvals, c -> (
                   matrix apply(Avals, 
 		       a -> apply(Bvals, b -> (
@@ -432,16 +412,30 @@ markovMatrices(Ring,List) := (R, Stmts) -> (
      )
 
 markovIdeal = method()
-markovIdeal(Ring,List) := (R,Stmts) -> (
-     M := markovMatrices(R,Stmts);
+markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
+     -- R should be a markovRing, G a digraph
+     -- and Stmts is a list of independent statements
+     -- markovIdeal computes the ideal associated to the 
+     -- list of independent statements Stmts
+     M := markovMatrices(R,G,Stmts);
      sum apply(M, m -> minors(2,m))
      )
 
 -------------------------------------------------------
 -- Constructing the ideal of a independence relation --
 -------------------------------------------------------
+-- NOTE: ALL THE FUNCTIONS BELOW ARE DECLARED GLOBAL INSTEAD OF LOCAL
+-- FOR THE REASON THAT LOCAL DEFINITIONS WOULD INEXPLICABLY 
+-- CREATE ERRORS.
 
-cartesian := (L) -> (
+-- the following function retrieves the position of the keys in the graph G
+-- for all keys contained in the list S
+getPositionOfKeys = (G,S) -> 
+     apply(S, v -> position(keys G, k-> k===v))
+
+-- cartesian ({d_1,...,d_n}) returns the cartesian product 
+-- of {0,...,d_1-1} x ... x {0,...,d_n-1}
+cartesian = (L) -> (
      if #L == 1 then 
 	return toList apply (L#0, e -> 1:e);
      L0 := L#0;
@@ -449,11 +443,16 @@ cartesian := (L) -> (
      C := cartesian Lrest;
      flatten apply (L0, s -> apply (C, c -> prepend (s,c))))
 
-possibleValues := (d,A) ->
-     cartesian (toList apply(1..#d, i -> 
+-- possibleValues ((d_1,...,d_n),A) returns the cartesian product 
+-- of all d_i's such that the vertex i is a member of the list A
+-- it assumes that the list A is a list of integers.
+possibleValues = (d,A) ->
+     cartesian (toList apply(0..#d-1, i -> 
 	       if member(i,A) 
-	       then toList(1..d#(i-1)) 
+	       then toList(1..d#i) 
 	       else {0}))
+     
+-- prob((d_1,...,d_n),(s_1,dots,s_n))
 
 prob = (d,s) -> (
      L := cartesian toList apply (#d, i -> 
@@ -509,8 +508,8 @@ gaussMinors = method()
 gaussMinors(Digraph,Matrix,List) := (G,M,Stmt) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list Stmts is one statement {A,B,C}.
-     rows := join(getPositionOfKeys(G,Stmt,0), getPositionOfKeys(G,Stmt,2));
-     cols := join(getPositionOfKeys(G,Stmt,1), getPositionOfKeys(G,Stmt,2)); 
+     rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2));
+     cols := join(getPositionOfKeys(G,Stmt#1), getPositionOfKeys(G,Stmt#2)); 
      M1 = submatrix(M,rows,cols);
      minors(#Stmt#2+1,M1)     
      )
@@ -539,6 +538,7 @@ gaussIdeal(Ring, Digraph, List) := (R,G,Stmts) -> (
      M = genericSymmetricMatrix(R, R#gaussRing);
      sum apply(Stmts, D -> gaussMinors(G,M,D))     
      )
+
 --in case the global sttmts are not computed already :
 gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
 
@@ -557,8 +557,8 @@ gaussMatrices(Digraph,Matrix,List) := (G,M,s) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list s is a statement of the form {A,B,C}.
      --flatten apply(Stmts, s-> (
-     	       rows := join(getPositionOfKeys(G,s,0), getPositionOfKeys(G,s,2));
-     	       cols := join(getPositionOfKeys(G,s,1), getPositionOfKeys(G,s,2)); 
+     	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));
+     	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2)); 
      	       submatrix(M,rows,cols)
      --	       )
      --	  )
@@ -572,8 +572,6 @@ gaussMatrices(G,M,sta)
 apply(Stmts, sta-> gaussMatrices(G,M,sta))
 ///
 
---- Luis Garcia: August 2010. UP TO THIS POINT, CODE IS ORDER FREE
---- SP day 4.
 
 -- THE FOLLOWING NEEDS TO BE COPIED TO THE GAUSSIAN STUFF:
 trekIdeal = method()
@@ -600,11 +598,6 @@ trekIdeal(Ring, Digraph) := (R,G) -> (
      substitute(I,R)
      )
 
---the following function retrieves the position of the keys in the graph G
---for all keys that are contained in the ith entry of the list D 
-getPositionOfKeys:= (G,D,i)-> 
-     apply(D#i,oneLabel -> position(keys G, k-> k===oneLabel))
-
 ------------------------------
 -- Gaussian mixed graphs    --
 ------------------------------
@@ -627,41 +620,74 @@ doc ///
   Key
     GraphicalModels
   Headline
-    GraphicalModels. ideals arising from Bayesian networks in statistics
+    GraphicalModels. A package for discrete and Gaussian statistical graphical models
   Description
     Text
-      ****NEEDS UPDATING!****
-      
-      This package is used to construct ideals corresponding to discrete graphical models,
-      as described in several places, including the paper: Garcia, Stillman and Sturmfels,
+      This package extends Markov.lib. It is used to construct ideals corresponding to discrete graphical models,
+      as described in several places, including the paper: Luis David Garcia, Michael Stillman and Bernd Sturmfels,
       "The algebraic geometry of Bayesian networks", J. Symbolic Comput., 39(3-4):331–355, 2005.
   
-      The paper also constructs Gaussian ideals, as described in the paper by Seth Sullivant:
-      "Algebraic geometry of Gaussian Bayesian networks", Adv. in Appl. Math. 40 (2008), no. 4, 482--513.
+      The package also constructs ideals of Gaussian Bayesian networks and Gaussian graphical models 
+      (graphs containing both directed and bidirected edges), as described in the papers:
+      Seth Sullivant, "Algebraic geometry of Gaussian Bayesian networks", Adv. in Appl. Math. 40 (2008), no. 4, 482--513;
+      Seth Sullivant, Kelli Talaska and Jan Draisma, "Trek separation for Gaussian graphical models", 
+      Annals of Statistics 38 no.3 (2010) 1665--1685. 
+      
+      Further, the package contains procedures to solve the identifiability problem for 
+      Gaussian graphical models as described in the paper: 
+      Luis D. Garcia-Puente, Sarah Spielvogel and Seth Sullivant, "Identifying causal effects with computer algebra", 
+      Proceedings of the $26^{th}$ Conference of Uncertainty in Artificial Intelligence.
       
       Here is a typical use of this package.  We create the ideal in 16 variables whose zero set 
       represents the probability distributions on four binary random variables which satisfy the
-      conditional independence statements coming from the "diamond" graph 4 --> 2,3 --> 1.
-      R = markovRing(2,2,2,2)
-      --G = makeGraph{{},{1},{1},{2,3}}
-      --S = globalMarkovStmts G
-      --I = markovIdeal(R,S)
+      conditional independence statements coming from the "diamond" graph d --> c,b --> a.
+    Example
+       G = digraph  {{a,{}},{b,{a}},{c,{a}},{d,{b,c}}}
+       R = markovRing (2,2,2,2)
+       S = globalMarkovStmts G
+       I = markovIdeal(R,G,S);
+       netList pack(2,I_*)
+       
     Text
-      Sometime an ideal can be simplified by changing variables.  Very often, by using @TO marginMap@, 
+      Sometime an ideal can be simplified by changing variables.  Very often, 
+      by using, @TO marginMap@,
       such ideals can be transformed to binomial ideals.  This is the case here.
-      F = marginMap(1,R)
-      --J = F I;
-      --netList pack(2,J_*)
+    Example
+       F = marginMap(1,R)
+       I = F I;
+       netList pack(2,I_*)
     Text
-      This ideal has 5 primary components.  The first is the one that has statistical significance.
-      The significance of the other components is still poorly understood.
-      --time netList primaryDecomposition J
-  Caveat
-    The parts of the package involving graphs might eventually be changed to use a package dealing
-    specifically with graphs.  This might change the interface to this package.  ****THIS WAS ALREADY DONE;
-    SEE GRAPHS.M2. IT SHOULD BE STATED THAT THIS PACKAGE IS CALLED FOR.****
+      This ideal has 5 primary components.  The first component is the one that has statistical significance.
+      It is the defining ideal of the variety parameterized by the 
+      the factorization of the probability distributions 
+      according to the graph G. The remaining components lie on the boundary of the simplex
+      and are still poorly understood.
+    Example     
+       netList primaryDecomposition I
+    Text
+      The following example illustrates the caveat below.
+    Example
+       H = digraph {{d,{b,a}},{c,{}},{b,{c}},{a,{c}}}
+       T = globalMarkovStmts H 
+       J = markovIdeal(R,H,T);
+       netList pack(2,J_*)
+       F = marginMap(3,R);
+       J = F J;
+       netList pack(2,J_*)
+    Text
+      Note that the graph $H$ is isomorphic to $G$, we have just relabeled the vertices. 
+      Observe that the vertices of $H$ are stored
+      in lexicographic order. Also note that the this graph isomorphism lifts to an isomorphism of ideals.     
+ Caveat
+     This package requires Graphs.m2, as a consequence it can do computations with graphs
+     whose vertices are not necessarily labeled by integers. This could potentially create some confusion about what does
+     $p_{i_1i_2\cdots i_n}$ mean. The package orders the vertices lexicographically, so 
+     $p_{i_1i_2\cdots i_n} = p(X_1 = i_1, X_2 = i_2, \dots, X_n = i_n)$ where the labels
+     $X_1,X_2,\dots,X_n$ have been ordered lexicographically. Therefore, the user is encouraged
+     to label the vertices in a consistent way (all numbers, or all letters, etc).
 ///
 
+end 
 
 doc ///
   Key
