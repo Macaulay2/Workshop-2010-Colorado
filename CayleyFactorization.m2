@@ -10,7 +10,7 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{cayleyFactor, straightenPoly}
+   export{cayleyFactor, GrassmannCayleyAlgebra, straightenPoly}
    
    
 ------------------------------------------------------------------- 
@@ -126,7 +126,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 		coeffA := (first listForm(monoA))#1;
 		insideA := sort toList S;
 		outsideA := sort toList (set(0..degA-1) - S);
-     	        signOfShuffle := sign(insideA|outsideA);
+     	        signShuffle := signOfShuffle(insideA,outsideA);
 		insideMonoA := product apply(insideA, i -> (support monoA)#i); 
 		outsideMonoA := product(set(support monoA) - {insideMonoA});
 		bracket :=insideMonoA*monoB;
@@ -134,7 +134,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 		else (
 		     bracketCoeff :=  (first listForm(bracket))#1;
 		     bracket = product drop(support(bracket),{0,d});
-		     signOfShuffle*coeffA*bracketCoeff*bracket*outsideMonoA
+		     signShuffle*coeffA*bracketCoeff*bracket*outsideMonoA
 		     )
 		)	   
 	   )
@@ -245,7 +245,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
    	points:= toList (0..n);
    	points = replace(a,b,points);
    	if(o.OnlineStraightening)then(
-	     return(straighten(permutePoints(P,d,n,points),d,n) == 0_R)
+	     return(straightenPoly(permutePoints(P,d,n,points),d,n) == 0_R)
 	     )else(return(permutePoints(P,d,n,points) == 0_R));
 	)	     
 
@@ -267,8 +267,8 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
        if(o.OnlineStraightening) then (
 	    allFactoredAtoms := sort flatten apply(topExtensors, l->sort toList(l));
 	    newOrder := inversePermutation(allFactoredAtoms | sort toList( set(0..n) - allFactoredAtoms ) );
-	    {topExtensors, straighten( lift( permutePoints(
-		 straighten(permutePoints(P, d, n, newOrder),d,n)/permutePoints(productFactors, d, n, newOrder), 
+	    {topExtensors, straightenPoly( lift( permutePoints(
+		 straightenPoly(permutePoints(P, d, n, newOrder),d,n)/permutePoints(productFactors, d, n, newOrder), 
 		 d, n, allFactoredAtoms | sort toList( set(0..n) - allFactoredAtoms )), R),d,n)}
 	    ) else (
        	    {topExtensors, P/productFactors}--straightening is used
@@ -285,7 +285,7 @@ findPairFactor = method(
       -- INPUT: P is a polynomial in Grassmannian(d,n);
       --     	 L is a list of atomic extensors of P; 
       -- OUTPUT: A pair (E,F) such that E ^ F is a primitive factor of P
-      -- Method: Step 3 & 4 in Algorithm 3.5.6 of Sturmfels' Algorithmic Inv. Theory
+      -- Method: Step 3 & 4 in Algorithm 3.5.6 of Sturmfels' Algorithmic Invariant Theory
       atomicExt := select(L, ll-> (#ll =!= d+1));
       scan(subsets(#atomicExt,2), a -> (
 		E := sort toList atomicExt#(a#0);
@@ -293,7 +293,7 @@ findPairFactor = method(
 		if(#E + #F > d+1) then (
 		     newOrder := inversePermutation(sort(E) | sort(F) | sort toList(set(0..n) - (E|F))); 
 		     PermP := permutePoints(P, d,n, newOrder); -- permute the indices so that E and F comes first
-		     if(o.OnlineStraightening) then (PermP = straighten(PermP,d,n););
+		     if(o.OnlineStraightening) then (PermP = straightenPoly(PermP,d,n););
 		     found := 1;
 		     scan(terms PermP, monomial -> (
 			  supp := (support(monomial))_{0,1};
@@ -324,7 +324,7 @@ findPairFactor = method(
 		     	  inverseNewOrder := sort(E) | sort(F) | sort toList(set(0..n) - (E|F));
 			  Psub := 0;
 			  if(o.OnlineStraightening) then (
-			       Psub = straighten(permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder),d,n);
+			       Psub = straightenPoly(permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder),d,n);
 			       ) else (
 			       Psub = permutePoints(sub(PermP, substitutions), d, n, inverseNewOrder);
 			       );
@@ -398,20 +398,20 @@ findPairFactor = method(
 ----------signAndShuffle, signOfShuffle copied from schubert.m2 written by Sturmfels and Yu
 ----------straightenPoly is modified code from the same file
 
-signAndShuffle := (a,b) -> (
+signAndShuffle = (a,b) -> (
      ct := 0;
      i := 0; m := #a;
      j := 0; n := #b;
      sh := while a#?i or b#?j list (
 	  t := if a#?i then a#i;
 	  u := if b#?j then b#j;
-     	  if t === u then return 0;
+     	  if t === u then return (0,());
 	  if t === null then (j = j+1; u)
 	  else if u === null or t < u then (i = i+1; t)
      	  else (ct = ct + m-i; j = j+1; u));
      ((-1)^ct, toSequence sh));
 
-signOfShuffle := (a,b) -> (
+signOfShuffle = (a,b) -> (
      ct := 0;
      i := 0; m := #a;
      j := 0; n := #b;
@@ -481,7 +481,7 @@ return null;
  )
 
 
- *}
+
  ------------------------------------------------------------------- 
   ----------------------Documentation--------------------------------
    ------------------------------------------------------------------- 
@@ -560,24 +560,23 @@ d=2;n=5;
 S = ring( Grassmannian(d,n))
 P = p_(0,3,4)_S*p_(1,2,5)_S
 
-straighten(P,d,n)
+straightenPoly(P,d,n)
+straightenQuick(P,d,n)
 
 R = GrassmannCayleyAlgebra(2,5)
+use R
 meet(a_1*a_2+a_3, a_3*a_4+a_5)
      
 viewHelp CayleyFactorization
 d = 2; n=5;
-Grassmannian(d,n);
+I = Grassmannian(d,n);
 R = ring oo;
-R = (ring oo)/oo ;
-partialAtoms = toList apply(0..n, i->set {i})
-P = -p_(0,1,2)*p_(0,3,4)*p_(1,3,5)*p_(2,4,5)+p_(0,1,3)*p_(0,2,4)*p_(1,2,5)*p_(3,4,5)
- P = p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5)
-  P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
- P = p_(0,1,2)*p_(3,4,5)*(  p_(1,3,5)*p_(0,2,4)+ p_(1,2,3)*p_(0,4,5));
-cayleyFactor(P,d,n)
-cayleyFactor(P,d,n, OnlineStraightening => true)
-cayleyFactor(P,d,n, OnlineStraightening => false)
+P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4); -- factorable
+time cayleyFactor(P,d,n, OnlineStraightening => true)
+
+R = R / I;
+time cayleyFactor(P,d,n, OnlineStraightening => false)
+
 permutePoints(P, d, n, {5,4,3,2,1,0})
 
 L = toList listAtoms(P, d, n, OnlineStraightening => true)
@@ -629,11 +628,8 @@ use(S)
 use((ring oo) / oo);
 partialAtoms = toList apply(0..n, i->set {i})
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
-P =  -p_(2,7,8);
-P =  -p_(0,7,8);
-P = -p_(0,4,6)*p_(5,7,8)+p_(0,4,5)*p_(6,7,8);
-P = permutePoints(P, d, n, {5, 6, 7, 8, 0, 1, 2, 3, 4}); -- -p_(0,2,4)*p_(1,3,5)+p_(0,1,4)*p_(2,3,5)+p_(0,2,3)*p_(1,4,5)-p_(0,1,3)*p_(2,4,5)+2*p_(0,1,2)*p_(3,4,5);
-cayleyFactor(P,d,n)
+time cayleyFactor(P,d,n)
+time cayleyFactor(P,d,n, OnlineStraightening => false)
 
 L = toList listAtoms(P, d, n, OnlineStraightening => true)
 L = toList listAtoms(P, d, n, OnlineStraightening => false)
