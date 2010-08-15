@@ -10,7 +10,7 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{cayleyFactor}
+   export{cayleyFactor, straightenPoly}
    
    
 ------------------------------------------------------------------- 
@@ -301,7 +301,7 @@ findPairFactor = method(
 			  secondRow := set (baseName(supp#1))#1; -- second row of tableau
 			  if((not isSubset(set(0..#E-1),firstRow)) or (not isSubset(set(0..#F-1), firstRow+secondRow)) or (not isSubset(firstRow, set(0..#E+#F-1) ))) then (
      	       	    	      found = 0;
-			      break;
+        		      break;
 			       )
 			  )
 		     );
@@ -395,22 +395,92 @@ findPairFactor = method(
 
 
 --------------------Straightening without a full Groebner basis--------
+----------signAndShuffle, signOfShuffle copied from schubert.m2 written by Sturmfels and Yu
+----------straightenPoly is modified code from the same file
 
-straighten = (P,d,n) ->(
+signAndShuffle := (a,b) -> (
+     ct := 0;
+     i := 0; m := #a;
+     j := 0; n := #b;
+     sh := while a#?i or b#?j list (
+	  t := if a#?i then a#i;
+	  u := if b#?j then b#j;
+     	  if t === u then return 0;
+	  if t === null then (j = j+1; u)
+	  else if u === null or t < u then (i = i+1; t)
+     	  else (ct = ct + m-i; j = j+1; u));
+     ((-1)^ct, toSequence sh));
+
+signOfShuffle := (a,b) -> (
+     ct := 0;
+     i := 0; m := #a;
+     j := 0; n := #b;
+     while i<m and j<n do (
+     	  if a#i == b#j then return 0;
+     	  if a#i < b#j then i = i+1
+     	  else (ct = ct + m-i; j = j+1));
+     (-1)^ct);
+
+straightenQuick = (P,d,n) ->(
      if(isConstant P) then (return(P););
      p :=(baseName(first support(first terms P)))#0;
      I := sub(Grassmannian(d,n, Variable => p), ring P);
      return(P % I);     
      )
-{*
 
-straighten(P,d,n) ->(
+straightenPoly= method();
+straightenPoly(RingElement,ZZ,ZZ) := (P,d,n) ->(
+
      R:= ring P;
      L:= terms P;
-     apply(L, i-> apply(support i, j -> baseName#);
-     )
+     
+     --list containing {coefficient, support} for each term
+     tableauxList :=apply(L, i-> (coefficient((entries monomials i)#0#0,i), sort apply(support i, j-> (baseName j)#1)));
+     --look for a nonstandard tableaux
+     nonStandard:=null;
+     t:=0;
+     --exit when nonstandard = position of the first inversion and the rows in which it occurs
+     for i from 0 to (#tableauxList-1) when nonStandard === null do(
+	  nonStandard = findNonstandardTerm((tableauxList#i)#1);
+	  --t equals the index of the nonstandard tableax in tableauxlist
+	  t=i;
+	  );
+     if nonStandard === null then return P
+     else (
+	  up:= (nonStandard#0);
+	  r:= (nonStandard#1)#0;
+	  s:=(nonStandard#1)#1;
+	  snake := s_{0..up} | r_{up..d};
+     	  pluckerSyz:=sum for s1 in subsets(snake,up+1) list (
+	       s2 := snake - set s1;
+	       (sgn1,a) := signAndShuffle(r_{0..up-1}, s2); 
+	       if sgn1 == 0 then continue;
+	       (sgn2,b) := signAndShuffle(s1, s_{up+1..d});
+	       if sgn2 == 0 then continue;
+	       sgn := sgn1 * sgn2 * signOfShuffle(s1,s2);
+	       sgn *R_(((baseName R_0)#0)_a) *R_(((baseName R_0)#0)_b));
+     );
+   newP:=P - (tableauxList#t)#0*pluckerSyz*product( apply(toList( set((tableauxList#t)#1) -set{r,s}), i->R_(((baseName R_0)#0)_i) ));
+   straightenPoly(newP,d,n)
+ )
  
- 
+findNonstandardTerm = T ->(
+      --T = tableaux = list of sequences
+      --returns position of inversion and the rows where the inversion took place
+      up:=null;
+      pair:=null;
+      P :=subsets(T,2);
+      for i from 0 to (#P-1) do(
+	   up = position(((P#i)#0), ((P#i)#1), (a,b) -> a>b);
+	   if up =!=null then( 
+		pair = P#i;
+		return (up, pair);
+		);
+      );
+return null;
+ )
+
+
  *}
  ------------------------------------------------------------------- 
   ----------------------Documentation--------------------------------
@@ -592,6 +662,7 @@ sigma = {2,3,0,1,5,7,6,8,4}
 
 end
 restart
+uninstallPackage "CayleyFactorization"
 debug loadPackage "CayleyFactorization"
 d = 2;
 n=8;
@@ -601,6 +672,25 @@ P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,6)*p_(2,3
 F = cayleyFactor(P,d,n);
 peek F
 
+use ring I;
+
+restart
+debug loadPackage "CayleyFactorization"
+d=2;n=8;
+I = Grassmannian(d,n),;
+R = ring I;
+use R;
+P = p_(0,1,5)*p_(2,3,4)
+P = p_(0,1,5)*p_(2,3,4)*p_(6,7,8)
+
+P = straightenPoly(P,d,n)
+
+ straightenPoly(p_(0,1,2)*p_(3,4,5),d,n)
+
+S =R/I;
+p_(0,1,5)*p_(2,3,4)
+
+use S;
 
 d = 6;
 n=12;
@@ -616,6 +706,8 @@ L = listAtoms(p_(0,1,2)*p_(3,4,5)+p_(0,1,3)*p_(2,4,5),2,5)
 R = ring Grassmannian(2,8);
 use((ring oo)/ oo);
 P = (p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
+d=2;
+n=8;
 
 
 F= cayleyFactor(P, 2,8)
