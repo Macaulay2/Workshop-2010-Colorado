@@ -1,5 +1,5 @@
 -- -*- coding: utf-8 -*-
-newPackage("Graphs",
+newPackage("NewGraphs",
      Authors => {
 	  {Name => "Amelia Taylor"},
 	  {Name => "Augustine O'Keefe"}
@@ -91,10 +91,15 @@ digraph HashTable := (g) -> (
      -- Output: A hash table of type Digraph.
      --         If a value of the hash table g is a List, Sequence or Array, it is converted into a set.
      --         If a value x of the hash table g is not a Set or VisibleList, it is converted into a set {x}.
-     if g === (new HashTable) then new Digraph from g else (
+     C := new MutableHashTable;
+     C#cache = new CacheTable from {};
+     if g === (new HashTable) then (C#graph = g;
+	  new Digraph from C) 
+     else (
      	  G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
      	  nullVertices := toList (sum(values G) - keys G);
-     	  new Digraph from merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus)
+     	  C#graph = merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus);
+     	  new Digraph from C
      	  )
      )
 
@@ -105,7 +110,12 @@ digraph List := (g) -> (
      --         then the second element of the pair should be empty. 
      -- Output:  A hashtable with keys the names of the nodes 
      --          with values the children.
-     if g === {} then new Digraph from new HashTable else (
+     if g === {} then (
+	  C := new MutableHashTable;
+     	  C#cache = new CacheTable from {};
+	  C#graph = new HashTable;
+	  new Digraph from C) 
+     else(
      	  G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
      	  H := new MutableHashTable from apply(G,x->{x#0,set {}});     
      	  scan(G, x -> H#(x#0) = H#(x#0) + x#1);
@@ -123,9 +133,12 @@ graph HashTable := opts -> (g) -> (
      G := digraph g;
      -- make sure that for every edge A-B, B appears in the value of A and vice versa.
      if G === digraph({}) then new Graph from G else (
-     	  H := new MutableHashTable from G;
-     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     	  new Graph from H)
+	  C := new MutableHashTable;
+     	  C#cache = G#cache;
+     	  C#graph = new MutableHashTable from G#graph;
+	  scan(keys G#graph, i->scan(toList G#graph#i, j-> C#graph#j=C#graph#j+set{i}));
+     	  C#graph = new HashTable from C#graph;
+     	  new Graph from C)
      )
 
 graph List := opts -> (g) -> (
@@ -139,28 +152,23 @@ graph List := opts -> (g) -> (
      G := digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}}));
      -- make sure that for every edge A-B, B appears in the value of A and vice versa.
      if G === digraph({}) then new Graph from G else (
-     	  H := new MutableHashTable from G;
-     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     	  new Graph from H)
+	  C := new MutableHashTable;
+     	  C#cache = G#cache;
+     	  C#graph = new MutableHashTable from G#graph;
+     	  scan(keys G#graph, i->scan(toList G#graph#i, j-> C#graph#j=C#graph#j+set{i}));
+     	  C#graph = new HashTable from C#graph;
+     	  new Graph from C)
      )
 
-bigraph = method()
-bigraph HashTable := (g) -> (
+bigraph = method(Options => {Singletons => null})
+bigraph HashTable := opts -> (g) -> (
      -- Input:  A hash table with keys the names of the nodes of 
      --         the graph and the values the neighbors of that node. 
-     -- Output: A hash table of type Bigraph. 
-     -- Caveat: The final object looks just like a Graph.  Thus the
-     -- purpose of this code and the type Bigraph is to have clear
-     -- constructions and interpretations in GraphicalModels. 
-     G := digraph g;
-     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
-     if G === digraph({}) then new Bigraph from G else (
-     	  H := new MutableHashTable from G;
-     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     	  new Bigraph from H)
-     )
-
-bigraph List := (g) -> (
+     -- Output: A hash table of type Graph. 
+     H := graph g;
+     new Bigraph from H)
+     
+bigraph List := opts -> (g) -> (
      -- Input:  A list of lists with two elements which describe the 
      --         edges of the graph. 
      -- Output:  A hash table with keys the names of the nodes and the 
@@ -168,15 +176,8 @@ bigraph List := (g) -> (
      -- Caveat: The final object looks just like a Graph.  Thus the
      -- purpose of this code and the type Bigraph is to have clear
      -- constructions and interpretations in GraphicalModels. 
-     G := digraph g;
-     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
-     if G === digraph({}) then new Bigraph from G else (
-     	  H := new MutableHashTable from G;
-     	  scan(keys G, i->scan(toList G#i, j-> H#j=H#j+set{i}));
-     	  new Bigraph from H)
-     )
-
-------- Definitely need descendents.  
+     H := graph g;
+     new Bigraph from H)
 
 mixedGraph = method()
 mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
@@ -187,11 +188,14 @@ mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
     if not instance(g, Graph) then error "expected first argument to be a Graph";
     if not instance(d, Digraph) then error "expected second argument to be a Digraph";
     if not instance(b, Bigraph) then error "expected third argument to be a Bigraph";
+    C := new MutableHashTable;
+    C#cache = new CacheTable from {};
     h := new MutableHashTable;
     h#(class g) = g;
     h#(class d) = d;
     h#(class b) = b;
-    new MixedGraph from h)
+    C#graph = new HashTable from h;
+    new MixedGraph from C)
 
 mixedGraph (Digraph, Bigraph) := (d,b) -> (
     -- Input: A hashtable of digraphs.
@@ -242,6 +246,8 @@ labeledGraph (Digraph,List) := (g,L) -> (
      ---- Note to Selves --- this code should also nicely build
      ---- hypergraphs as hash tables with again, nodes as keys and
      ---- neighbors as values. 
+     C := new MutableHashTable;
+     C#cache = new CacheTable from {};
      lg := new MutableHashTable;
      lg#graphData = g;
      label := new MutableHashTable;
@@ -264,8 +270,99 @@ labeledGraph (Digraph,List) := (g,L) -> (
        ));
      );
      lg#labels = new HashTable from label;
-     new LabeledGraph from lg)
+     C#graph = lg;
+     new LabeledGraph from C)
 
+----------------------------------------------------------------------
+-- Set the display and string functions for the various graph types --
+-- e.g. net, toString, toExternalString and other functions to      --
+-- disguise the internal structure.   
+----------------------------------------------------------------------
+
+net Digraph := g -> (
+     horizontalJoin flatten ( 
+     	  net class g,
+	  "{", 
+	  -- the first line prints the parts vertically, second: horizontally
+ 	  stack (horizontalJoin \ sort apply(pairs g#graph, (k,v) -> (net k, " => ", net v))),
+	  "}" 
+     	  ))
+
+net MixedGraph := g -> (
+     horizontalJoin flatten ( 
+     	  net class g,
+	  "{", 
+	  -- the first line prints the parts vertically, second: horizontally
+ 	  stack (horizontalJoin \ sort apply(pairs (g#graph),(k,v) -> (net k, " => ", net v))),
+	  "}" 
+     	  ))
+
+net Bigraph := g -> (
+     horizontalJoin flatten ( 
+     	  net class g,
+	  "{", 
+	  -- the first line prints the parts vertically, second: horizontally
+ 	  stack (horizontalJoin \ sort apply(pairs (g#graph),(k,v) -> (net k, " => ", net v))),
+	  "}" 
+     	  ))
+
+net LabeledGraph := g -> (
+     horizontalJoin flatten ( 
+     	  net class g,
+	  "{", 
+	  -- the first line prints the parts vertically, second: horizontally
+ 	  stack (horizontalJoin \ sort apply(pairs (g#graph),(k,v) -> (net k, " => ", net v))),
+	  "}" 
+     	  ))
+
+toString Digraph := g -> (
+     concatenate(
+	  "new ", toString class g#graph,
+	  if parent g#graph =!= Nothing then (" of ", toString parent g),
+	  " from {",
+	  if # g#graph > 0
+	  then 
+	  demark(", ", apply(pairs g#graph, (k,v) -> toString k | " => " | toString v))
+	  else "",
+	  "}"))     
+
+toString Bigraph := g -> (
+     concatenate(
+	  "new ", toString class g#graph,
+	  if parent g#graph =!= Nothing then (" of ", toString parent g),
+	  " from {",
+	  if # g#graph > 0
+	  then 
+	  demark(", ", apply(pairs g#graph, (k,v) -> toString k | " => " | toString v))
+	  else "",
+	  "}"))     
+
+toString MixedGraph := g -> (
+     concatenate(
+	  "new ", toString class g#graph,
+	  if parent g#graph =!= Nothing then (" of ", toString parent g),
+	  " from {",
+	  if # g#graph > 0
+	  then 
+	  demark(", ", apply(pairs g#graph, (k,v) -> toString k | " => " | toString v))
+	  else "",
+	  "}"))     
+
+toString LabeledGraph := g -> (
+     concatenate(
+	  "new ", toString class g#graph,
+	  if parent g#graph =!= Nothing then (" of ", toString parent g),
+	  " from {",
+	  if # g#graph > 0
+	  then 
+	  demark(", ", apply(pairs g#graph, (k,v) -> toString k | " => " | toString v))
+	  else "",
+	  "}"))     
+     
+graph Digraph := g -> g#graph
+graph Bigraph := g -> g#graph
+graph MixedGraph := g -> g#graph
+graph LabeledGraph := g -> g#graph
      
 -----------------------------
 -- Graph Display Functions --
@@ -315,8 +412,6 @@ writeDotFile(String, Graph) := (filename, G) -> (
 	  );
      fil << "}" << endl << close;
      )
-
-
 
 writeDotFile(String, Digraph) := (filename, G) -> (
      -- Input:  The desired file name for the Dot file created and a digraph
