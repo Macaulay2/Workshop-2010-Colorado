@@ -541,11 +541,14 @@ descendents(Digraph,Thing) := (G,v) -> (
 	       	    dE = dE + cC;
 	       	    )
 	       );
-	  if G.cache#?descendents then G.cache#descendents#v = dE
-	  else (
-	       h := new MutableHashTable;
+	  if G.cache#?descendents then (
+	       h := new MutableHashTable from G.cache#descendents;
 	       h#v = dE;
-	       G.cache#descendents = h);
+	       G.cache#descendents = new HashTable from h)
+	  else (
+	       h = new MutableHashTable;
+	       h#v = dE;
+	       G.cache#descendents = new HashTable from h);
      	  dE)
      )
 descendents(MixedGraph, Thing) := (G,v) -> (
@@ -553,11 +556,14 @@ descendents(MixedGraph, Thing) := (G,v) -> (
      if G1.cache#?descendents and G1.cache#descendents#?v then G1.cache#descendents#?v
      else (
 	  C := descendents(G1,v);
-	  if G1.cache#?descendents then G1.cache#descendents#v = C
+	  if G1.cache#?descendents then (
+	       h := new MutableHashTable from G1.cache#descendents;
+	       h#v = dE;
+	       G1.cache#descendents = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G1.cache#descendents = h);
+	       G1.cache#descendents = new HashTable from h);
 	  C)
      )
      
@@ -574,22 +580,28 @@ nondescendents = method()
 nondescendents(Digraph,Thing) := (G,v) -> (
      if G.cache#?nondescendents and G.cache#nondescendents#?v then G.cache#nondescendents#v else(
      	  C := set keys (graph G) - descendents(G,v) - set {v};
-	  if G.cache#?nondescendents then G.cache#nondescendents#v = C
+	  if G.cache#?nondescendents then (
+	       h:= new MutableHashTable from G.cache#nondescendents;
+	       h#v = C;
+	       G.cache#nondescendents = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G.cache#nondescendents = h);
+	       G.cache#nondescendents = new HashTable from h);
 	  C)
      )
 nondescendents(MixedGraph,Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?nondescendents and G1.cache#nondescendents#?v then G1.cache#nondescendents#v else(
      	  C := set keys (graph G1) - descendents(G1,v) - set {v};
-	  if G1.cache#?nondescendents then G1.cache#nondescendents#v = C
+	  if G1.cache#?nondescendents then (
+	       h:= new MutableHashTable from G1.cache#nondescendents;
+	       h#v = C;
+	       G1.cache#nondescendents = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G1.cache#nondescendents = h);
+	       G1.cache#nondescendents = new HashTable from h);
 	  C)
      )
 
@@ -600,22 +612,28 @@ parents = method()
 parents(Digraph,Thing) := (G,v) -> (
      if G.cache#?parents and G.cache#parents#?v then G.cache#parents#v else(
      	  C := set select(keys(graph G), i -> member(v, (graph G)#i));
-	  if G.cache#?parents then G.cache#parents#v = C
+	  if G.cache#?parents then (
+	       h:= new MutableHashTable from G.cache#parents;
+	       h#v = C;
+	       G.cache#parents = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G.cache#parents = h);
+	       G.cache#parents = new HashTable from h);
 	  C)
      )
 parents(MixedGraph,Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?parents and G1.cache#parents#?v then G1.cache#parents#v else(
      	  C := set select(keys(graph G1), i -> member(v, (graph G1)#i));
-	  if G1.cache#?parents then G1.cache#parents#v = C
+	  if G1.cache#?parents then (
+	       h:= new MutableHashTable from G1.cache#parents;
+	       h#v = C;
+	       G1.cache#parents = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G1.cache#parents = h);
+	       G1.cache#parents = new HashTable from h);
 	  C)
      )
      	  
@@ -635,9 +653,12 @@ foreFathers(Digraph, Thing) := (G,v) -> (
 	       	    aN = aN + cP;
 	       	    )
 	       );
-	  if G.cache#?foreFathers then G.cache#foreFathers#v = aN
+	  if G.cache#?foreFathers then (
+	       h := new MutableHashTable from G.cache#foreFathers;
+	       h#v = aN;
+	       G.cache#foreFathers = new HashTable from h)
 	  else (
-	       h := new MutableHashTable;
+	       h = new MutableHashTable;
 	       h#v = aN;
 	       G.cache#foreFathers = h);
      	  aN)
@@ -647,11 +668,14 @@ foreFathers(MixedGraph, Thing) := (G,v) -> (
      if G1.cache#?foreFathers and G1.cache#foreFathers#?v then G1.cache#foreFathers#?v
      else (
 	  C := foreFathers(G1,v);
-	  if G1.cache#?foreFathers then G1.cache#foreFathers#v = C
+	  if G1.cache#?foreFathers then (
+	       h:= new MutableHashTable from G1.cache#foreFathers;
+	       h#v = C;
+	       G1.cache#foreFathers = new HashTable h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G1.cache#foreFathers = h);
+	       G1.cache#foreFathers = new HashTable h);
 	  C)
      )
      
@@ -663,11 +687,14 @@ children = method()
 children(Digraph,Thing) := (G,v) -> (
      if G.cache#?children and G.cache#children#?v then G.cache#children#v else (
 	  C := (graph G)#v;
-	  if G.cache#?children then G.cache#children#v = C
+	  if G.cache#?children then (
+	       h := new MutableHashTable G.cache#children;
+	       h#v = C;
+	       G.cache#children = new HashTable from h)
 	  else(
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G.cache#children = h);
+	       G.cache#children = new HashTable from h);
 	  C)
      )
 
@@ -676,11 +703,14 @@ children(MixedGraph, Thing) := (G,v) -> (
      if G1.cache#?children and G1.cache#children#?v then G1.cache#children#?v
      else (
 	  C := children(G1,v);
-	  if G1.cache#?children then G1.cache#children#v = C
+	  if G1.cache#?children then (
+	       h := new MutableHashTable G1.cache#children;
+	       h#v = C;
+	       G1.cache#children = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
-	       G1.cache#children = h);
+	       G1.cache#children = new HashTable from h);
 	  C)
      )
      
@@ -692,11 +722,14 @@ neighbors = method()
 neighbors(Graph,Thing) := (G,v) -> (
      if G.cache#?neighbors and G.cache#neighbors#?v then G.cache#neighbors#v else (
 	  n := (graph G)#v;
-	  if G.cache#?neighbors then G.cache#neighbors#v = n
+	  if G.cache#?neighbors then (
+	       h := new MutableHashTable from G.cache#neighbors;
+	       h#v = n;
+	       G.cache#neighbors = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = n;
-	       G.cache#neighbors = h;
+	       G.cache#neighbors = new HashTable from h;
 	       );
 	  n)
      )
@@ -704,11 +737,14 @@ neighbors(MixedGraph,Thing) := (G,v) -> (
      G1 := (graph G)#Graph;
      if G1.cache#?neighbors and G1.cache#neighbors#?v then G1.cache#neighbors#v else (
 	  n := (graph G1)#v;
-	  if G1.cache#?neighbors then G1.cache#neighbors#v = n
+	  if G1.cache#?neighbors then (
+	       h := new MutableHashTable from G1.cache#neighbors;
+	       h#v = n;
+	       G1.cache#neighbors = new HashTable from h)
 	  else (
 	       h = new MutableHashTable;
 	       h#v = n;
-	       G1.cache#neighbors = n;
+	       G1.cache#neighbors = new HashTable from h
 	       );
 	  n)
      )
@@ -720,14 +756,28 @@ nonneighbors = method()
 nonneighbors(Graph, Thing) := (G,v) -> (
      if G.cache#?nonneighbors then G.cache#nonneighbors else (
      	  n := set keys (graph G) - neighbors(G,v) - set{v};
-	  G.cache#nonneighbors = n; 
+	  if G.cache#?nonneighbors then (
+	       h := new MutableHashTable from G.cache#nonneighbors;
+	       h#v = n;
+	       G.cache#nonneighbors = new HashTable from h)
+	  else (
+	       h = new MutableHashTable;
+	       h#v = n;
+	       G1.cache#nonneighbors = new HashTable from h)
 	  n)
      )
 nonneighbors(MixedGraph,Thing) := (G,v) -> (
      G1 := (graph G)#Graph;
      if G1.cache#?nonneighbors then G1.cache#nonneighbors else (
 	  n := nonneighbors(G1, v);
-	  G1.cache#neighbors = n;
+	  if G1.cache#?nonneighbors then (
+	       h := new MutableHashTable from G1.cache#nonneighbors;
+	       h#v = n;
+	       G1.cache#nonneighbors = new HashTable from h)
+	  else (
+	       h = new MutableHashTable;
+	       h#v = n;
+	       G1.cache#nonneighbors = new HashTable from h)
 	  n)
      )
 
