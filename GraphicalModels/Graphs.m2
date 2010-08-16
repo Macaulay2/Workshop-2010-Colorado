@@ -400,14 +400,12 @@ simpleGraph(Graph) := H -> (
 	  );
      digraph hashTable pairH)
 
-
- 
 writeDotFile = method()
 writeDotFile(String, Graph) := (filename, G) -> (
      -- Input: The desired file name for the DOT file created and a graph.
      -- Output: The code for the inputted graph to be constructed in Graphviz 
      --         with the specified file name.
-     H := simpleGraph G;
+     H := graph simpleGraph G;
      fil := openOut filename;
      fil << "graph G {" << endl;
      q := pairs H;
@@ -431,6 +429,7 @@ writeDotFile(String, Digraph) := (filename, G) -> (
      -- Input:  The desired file name for the Dot file created and a digraph
      -- Output:  The code for the inputted digraph to be constructed in Graphviz 
      --          with the specified file name.
+     G = graph G;
      fil := openOut filename;
      fil << "digraph G {" << endl;
      q := pairs G;
