@@ -532,7 +532,6 @@ descendents(Digraph,Thing) := (G,v) -> (
      -- Output: The set of vertices that are descendents of the vertex 
      --         of interest.
      if G.cache#?descendents and G.cache#descendents#?v then G.cache#descendents#v else(
---	  G1 = graph G;
      	  notDone := true;
      	  cC := children(G,v);
      	  dE := cC;
@@ -550,8 +549,7 @@ descendents(Digraph,Thing) := (G,v) -> (
 	       G.cache#descendents = h);
      	  dE)
      )
-  
-   descendents(MixedGraph, Thing) := (G,v) -> (
+descendents(MixedGraph, Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?descendents and G1.cache#descendents#?v then G1.cache#descendents#?v
      else (
@@ -627,17 +625,37 @@ foreFathers = method()
      -- Output: The set of vertices that are the ancestors of the vertex 
      --	    	of interest.
 foreFathers(Digraph, Thing) := (G,v) -> (
-     notDone := true;
-     cP := parents(G,v);
-     aN := cP;
-     while notDone === true do(
-	  if (toList cP) === {} then notDone = false
+     if G.cache#?foreFathers and G.cache#foreFathers#?v then G.cache#foreFathers#v else(
+     	  notDone := true;
+     	  cP := parents(G,v);
+     	  aN := cP;
+     	  while notDone === true do(
+	       if (toList cP) === {} then notDone = false
+	       else (
+	       	    cP = set flatten apply(toList cP, i -> toList parents(G,i));
+	       	    aN = aN + cP;
+	       	    )
+	       );
+	  if G.cache#?foreFathers then G.cache#foreFathers#v = aN
 	  else (
-	       cP = set flatten apply(toList cP, i -> toList parents(G,i));
-	       aN = aN + cP;
-	       )
-	  );
-     aN)	  
+	       h := new MutableHashTable;
+	       h#v = aN;
+	       G.cache#foreFathers = h);
+     	  aN)
+     )	  
+foreFathers(MixedGraph, Thing) := (G,v) -> (
+     G1 := digraph G;
+     if G1.cache#?foreFathers and G1.cache#foreFathers#?v then G1.cache#foreFathers#?v
+     else (
+	  C := foreFathers(G1,v);
+	  if G1.cache#?foreFathers then G1.cache#foreFathers#v = C
+	  else (
+	       h = new MutableHashTable;
+	       h#v = C;
+	       G1.cache#foreFathers = h);
+	  C)
+     )
+     
 
 children = method()
      -- Input: A digraph and the key for the vertex of interest.
