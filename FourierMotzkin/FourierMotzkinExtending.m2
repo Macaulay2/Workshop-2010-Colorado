@@ -171,7 +171,7 @@ glrs Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
+     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      ggetMatrix (filename | ".ext")
      )
@@ -182,7 +182,7 @@ glrs (Matrix,Matrix) := Matrix => (A,B) ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
+     execstr = "time glrs " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr ;
      ggetMatrix (filename | ".ext")
      ))
@@ -219,7 +219,7 @@ cdd Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
+     execstr = "time lcdd " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      getMatrix (filename | ".ext")
      )
@@ -242,7 +242,7 @@ gcdd Matrix := Matrix => A ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A);
      close F;
-     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
+     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      ggetMatrix (filename | ".ext")
      )
@@ -253,7 +253,7 @@ gcdd (Matrix, Matrix) := Matrix => (A,B) ->(
      F := openOut(filename|".ine");
      putMatrix(F,-A,B);
      close F;
-     execstr = "lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
+     execstr = "time lcdd_gmp " |rootPath | filename | ".ine " | rootPath | filename | ".ext 2> " | rootPath | filename |".txt";
      run execstr;
      ggetMatrix (filename | ".ext")
      ))    
