@@ -576,8 +576,8 @@ nondescendents = method()
      --	        the vertex of interest.
 nondescendents(Digraph,Thing) := (G,v) -> (
      if G.cache#?nondescendents and G.cache#nondescendents#?v then G.cache#nondescendents#v else(
-     	  C := set keys G - descendents(G,v) - set {v};
-	  if G.cache#?nondescendents then G1.cache#nondescendents#v = C
+     	  C := set keys (graph G) - descendents(G,v) - set {v};
+	  if G.cache#?nondescendents then G.cache#nondescendents#v = C
 	  else (
 	       h = new MutableHashTable;
 	       h#v = C;
@@ -587,7 +587,7 @@ nondescendents(Digraph,Thing) := (G,v) -> (
 nondescendents(MixedGraph,Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?nondescendents and G1.cache#nondescendents#?v then G1.cache#nondescendents#v else(
-     	  C := set keys G1 - descendents(G1,v) - set {v};
+     	  C := set keys (graph G1) - descendents(G1,v) - set {v};
 	  if G1.cache#?nondescendents then G1.cache#nondescendents#v = C
 	  else (
 	       h = new MutableHashTable;
@@ -602,7 +602,7 @@ parents = method()
      --	    	of interest.
 parents(Digraph,Thing) := (G,v) -> (
      if G.cache#?parents and G.cache#parents#?v then G.cache#parents#v else(
-     	  C := set select(keys(G), i -> member(v, G#i));
+     	  C := set select(keys(graph G), i -> member(v, (graph G)#i));
 	  if G.cache#?parents then G.cache#parents#v = C
 	  else (
 	       h = new MutableHashTable;
@@ -613,7 +613,7 @@ parents(Digraph,Thing) := (G,v) -> (
 parents(MixedGraph,Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?parents and G1.cache#parents#?v then G1.cache#parents#v else(
-     	  C := set select(keys(G1), i -> member(v, G1#i));
+     	  C := set select(keys(graph G1), i -> member(v, (graph G1)#i));
 	  if G1.cache#?parents then G1.cache#parents#v = C
 	  else (
 	       h = new MutableHashTable;
@@ -673,16 +673,26 @@ neighbors = method()
      -- Output: The set of vertices that are neighbors of the vertex 
      --	    	of interest.
 neighbors(Graph,Thing) := (G,v) -> (
-     if G.cache#?neighbors then G.cache.neighbors else (
+     if G.cache#?neighbors and G.cache#neighbors#?v then G.cache#neighbors#v else (
 	  n := (graph G)#v;
-	  G.cache#neighbors = n;
+	  if G.cache#?neighbors then G.cache#neighbors#v = n
+	  else (
+	       h = new MutableHashTable;
+	       h#v = n;
+	       G.cache#neighbors = h;
+	       );
 	  n)
      )
 neighbors(MixedGraph,Thing) := (G,v) -> (
      G1 := (graph G)#Graph;
-     if G1.cache#?neighbors then G1.cache.neighbors else (
+     if G1.cache#?neighbors and G1.cache#neighbors#?v then G1.cache#neighbors#v else (
 	  n := (graph G1)#v;
-	  G1.cache#neighbors = n;
+	  if G1.cache#?neighbors then G1.cache#neighbors#v = n
+	  else (
+	       h = new MutableHashTable;
+	       h#v = n;
+	       G1.cache#neighbors = n;
+	       );
 	  n)
      )
 	 
@@ -691,14 +701,14 @@ nonneighbors = method()
      -- Output: The set of vertices that are not neighbors of the vertex 
      --	    	of interest.
 nonneighbors(Graph, Thing) := (G,v) -> (
-     if G.cache#?nonneighbors then G.cache.nonneighbors else (
-     	  n := set keys (graph G1) - neighbors(G,v)-set{v}
+     if G.cache#?nonneighbors then G.cache#nonneighbors else (
+     	  n := set keys (graph G) - neighbors(G,v) - set{v};
 	  G.cache#nonneighbors = n; 
 	  n)
      )
-neighbors(MixedGraph,Thing) := (G,v) -> (
+nonneighbors(MixedGraph,Thing) := (G,v) -> (
      G1 := (graph G)#Graph;
-     if G1.cache#?nonneighbors then G1.cache.nonneighbors else (
+     if G1.cache#?nonneighbors then G1.cache#nonneighbors else (
 	  n := nonneighbors(G1, v);
 	  G1.cache#neighbors = n;
 	  n)
