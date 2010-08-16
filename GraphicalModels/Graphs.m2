@@ -953,7 +953,7 @@ completeGraph(ZZ) := n -> (
       G := new MutableHashTable;
       L := while i < n list i do i = i+1;
       apply(L, i-> G#i =  set L - set {i});
-      G = graph(G)
+      G = graph(new HashTable from G)
       )   
 
 cycleGraph = method()
@@ -966,7 +966,7 @@ cycleGraph(ZZ) := n -> (
 	  G#i = set{(i-1)%n,(i+1)%n}; 
 	  i = i+1;
 	  );
-     G = graph(G)
+     G = graph(new HashTable from G)
      )
   
 
