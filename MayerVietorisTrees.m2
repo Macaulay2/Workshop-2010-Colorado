@@ -16,7 +16,9 @@ newPackage(
         DebuggingMode => true
         )
 
-export {fullMVT, relMVT, relevantNodes, projDimMVT, regMVT, lowerBettiMVT, upperBettiMVT, pseudoBettiMVT, PivotStrategy, hilbertSeriesMVT}
+export {fullMVT, relMVT, relevantNodes, relNodesGens, refineUndecided, splitNodes,
+     projDimMVT, regMVT, lowerBettiMVT, upperBettiMVT, pseudoBettiMVT, PivotStrategy, 
+     hilbertSeriesMVT}
 
 --TO DO:
 -- v0: document methods
