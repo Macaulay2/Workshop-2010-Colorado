@@ -634,8 +634,7 @@ doc ///
          the maximum number of loops you want to run
    Outputs
       :Boolean
-      :ZZ
-         the number of loops it tried
+			   If the answer is true, it will output the number of loops it needed; if false it will output the permutations it tried
    Description
       Text
          It runs a loop to find elements of the Galois group until it find a generating set or die after {\tt mx} tries.
