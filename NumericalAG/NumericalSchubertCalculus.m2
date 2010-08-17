@@ -373,7 +373,7 @@ isFullSymmetric(List) := (perms)->(
 -- know that Gal(Prblm) = symm_n
 --
 -------------------
-isGaloisFullSymmetric = method((TypicalValue => Boolean)
+isGaloisFullSymmetric = method(TypicalValue => Boolean)
 isGaloisFullSymmetric(Sequence, List, List, ZZ) := (prblm, flgs, solns, mx) ->(
 	-- mx is the maximal number of loops we want to run
  	(l,m,k,n) := prblm;
