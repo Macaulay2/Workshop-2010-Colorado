@@ -318,7 +318,7 @@ getFileName = () -> (
 --GAPexe ="/Applications/gap4r4/bin/./gap.sh";	
 GAPexe := "gap";
 
-isFullSymmetric = method(TypicalValue => Nothing)
+isFullSymmetric = method(TypicalValue => Boolean)
 isFullSymmetric(List) := (perms)->(
 	--
 	-- perms is a list of permutations
@@ -373,7 +373,7 @@ isFullSymmetric(List) := (perms)->(
 -- know that Gal(Prblm) = symm_n
 --
 -------------------
-isGaloisFullSymmetric = method()
+isGaloisFullSymmetric = method((TypicalValue => Boolean)
 isGaloisFullSymmetric(Sequence, List, List, ZZ) := (prblm, flgs, solns, mx) ->(
 	-- mx is the maximal number of loops we want to run
  	(l,m,k,n) := prblm;
@@ -500,49 +500,48 @@ doc ///
     Usage
        trackSimpleSchubert(kn,cond, G, F)
     Inputs
-         kn:Sequence
-            two integers (k,n) denoting the Grassmannian Gr(k,n)
-         cond:Sequence
-            of two partitions of n
-         G:List
-            of starting Flags G_1,..., G_d
-         F:List
-            of target Flags F_1,...,F_d
+       kn:Sequence
+          two integers (k,n) denoting the Grassmannian Gr(k,n)
+       cond:Sequence
+          of two partitions of n
+       G:List
+          of starting Flags G_1,..., G_d
+       F:List
+          of target Flags F_1,...,F_d
     Outputs
-         :List
-            solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
+       :List
+          solutions of the Schubert problem defined by l and m with respect to the flags F_1,...,F_d
     Description
        Text
           Given partitions $l$ and $m$ in the Grassmannian $Gr(k,n)$, and two sets of fixed flags $G_1,...,G_d$, and $F_1,...,F_d$; where $d=k*(k-n) - |l| - |m|$. The function tracks the solutions of the system defined by $G_1,...,G_d$ (if the solutions are not given, it computes them using {\tt solveSimpleSchubert}) to find solutions for the system defined by $F_1,...,F_d$. 
        Example
-         ---- Simple Schubert Problem
-   	 (k,n) = (3,7)
-   	 l = {2,1,0}
-   	 m = {1,1,0}
-   	 ----  Generate random flags G and F----
-   	 d = k*(n-k)-sum(l)-sum(m);
-   	 G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   	 F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   	 ---------------------------------
-   	 trackSimpleSchubert((k,n),(l,m),G,F)
-       
-      Text
-         If the solutions of the system defined by $G_1,...,G_d$ are given, they can be given in the function to avoid unnecessary computations
-      Example
-         ---- Simple Schubert Problem
-   	 (k,n) = (3,7)
-   	 l = {2,1,0}
-   	 m = {1,1,0}
-   	 ----  Generate random flags G and F----
-   	 d = k*(n-k)-sum(l)-sum(m);
-   	 G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   	 F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
-   	 ---------------------------------
-   	 Solns = solveSimpleSchubert((k,n),l,m,G);
-         trackSimpleSchubert((k,n),(l,m),G,F, StartSolutions=>Solns)
+          ---- Simple Schubert Problem
+   	  (k,n) = (3,7)
+   	  l = {2,1,0}
+   	  m = {1,1,0}
+   	  ----  Generate random flags G and F----
+   	  d = k*(n-k)-sum(l)-sum(m);
+   	  G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	  F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	  ---------------------------------
+   	  trackSimpleSchubert((k,n),(l,m),G,F)
+       Text
+          If the solutions of the system defined by $G_1,...,G_d$ are given, they can be given in the function to avoid unnecessary computations
+       Example
+          ---- Simple Schubert Problem
+   	  (k,n) = (3,7)
+   	  l = {2,1,0}
+   	  m = {1,1,0}
+   	  ----  Generate random flags G and F----
+   	  d = k*(n-k)-sum(l)-sum(m);
+   	  G = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	  F = apply(d, i->matrix apply(n-k,i->apply(n,j->random CC)));
+   	  ---------------------------------
+   	  Solns = solveSimpleSchubert((k,n),l,m,G);
+          trackSimpleSchubert((k,n),(l,m),G,F, StartSolutions=>Solns)
    SeeAlso
-         solveSimpleSchubert
-         createRandomFlagsForSimpleSchubert
+      solveSimpleSchubert
+      createRandomFlagsForSimpleSchubert
 ///;
 
 doc ///
@@ -575,26 +574,96 @@ doc ///
          l={1,1}
 	 m={2,1}
 	 (k,n) = (3,7)
-	 d = k*(n-k)-sum(l)-sum(m);
-	 ---
-	 --- Generate a random set of flags
-	 --- to compute an instance of the problem	 
+      Text
+	 Generate a random set of flags to compute an instance of the problem	 
+      Example
 	 G = createRandomFlagsForSimpleSchubert((k,n),l,m)	 
-	 ---------------------------------
-	 ---  Solve the problem
+      Text
+         Solve the problem
+      Example
 	 S = solveSimpleSchubert((k,n),l,m,G);
-	 --------------------------------
-	 -- This is a problem with 77 solutions
+      Text
+         This is a problem with 77 solutions
+      Example
 	 #S
-	 --
-	 -- an element of the Galois group is:
-	 --
+      Text
+	 an element of the Galois group is:
+      Example
 	 findGaloisElement((l,m,k,n), G, S)
    SeeAlso
       isFullSymmetric
       isGaloisFullSymmetric 
       solveSimpleSchubert
       createRandomFlagsForSimpleSchubert
+///;
+
+doc ///
+   Key
+      isFullSymmetric
+   Headline
+      Check if a list of permutations generate the full symmetric group.
+   Usage
+      isFullSymmetric(P)
+   Inputs
+      P:List
+         of Lists of permutations
+   Outputs
+      :Boolean
+   Description
+      Text
+         Takes a list of permutations of {1,...,n} and uses GAP to check if those generate the symmetric group $S_n$.
+   Caveat
+      It assumes that GAP runs when you type {\tt gap} in a terminal      
+///;
+
+doc ///
+   Key
+      isGaloisFullSymmetric
+   Headline
+      find Galois elements of a simple Schubert Problem until they generate the full symmetric group
+   Usage
+      isGaloisFullSymmetric(pblm, flag, solns, mx)
+   Inputs
+      pblm:Sequence
+         a sequence (l,m,k,n) that contains two partitions l,m and two integers k,n that define the simple Schubert problem l,m in the Grassmannian Gr(k,n)
+      flag:List
+         a list of numerical matrices that define an instance of the simple Schubert Problem
+      solns:List
+         solutions of the specific instance
+      mx:ZZ
+         the maximum number of loops you want to run
+   Outputs
+      :Boolean
+      :ZZ
+         the number of loops it tried
+   Description
+      Text
+         It runs a loop to find elements of the Galois group until it find a generating set or die after {\tt mx} tries.
+      Example
+         l={1,1}
+         m={2,1}
+         (k,n) = (3,7)
+      Text
+         Generate a random set of flags to compute an instance of the problem	 
+      Example
+         G = createRandomFlagsForSimpleSchubert((k,n),l,m)	 
+      Text
+         Solve the Schubert problem
+      Example
+         S = solveSimpleSchubert((k,n),l,m,G);
+      Text
+         Check if the Galois group is the symmetric group
+      Example
+         isGaloisFullSymmetric((l,m,k,n), G, S, 5)
+      Text 
+          one permutation is not enough
+      Example
+          isGaloisFullSymmetric((l,m,k,n), G, S, 1)
+   SeeAlso
+      isFullSymmetric
+      findGaloisElement
+   Caveat
+      This assumes that GAP runs when you type in the terminal {\tt gap} and that we already know that the Galois group is the full symmetric group, otherwise it will output {\tt false} after {\tt mx} repetitions.
 ///;
 
 TEST ///
