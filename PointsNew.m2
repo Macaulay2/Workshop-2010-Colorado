@@ -66,6 +66,56 @@ reduceColumn = (M,Mchange,H,c) -> (
 	  );
      true
      )
+--Jb 8.00
+--Beställning av kurslitteratur
+--Kontakta assistenterna Daniel - analys. Madde fb.
+--Tentorna
+--Nya huvudlistor
+--Köpa videokamera, tors/fredag, mygga. 
+--Mån-Ons, adm.
+--Kalender
+--Ringa om lägenheten
+--Geogebra
+--Lagra råfilerna; datum, tid, föreläsare, dagnr, kurs, kvalitet.
+--Webwork, presentation på tisdag, presentation för distansarna fre.
+--Reine & Fredrik om onsdag.
+--Reine om tisdag och onsdag lathund (ska skrivas om).
+
+--x_i e_j = e_h OK
+--x_i e_j = lm(g_k) OK
+--x_i e_j multiple of an element in ini. Pick any x_k with e_j = e_j' x_k 
+--such that (x_i e_j') is not a basis element. This one has already been
+--computed since it is less than x_i e_j, so x_i e_j' = c_1 e_1 + ... + c_s e_s.
+-- Every x_k e_i *with* c_i != 0 has been computed before!
+
+--Even better, order the elements (x_i_1, e_j_1), ..., (x_i_k, e_j_k) with
+--the property that x_i e_j = x_i_1 e_j_1 = x_i_2 e_j_2 = ...
+--We only need to pick one of these elements. 
+--Any of the elements in supp(x_i e_j) \cap (x_i_1, ..., x_i_k)^c has the
+-- property of the element x_k on the third line. Pick such an element.
+
+-- Konstruera listan (eventuell, lagra index på e_i?
+-- for i from 0 to s-1 do (
+--     for j from 0 to #gens-1 do (
+--     	    newlist = apply(...)
+---    )
+--       mergePairs (l, newList, union av supp)
+--  )
+-- Bygg upp multiplikationsmatriserna
+-- for i from 0 to #l-1 do (
+--     supp = support (l#0)#0;
+--     monset = (l#0)#1.
+--     x_k \in supp - monset.
+--     x_i = first monset;
+--     cv = getCoefficientVector(x_k, (l#0)/x_i)
+--      for j from 0 to #cv-1 do (
+--     	  v = v+cv#j * getCoefficientVector(i,j)
+--       )
+--     insertintomatrix(i, e, v);
+--     for j from 1 to #monset do (
+--          insertintomatrix(monset#j, e, v);
+--     )
+)
 
 borderBasisNaive = method (TypicalValue => List)
 borderBasisNaive (List, List, Ring) := (std, gblist, R) -> (
@@ -84,7 +134,7 @@ borderBasisNaive (List, List, Ring) := (std, gblist, R) -> (
 	       l = flatten entries (coefficients ((R_i * std#j) % Gb, Monomials => std))_1;
 	       scan(#l, k -> m_(j,k) = RtoK(l#k));
 	  );	
-     	  bb = append (bb, matrix m); --We don't want it to mutable anymore.
+     	  bb = append (bb, matrix m); --We don't want it to be mutable anymore.
      );	   
      return bb;
 )
@@ -103,8 +153,7 @@ borderBasisNaive (List, List, Ring) := (std, gblist, R) -> (
 	  return l
 	  );
      -- The above is not a good soluion, fix it
-     result = cv * multMatrix;
-     return result
+     return cv * multMatrix;
      )
 	       
 	       
@@ -181,7 +230,7 @@ pointsMat(Matrix,Ring) := (M,R) -> (
 	  );
      --print("ntimes "|ntimes|" std+inG "|#Q + numgens inG);
      stds := transpose matrix{Q};
-     A := transpose matrix{apply(Fs, f -> f stds)};
+     A := inverse transpose matrix{apply(Fs, f -> f stds)};
      (A, stds)
      )
 
@@ -270,7 +319,7 @@ separators (Matrix, Matrix) := (stds, Ainv) -> (
 -- Samuel Lundqvist jan 2010
 
 nfPoints = method()
-nfPoints (RingElement, List, Matrix, Matrix) := (p, phi, stds, Ainv) -> (
+nfPoints (RingElement, List, List, Matrix) := (p, phi, stds, Ainv) -> (
      --Evaluate the vector on the points
      v := transpose matrix {apply (phi, r -> r p)};
      w := Ainv * v;
@@ -281,6 +330,7 @@ nfPoints (RingElement, List, Matrix, Matrix) := (p, phi, stds, Ainv) -> (
      )
 
 -- Samuel Lundqvist aug 2010
+-- Return the stdmons as a list
 stdmons = method()
 stdmons(PolynomialRing, GroebnerBasis) := (S,Gb) -> (
      I := monomialIdeal(leadTerm (Gb));
@@ -290,6 +340,9 @@ stdmons(PolynomialRing, GroebnerBasis) := (S,Gb) -> (
      apply(basisSmodI, i -> SmodItoS(i))
      )
 
+--getEssGens = method() ->
+
+
 -- Samuel Lundqvist jan 2010, aug 2010
 FGLM = method() 
 FGLM (GroebnerBasis, PolynomialRing, Option) := (GS,S,monOrd) -> (   
@@ -298,7 +351,7 @@ FGLM (GroebnerBasis, PolynomialRing, Option) := (GS,S,monOrd) -> (
      s := length basisS;   
      inGSl := flatten entries leadTerm GS;
      GSl :=  flatten entries gens GS;
-     timing(bb := borderBasisNaive(basisS, GSl, S););
+     print timing(bb := borderBasisNaive(basisS, GSl, S););
      --from now on, we will compute over the ring R.
      R := newRing(S, monOrd);
      RtoS := map(S,R);
@@ -331,6 +384,7 @@ FGLM (GroebnerBasis, PolynomialRing, Option) := (GS,S,monOrd) -> (
      G := {}; -- the list of Groebner basis elements to return
      numList := 1;
     while L != {} do (
+     print (#L);
 	  -- First step: get the monomial to consider
 	  --print "L equals";
 	  --print L;
@@ -338,26 +392,26 @@ FGLM (GroebnerBasis, PolynomialRing, Option) := (GS,S,monOrd) -> (
 	  L = drop(L,1);
 	   --Pick the minimal elementet in L.
 	  -- Now fix up the matrices P, PC
-	  use S;
+	  --use S;
 	  --We are multiplying with (Lleast#1)#0;
           cv = getCoefficientVector(
 	       (Lleast#1)#0, (Lleast#1)#1, K, bb#((Lleast#1)#0),s);
 	  scan(s, i -> P_(i,thiscol) = cv_(0,i)); --add the column to P
-	  use R;
+	  --use R;
 	  rawMatrixColumnScale(raw PC, raw(0_K), thiscol, false);
 	  PC_(thiscol,thiscol) = 1_K;
-          isLT := reduceColumn(P,PC,H,thiscol);
+          print timing(isLT := reduceColumn(P,PC,H,thiscol););
 	  monom = (Lleast#0);
 	  if isLT then (
 	       -- we add to G
+	       print monom;
+	       print (Lleast#1)#2;
 	       g := sum apply(toList(0..thiscol-1), i -> PC_(i,thiscol) * Q_i);
 	       G = append(G, PC_(thiscol,thiscol) * monom + g);
 	       )
 	  else (
 	       -- we modify L and thiscol
-	       Q = append(Q, monom);
-	   
-	  
+	       Q = append(Q, monom);	  
 	       newList := {};
 	       for i from 0 to #essgens - 1 do (
 	       	  numList = numList + 1;
@@ -367,16 +421,30 @@ FGLM (GroebnerBasis, PolynomialRing, Option) := (GS,S,monOrd) -> (
 --	       print newList;
 	       L = mergePairs(L,newList, (v,w)->(v#0,v#1,v#2 + w#2));
 	       --print L;
-	       L = removeElements(L);
+	       
 	       --print L;
 	       thiscol = thiscol + 1;
-	       )
+	       );
+	  L = removeElements(L);
 	  );
---     print("number of monomials considered = "|nL);
+     --print("number of monomials considered = " numList);
      (R,G,Q)
      )
 
+
 removeElements = (L) -> (
+     while L != {} do (
+	  Lleast = first(L);
+       if (#support(Lleast#0) > (Lleast#1)#2) then (
+       L = drop(L,1);
+       ) else (
+       return L;
+       );
+  );
+  return L;   
+)
+
+removeElementsOld = (L) -> (
      if (L == {}) then (
 	  return {};
 	  );     	  
