@@ -1,3 +1,16 @@
+Okay, I've copied all these ideas into
+
+    svn://svn.macaulay2.com/Macaulay2/trunk/M2/Macaulay2/bugs/dan/1-FromMethod
+
+Since complicated new syntax has been suggested (List from x, Matrix of ZZ from {{3}})
+this is going to take some time.
+
+Thanks to everyone!
+
+Dan
+
+=============================================================================
+
 -- Everyone is invited to enter their proposed code for doing conversions from
 -- one type to another, use "new ... from ..." methods.  Find your name below
 -- and add it there, to avoid conflicts.
