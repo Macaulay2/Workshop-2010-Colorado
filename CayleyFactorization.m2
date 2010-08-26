@@ -10,11 +10,11 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{cayleyFactor, GrassmannCayleyAlgebra, straightenPoly, OnlineStraightening}
+   export{cayleyFactor, GrassmannCayleyAlgebra, straightenPoly, OnlineStraightening, meet, PointName, BasisChoice, PluckerVariable}
    
    
 ------------------------------------------------------------------- 
--------------------  the main function -------------------------
+--------------  the main function for Cayley Factorization -------
 ------------------------------------------------------------------- 
 
 	   
@@ -37,8 +37,6 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => o -> (P,d,n,partialAtom
      knownFactors := null;
      atoms := toList listAtoms(P, partialAtoms, d, n,o); -- Step 1
      if(#select(atoms, a -> #a >= d+1) <= 0 and (max apply(subsets(atoms,2), S-> #S#0+#S#1)) < d+1) then (
---	  print("atom size ",(max apply(subsets(atoms,2), S-> #S#0+#S#1)));
---	  print("not factorable, step 1. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  ); 
      pureFactors := factorBrackets(P,d,n,atoms, o); -- Step 2
@@ -47,13 +45,11 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => o -> (P,d,n,partialAtom
        	  P = pureFactors#1;
        	  atoms = toList((set atoms) - (set pureFactors#0));
 	  if(#atoms == 0 or (degree P)#0 <= 0)then (
---	       print( "after step 2: ", knownFactors);
 	       return(knownFactors);
 	       )
        	  );
      pairFactor := findPairFactor(P,d,n,atoms, o); -- Steps 3 and 4
      if(pairFactor === null) then (
---	  	  print("not factorable, step 3. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  );
      if(knownFactors === null) then (
@@ -64,16 +60,10 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => o -> (P,d,n,partialAtom
      newIndices := pairFactor#2;
      newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {set newIndices};
      expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
- --    print("trying to factor ", toString pairFactor#1);
- --    print("new partial atoms: ", newPartialAtoms);
- --    print("expansionKey: ", expansionKey);
      smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms);
      if(smallerFactors === null) then (
---	 print("not factorable, recursive step. P = ", P, "atoms = ", atoms);
 	  return(null);
 	  ) else (
---	  print("smaller Factors: ", smallerFactors);
---	  print("after substitution: ", replace(expansionKey#0, expansionKey#1, toString smallerFactors));
      	  return(value replace(expansionKey#0, expansionKey#1, toString smallerFactors));
 	  );
      )
@@ -128,7 +118,7 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
 		outsideA := sort toList (set(0..degA-1) - S);
      	        signShuffle := signOfShuffle(insideA,outsideA);
 		insideMonoA := product apply(insideA, i -> (support monoA)#i); 
-		outsideMonoA := product(set(support monoA) - {insideMonoA});
+		outsideMonoA := product(set(support monoA) - support(insideMonoA));
 		bracket :=insideMonoA*monoB;
 		if(bracket == 0) then (0)
 		else (
@@ -141,14 +131,6 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
       );
  GC
       )
- 
- 
- 
- 
- 
-
-
- 
 	   
 
    ----------------------------------------------------
@@ -352,18 +334,6 @@ findPairFactor = method(
        )
   )
 
-{* useless?
-  permutePoints :=  (R,d, n, sigma) -> (
-       -- INPUT: R is coordinate ring of Grassmannian(d,n)
-       --     	 sigma is a list of length of n, containing elements from {0,..,d}, with repetition allowed
-       -- OUTPUT: list of "permuted variable"s, can be used to make a ring map
-       apply(flatten entries vars R, v -> (
-     	     indicesToRingElement(R, d,n, apply(toList (baseName v)#1, i -> sigma#i))
-	 ) 
-	 )
-       )
-  }
-*}
 
  ------------------------------------------------------------------- 
 
@@ -495,48 +465,132 @@ doc ///
        Cayley Factorization
   Description
    Text
-   	This is a package that can be used to factor multilinear bracket polynomials as simple expressions in the Grassmann-Cayley algebra.  We used Neil White's algorithm, as described in the book "Algorithms in Invariant Theory" by Bernd Sturmfels.
+      This is a package that can be used to factor multilinear bracket polynomials as simple expressions in the Grassmann-Cayley algebra.  We used Neil White's algorithm, as described in the book "Algorithms in Invariant Theory" by Bernd Sturmfels.
 ///
+-------------------------------------------------------------------
+
 
 doc ///
   Key
        cayleyFactor
        (cayleyFactor, RingElement, ZZ, ZZ)
        (cayleyFactor, RingElement, ZZ, ZZ, List)
+       [cayleyFactor, OnlineStraightening]
   Headline
        Factors a multilinear bracket polynomial as a simple expression in the Grassmann-Cayley algebra
   Usage
        C = cayleyFactor(P,d,n)
        C = cayleyFactor(P,d,n,partialAtoms)
-       
   Inputs
      P: RingElement
            a multilinear polynomial in the coordinate ring of Grassmannian(d,n)
      d: ZZ
      n: ZZ
      partialAtoms:List 
-                 an optional list containing disjoint sets of points known to be in the same equivalence class
+                 a list containing disjoint sets of points known to be in the same equivalence class
   Outputs
      C: Expression
      	  \{,\} denotes join, and (,) denotes meet
-  Consequences
-
   Description
-   Text
-   Text
-   Example
-   	d = 2; n=5;
-	Grassmannian(d,n);
-	use((ring oo) / oo);
-  	P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
-	cayleyFactor(P,d,n)
-   Text
-   Example
+     Text
+     Example
+       d=2; n=5;R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+       P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
+       time cayleyFactor(P,d,n, OnlineStraightening => true)
+       I = time Grassmannian(d,n),;
+       S = ring(I) / I;
+       time cayleyFactor(P,d,n, OnlineStraightening => false)
+       d=2; n=8;
+       R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+       P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
+       time cayleyFactor(P,d,n, OnlineStraightening => true)
+       I = time Grassmannian(d,n),;
+       S = ring(I) / I;
+       time cayleyFactor(P,d,n, OnlineStraightening => false)
   Caveat
-       We do not check if the input polynomial is multilinear.  We assume that the input polynomial P is already in the coordinate ring of the Grassmannian.
+       We do not check if the input polynomial is multilinear.  
+       When the option OnlineStraightening is false, we assume that the input polynomial P is already in the coordinate ring of the Grassmannian.
+  SeeAlso
+       CayleyFactorization
+       GrassmannCayleyAlgebra
+  ///
+
+
+-------------------------------------------------------------------
+
+doc ///
+     Key
+     	  OnlineStraightening
+     Headline
+     	  an option used in cayley factorization
+     Description
+       Text
+          an optional argument used in CayleyFactorization package.  It is set to true by default.  
+	  Setting this option to true will compute the straightening syzygies as needed, instead of computing all of them.  
+	  To set this to false, you must make sure that the input polynomial is an element of the coordinate ring of a Grassmannian.  Otherwise the Cayley factorization does not work.
+///
+-------------------------------------------------------------------
+
+doc ///
+  Key
+    GrassmannCayleyAlgebra
+    (GrassmannCayleyAlgebra,ZZ,ZZ)
+  Headline
+    Creates a Grassmann Cayley Algebra
+  Usage
+    R = GrassmannCayleyAlgebra(d,n)
+  Inputs
+    d: ZZ
+    n: ZZ
+  Outputs
+    R: Ring
+  Consequences
+  Description
+    Text
+    Example
+    	 R = GrassmannCayleyAlgebra(2,5);
+	 meet(a_1*a_2+a_3, a_3*a_4+a_5)
+	 d=3;n=7;
+	 R = GrassmannCayleyAlgebra(d,n);
+	 a_1*a_2*a_3*a_4
+	 meet(a_1*a_0,  a_2*a_3)
+	 P = meet( meet(a_0*a_1, a_2*a_3*a_4), a_5*a_6*a_7 )
+	 S = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+	 Q = value(toString P)
+     	 cayleyFactor(Q,d,n)
+  Caveat
   SeeAlso
 ///
 
+-------------------------------------------------------------------
+
+
+doc ///
+  Key
+       meet
+  Headline
+       In the Grassmann-Cayley algebra, write the meet of two elements as a polynomial
+  Usage
+       c = meet(a,b)
+  Inputs
+       a: RingElement
+       b: RingElement
+  Outputs
+       c: RingElement
+  Consequences
+  Description
+    Text
+    Example
+         R = GrassmannCayleyAlgebra(2,5);
+	 gens R
+	 meet(a_1*a_2+a_0, a_3*a_4+a_5)
+  Caveat
+  SeeAlso
+///
+
+
+-------------------------------------------------------------------
+-------------------------- TEST -------------------------------------
  ------------------------------------------------------------------- 
 
 TEST ///
@@ -545,7 +599,7 @@ d=2; n=5;
 R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
 P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
 time cayleyFactor(P,d,n, OnlineStraightening => true)
-I = time Grassmannian(d,n);
+I = time Grassmannian(d,n),;
 S = ring(I) / I;
 time cayleyFactor(P,d,n, OnlineStraightening => false)
 
@@ -554,9 +608,14 @@ d=2; n=8;
 R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
 time cayleyFactor(P,d,n, OnlineStraightening => true)
-I = time Grassmannian(d,n);
+I = time Grassmannian(d,n),;
 S = ring(I) / I;
 time cayleyFactor(P,d,n, OnlineStraightening => false)
+
+R = GrassmannCayleyAlgebra(2,5);
+meet(a_1*a_2+a_3, a_3*a_4+a_5)
+
+
 
 ///
 
@@ -567,9 +626,11 @@ time cayleyFactor(P,d,n, OnlineStraightening => false)
 end
 
 restart
-uninstallPackage("CayleyFactorization")
 installPackage("CayleyFactorization", RemakeAllDocumentation => true )
-debug loadPackage "CayleyFactorization"
+viewHelp CayleyFactorization
+uninstallPackage("CayleyFactorization")
+debug loadPackage("CayleyFactorization", MakeDocumentation => true)
+
 
 d=2;n=5;
 S = ring( Grassmannian(d,n))
@@ -581,8 +642,8 @@ P = p_(0,3,4)*p_(1,2,5)
 straightenPoly(P,d,n)
 straightenQuick(P,d,n)
 
-R = GrassmannCayleyAlgebra(2,5)
-use R
+R = GrassmannCayleyAlgebra(2,5);
+use R;
 meet(a_1*a_2+a_3, a_3*a_4+a_5)
      
 viewHelp CayleyFactorization
