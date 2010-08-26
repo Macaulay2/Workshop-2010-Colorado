@@ -10,7 +10,7 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{cayleyFactor, GrassmannCayleyAlgebra, straightenPoly}
+   export{cayleyFactor, GrassmannCayleyAlgebra, straightenPoly, OnlineStraightening}
    
    
 ------------------------------------------------------------------- 
