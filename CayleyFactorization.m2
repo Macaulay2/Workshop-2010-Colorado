@@ -10,7 +10,8 @@ newPackage(
     	DebuggingMode => true
     	)
    
-   export{cayleyFactor, GrassmannCayleyAlgebra, straightenPoly, OnlineStraightening, meet, PointName, BasisChoice, PluckerVariable}
+   export{ BasisChoice, cayleyFactor, GrassmannCayleyAlgebra,	
+	meet, OnlineStraightening,  straightenPoly,PluckerVariable,PointName}
    
    
 ------------------------------------------------------------------- 
@@ -30,7 +31,12 @@ cayleyFactor = method(
      	  OnlineStraightening => true
 	  });
 cayleyFactor(RingElement, ZZ, ZZ) := Expression => o -> (P,d,n) -> (
-     cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}))
+     result := cayleyFactor(P,d,n, toList apply(0..n, i-> set {i}), o);
+     if(result === null) then (
+	  print("not factorable"); return(null);
+	  ) else(
+	  return(result);
+	  )
      )
 cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => o -> (P,d,n,partialAtoms) -> (
      if((degree P)#0 <= 0) then (return(P));
@@ -60,7 +66,7 @@ cayleyFactor(RingElement, ZZ, ZZ, List) := Expression => o -> (P,d,n,partialAtom
      newIndices := pairFactor#2;
      newPartialAtoms := toList((set atoms) - (set (pairFactor#0 / set))) | {set newIndices};
      expansionKey := { replace("[{}]", "",toString(sort toList newIndices)), toString flatten sequence pairFactor#0};
-     smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms);
+     smallerFactors := cayleyFactor(pairFactor#1, d,n, newPartialAtoms, o);
      if(smallerFactors === null) then (
 	  return(null);
 	  ) else (
@@ -328,7 +334,7 @@ findPairFactor = method(
 	-- This one does substitutions only for the variables appearing in the polynomial P
       if(isConstant P) then (return P);
       sub(P, apply(unique flatten ((terms P) / support), v -> (
-			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))--uses straightening when it returns a ring element
+			     v => indicesToRingElement(ring P, d,n, apply(toList (baseName v)#1, i -> sigma#i))
      	       	    	       )
       			  )
        )
@@ -450,7 +456,20 @@ findNonstandardTerm = T ->(
 return null;
  )
 
+-------------------------------------------------------------------
 
+     
+polynomialRing = method(
+     TypicalValue => PolynomialRing, 
+     Options => { 
+	  CoefficientRing => ZZ, 
+	  Variable => symbol p
+	  });
+
+polynomialRing(ZZ,ZZ) := o -> (k, n) -> (
+     L := toSequence \ subsets(n+1,k+1);
+     o.CoefficientRing (monoid [apply(L, i -> new IndexedVariable from {baseName o.Variable,unsequence i})])
+     )
 
  ------------------------------------------------------------------- 
   ----------------------Documentation--------------------------------
@@ -596,18 +615,20 @@ doc ///
 TEST ///
 
 d=2; n=5;
-R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+R = polynomialRing(d,n);
 P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
 time cayleyFactor(P,d,n, OnlineStraightening => true)
+time cayleyFactor(P,d,n, OnlineStraightening => false)
 I = time Grassmannian(d,n),;
 S = ring(I) / I;
 time cayleyFactor(P,d,n, OnlineStraightening => false)
 
 
 d=2; n=8;
-R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+R = polynomialRing(d,n);
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
 time cayleyFactor(P,d,n, OnlineStraightening => true)
+time cayleyFactor(P,d,n, OnlineStraightening => false)
 I = time Grassmannian(d,n),;
 S = ring(I) / I;
 time cayleyFactor(P,d,n, OnlineStraightening => false)
@@ -630,11 +651,14 @@ installPackage("CayleyFactorization", RemakeAllDocumentation => true )
 viewHelp CayleyFactorization
 uninstallPackage("CayleyFactorization")
 debug loadPackage("CayleyFactorization", MakeDocumentation => true)
-
+debug loadPackage("CayleyFactorization")
 
 d=2;n=5;
 S = ring( Grassmannian(d,n))
 S = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))]
+S = polynomialRing(2,5)
+I = Grassmannian(2,5,S);
+
 
 P = p_(0,3,4)*p_(1,2,5)
 
@@ -705,15 +729,18 @@ R = ring I;
 S = R/I;
 use(S)
 use((ring oo) / oo);
+R = polynomialRing(d,n);
 partialAtoms = toList apply(0..n, i->set {i})
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
 time cayleyFactor(P,d,n)
 time cayleyFactor(P,d,n, OnlineStraightening => false)
 
+
+
 L = toList listAtoms(P, d, n, OnlineStraightening => true)
 L = toList listAtoms(P, d, n, OnlineStraightening => false)
 L = {set {0, 1}, set {2, 3}, set {8, 7}, set {4}, set {5, 6}}
-findPairFactor(P,d,n,L,OnlineStraightening => true)
+pairFactor = findPairFactor(P,d,n,L,OnlineStraightening => false)
 
 P = p_(0,2,4)*p_(1,3,5)-2*p_(0,1,4)*p_(2,3,5)-p_(0,2,3)*p_(1,4,5)+p_(0,1,3)*p_(2,4,5)-2*p_(0,1,2)*p_(3,4,5)+2*p_(0,1,2);
 partialAtoms = {set {7}, set {6}, set {8}, set {1, 2}, set {0}};
