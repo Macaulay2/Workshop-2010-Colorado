@@ -11,7 +11,7 @@ newPackage(
     	)
    
    export{ BasisChoice, cayleyFactor, GrassmannCayleyAlgebra,	
-	meet, OnlineStraightening,  straightenPoly,PluckerVariable,PointName}
+	meet, OnlineStraightening, polynomialRing ,PluckerVariable,PointName,straightenPoly}
    
    
 ------------------------------------------------------------------- 
@@ -98,13 +98,14 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
       G := Grassmannian(d,n, CoefficientRing => o.CoefficientRing, Variable => p);
       R := ring(G)/G;
       E := o.CoefficientRing[a_0..a_n, e_0..e_d, SkewCommutative => true];
-      GC0 := E ** R;
+      GC0 := E**R;
       use(GC0);      
       I := ideal apply(a_0..a_n, v-> v_GC0* product(apply(toList(e_0..e_d), ee -> ee_GC0))) + 
      ideal apply(subsets(0..n,d+1),s-> (p_(toSequence(sort toList s)))_GC0*product(apply(toList(e_0..e_d), ee->ee_GC0))- product apply(s, i-> (a_i)_GC0));
      GC := GC0/I;
       
      meet(GC, GC) := (A,B) -> (
+      if(A == 0 or B == 0) then (return 0);
       termsA := terms A;
       termsB := terms B;
       if(#termsA > 1) then (
@@ -118,6 +119,9 @@ GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
       degA := (degree(monoA))#0;
       degB := (degree(monoB))#0;
       if(degA + degB < d+1) then (return(0));
+      if(degB == d+1) then (
+	   return(monoA *  product drop(support(monoB),{0,d}));
+	   );
       sum apply(subsets(degA , d+1 - degB), S -> (
 		coeffA := (first listForm(monoA))#1;
 		insideA := sort toList S;
@@ -513,7 +517,8 @@ doc ///
   Description
      Text
      Example
-       d=2; n=5;R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
+       d=2; n=5;
+       R = polynomialRing(d,n);
        P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
        time cayleyFactor(P,d,n, OnlineStraightening => true)
        I = time Grassmannian(d,n),;
@@ -554,6 +559,10 @@ doc ///
   Key
     GrassmannCayleyAlgebra
     (GrassmannCayleyAlgebra,ZZ,ZZ)
+    [GrassmannCayleyAlgebra, CoefficientRing]
+    [GrassmannCayleyAlgebra, BasisChoice]
+    [GrassmannCayleyAlgebra, PluckerVariable]
+    [GrassmannCayleyAlgebra, PointName]
   Headline
     Creates a Grassmann Cayley Algebra
   Usage
@@ -568,17 +577,25 @@ doc ///
     Text
     Example
     	 R = GrassmannCayleyAlgebra(2,5);
+	 a_5*a_2*a_1
+         a_0*a_1*a_3*a_4
+     	 meet(a_0*a_1, a_2*a_3)
 	 meet(a_1*a_2+a_3, a_3*a_4+a_5)
+     	 meet(a_0*a_1, a_2*a_3*a_4+a_3*a_5)
 	 d=3;n=7;
 	 R = GrassmannCayleyAlgebra(d,n);
-	 a_1*a_2*a_3*a_4
-	 meet(a_1*a_0,  a_2*a_3)
-	 P = meet( meet(a_0*a_1, a_2*a_3*a_4), a_5*a_6*a_7 )
-	 S = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
-	 Q = value(toString P)
+	 a_2*a_3*a_4*a_5
+	 meet(e_0*e_1,e_2*e_3)
+	 meet(e_0*e_1*e_2*e_3, a_0*a_1*a_3*a_5)
+	 meet(a_0*a_1, a_2*a_3*a_4)
+	 P = meet(meet(a_0*a_1*a_6,  a_2*a_3*a_4), a_5*a_7)
+	 cayleyFactor(P,d,n)
+	 S = polynomialRing(3,7);
+      	 Q = value(toString P)
      	 cayleyFactor(Q,d,n)
   Caveat
   SeeAlso
+    cayleyFactor
 ///
 
 -------------------------------------------------------------------
@@ -605,6 +622,72 @@ doc ///
 	 meet(a_1*a_2+a_0, a_3*a_4+a_5)
   Caveat
   SeeAlso
+    GrassmannCayleyAlgebra
+///
+
+-------------------------------------------------------------------
+doc ///
+     Key
+     	  BasisChoice
+     Headline
+     	  an option used in GrassmannCayleyAlgebra.  Default value is "e".
+     Description
+       Text
+ 
+///
+
+-------------------------------------------------------------------
+doc ///
+     Key
+     	  PluckerVariable
+     Headline
+     	  an option used in GrassmannCayleyAlgebra.  Default value is "p".
+     Description
+       Text
+ 
+///
+
+-------------------------------------------------------------------
+doc ///
+     Key
+     	  PointName
+     Headline
+     	  an option used in GrassmannCayleyAlgebra.  Default value is "a".
+     Description
+       Text
+ 
+///
+
+
+-------------------------------------------------------------------
+
+
+doc ///
+  Key
+       polynomialRing
+       (polynomialRing, ZZ, ZZ)
+       [polynomialRing, Variable]
+       [polynomialRing, CoefficientRing]
+  Headline
+       Make a polynomial ring with variables indexed by d+1 subsets of an n+1 set, just like polynomial ring containing the Plucker ideal.
+  Usage
+       R = polynomialRing(d,n)
+  Inputs
+       d: ZZ
+       n: ZZ
+  Outputs
+       R: PolynomialRing
+  Consequences
+  Description
+    Text
+    Example
+         R = polynomialRing(2,4, Variable=>T, CoefficientRing => ZZ/11)
+	 describe R
+	 Grassmannian(2,4,R)
+  Caveat
+  SeeAlso
+    Grassmannian
+    cayleyFactor
 ///
 
 
@@ -629,9 +712,9 @@ R = polynomialRing(d,n);
 P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
 time cayleyFactor(P,d,n, OnlineStraightening => true)
 time cayleyFactor(P,d,n, OnlineStraightening => false)
-I = time Grassmannian(d,n),;
-S = ring(I) / I;
-time cayleyFactor(P,d,n, OnlineStraightening => false)
+I = time Grassmannian(d,n,R);
+S = R / I;
+time cayleyFactor(P_S,d,n, OnlineStraightening => false)
 
 R = GrassmannCayleyAlgebra(2,5);
 meet(a_1*a_2+a_3, a_3*a_4+a_5)
