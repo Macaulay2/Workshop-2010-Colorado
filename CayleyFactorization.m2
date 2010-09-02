@@ -500,7 +500,7 @@ doc ///
        (cayleyFactor, RingElement, ZZ, ZZ, List)
        [cayleyFactor, OnlineStraightening]
   Headline
-       Factors a multilinear bracket polynomial as a simple expression in the Grassmann-Cayley algebra
+       Factors a multilinear bracket polynomial as a simple expression in the Grassmann-Cayley algebra.
   Usage
        C = cayleyFactor(P,d,n)
        C = cayleyFactor(P,d,n,partialAtoms)
@@ -516,6 +516,7 @@ doc ///
      	  \{,\} denotes join, and (,) denotes meet
   Description
      Text
+     	  In this example we consider 6 points, $\{0, ..., 5\}$, in a vector space of dimension 3.  The bracket [0,1,2] is denoted by $p_{(0,1,2)}$, etc. 
      Example
        d=2; n=5;
        R = polynomialRing(d,n);
@@ -523,6 +524,8 @@ doc ///
        time cayleyFactor(P,d,n, OnlineStraightening => true)
        I = time Grassmannian(d,n),;
        S = ring(I) / I;
+       P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
+
        time cayleyFactor(P,d,n, OnlineStraightening => false)
        d=2; n=8;
        R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
@@ -530,6 +533,7 @@ doc ///
        time cayleyFactor(P,d,n, OnlineStraightening => true)
        I = time Grassmannian(d,n),;
        S = ring(I) / I;
+       P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
        time cayleyFactor(P,d,n, OnlineStraightening => false)
   Caveat
        We do not check if the input polynomial is multilinear.  
@@ -669,7 +673,7 @@ doc ///
        [polynomialRing, Variable]
        [polynomialRing, CoefficientRing]
   Headline
-       Make a polynomial ring with variables indexed by d+1 subsets of an n+1 set, just like polynomial ring containing the Plucker ideal.
+       Make a polynomial ring with variables indexed by d+1 subsets of an n+1 set, just like the polynomial ring containing the Plucker ideal.  
   Usage
        R = polynomialRing(d,n)
   Inputs
@@ -704,7 +708,8 @@ time cayleyFactor(P,d,n, OnlineStraightening => true)
 time cayleyFactor(P,d,n, OnlineStraightening => false)
 I = time Grassmannian(d,n),;
 S = ring(I) / I;
-time cayleyFactor(P,d,n, OnlineStraightening => false)
+P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
+cayleyFactor(P,d,n, OnlineStraightening => false)
 
 
 d=2; n=8;
@@ -714,6 +719,7 @@ time cayleyFactor(P,d,n, OnlineStraightening => true)
 time cayleyFactor(P,d,n, OnlineStraightening => false)
 I = time Grassmannian(d,n,R);
 S = R / I;
+P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
 time cayleyFactor(P_S,d,n, OnlineStraightening => false)
 
 R = GrassmannCayleyAlgebra(2,5);
