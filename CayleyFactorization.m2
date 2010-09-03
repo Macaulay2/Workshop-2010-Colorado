@@ -522,11 +522,20 @@ doc ///
        R = polynomialRing(d,n);
        P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
        time cayleyFactor(P,d,n, OnlineStraightening => true)
+     Text
+     	  We see that the vanishing of the bracket polynomial [1,2,5][0,3,4]+[1,2,3][0,4,5]-[1,3,5][0,2,4] is equivalent to the condition that the meet of $\{0,1,4\}$ and $\{2,3,5\}$ is zero.  The meet of two extensors of step d is zero if and only if one of the extensors is zero.  Hence the Cayley factorization shows us that the bracket polynomial vanishes exactly when
+	  either 0,1,4 are collinear or 2,3,5 are collinear.  
+	  
+	  We can perform the same computation starting with a bracket polynomial in the coordinate ring of the Grassmanian G(2,5).  Note that Grassmannian(2,5) computes a reduced Gr\"obner basis for the ideal of G(2,5) in its Pl\"ucker embedding, which may involve computing syzygies that we do not need for straightening.
+     Example 
        I = time Grassmannian(d,n),;
        S = ring(I) / I;
        P = p_(1,2,5)*p_(0,3,4)+ p_(1,2,3)*p_(0,4,5)-p_(1,3,5)*p_(0,2,4);
-
        time cayleyFactor(P,d,n, OnlineStraightening => false)
+     Text
+     	  We compute the Cayley factorization of the bracket polynomial in Example 3.5.8 of $Algorithms in Invariant Theory$, Bernd Sturmfels, Springer-Verlag, 2008.
+    
+     Example
        d=2; n=8;
        R = ZZ[apply(subsets(0..n,d+1), a -> p_(toSequence(a)))];
        P = p_(0,1,2)*p_(3,4,5)*p_(6,7,8)-p_(0,1,2)*p_(3,4,6)*p_(5,7,8)-p_(0,1,3)*p_(2,4,5)*p_(6,7,8)+p_(0,1,3)*p_(2,4,6)*p_(5,7,8);
@@ -579,6 +588,7 @@ doc ///
   Consequences
   Description
     Text
+    	 
     Example
     	 R = GrassmannCayleyAlgebra(2,5);
 	 a_5*a_2*a_1
