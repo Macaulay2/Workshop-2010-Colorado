@@ -104,6 +104,7 @@ degVar(RingElement,RingElement) := (f,var) -> (
 
 commonDenom = method()
 commonDenom(Matrix) := M -> (
+     local nCol; local nRow; local denomList;
      nCol = rank source M;
      nRow = rank target M;    
      denomList = new List from {};
@@ -179,6 +180,7 @@ applyRowShortcut(Matrix) := g -> (
 	  );
      
      -- Fabianska shortcut 2.2.1(2).
+     -- Needs to be fixed.
      S = subsets(f,2);
      h = scan ( #S, i -> ( 
 	       if ideal S_i == R 
@@ -273,11 +275,9 @@ applyRowShortcut(Matrix) := g -> (
 	  apply(0..(n-1), i -> (M3_(i,0) = lSwap_(0,i)));
 	  M3_(0,1) = -M1_(1,0);
 	  M3_(1,1) = M1_(0,0);
-	  print(matrix M3);
 	  M4 = mutableIdentity(R,n);
 	  M4_(0,1) = -(-M1_(1,0)*gSwap_(0,0)+M1_(0,0)*gSwap_(0,1));
 	  apply(2..(n-1), i -> (M4_(0,i) = -(gSwap)_(0,i)));
-	  print(matrix M4);
 	  U5 = matrix(M2)*matrix(M3)*matrix(M4);
 	  return U5;  	  
      );
@@ -286,10 +286,11 @@ applyRowShortcut(Matrix) := g -> (
 
 -- This method takes a unimodular matrix phi over a PID and returns a unimodular matrix U such that phi*U = (I | 0).
 -- This works as long as Macaulay2 computes the Smith normal form like I think it does.
+-- Warning: May return unexpected results if R is not actually a PID.
 
 qsAlgorithmPID = method()
 qsAlgorithmPID(Matrix) := Matrix => phi -> (
-     local D; local F; local G; local H1; local H2; local U';
+     local B; local C; local D; local F; local G; local H1; local H2; local U'; local U; local V;
      (D,F,G) = smithNormalForm(phi);
      H1 = submatrix(G,[0..(rank source phi - 1)],[0..(rank target phi - 1)]);
      H2 = submatrix(G,[0..(rank source phi - 1)],[(rank target phi)..(rank source phi - 1)]);
@@ -305,61 +306,83 @@ qsAlgorithmPID(Matrix) := Matrix => phi -> (
 -- U*N is the matrix of the form (I | 0).
 -- Still need to implement qsAlgorithmRow.
 
-qsAlgorithm = method() 
+qsAlgorithm = method()
 qsAlgorithm(Matrix) := Matrix => phi -> (
-     R := ring phi;
-     nrow := rank target phi;
-     ncol := rank source phi;
-     r := ncol - nrow;
+     local nrow; local ncol; local r; local ai; local Ai; local Ui;
+     R = ring phi;
+     nrow = rank target phi;
+     ncol = rank source phi;
+     r = ncol - nrow;
+     
+     -- If there is only one row, then just return the
+     -- output of qsAlgorithmRow.
+     
+     if nrow == 1 then (
+	  return qsAlgorithmRow(phi);
+     );  
+     
      -- Implements the shortcut for (p-1) x p unimodular
      -- matrices from Fabianska section 2.2.1.
      
-     -- Better to invert and calculate row minors
-     -- or calculate column minors and then factor map?
-     -- Both of the following work and seem to be fast.
-     -- Make decision after trying more computationally
-     -- intensive examples.
-     
-     -- Compute column minors and factor map:
+     -- Invert and calculate row minors. (Use Cauchy-Binet formula.)
      if r == 1 then (
-	  M = mutableMatrix(R,1,ncol);
-	  for i from 0 to ncol-1 do M_(0,i) = colMinor(phi,i);
-	  M = matrix M;
-	  N = map(R^1) // M;
-	  bottomRow = mutableMatrix(R,1,ncol);
-	  for i from 0 to ncol-1 do bottomRow_(0,i) = (-1)^(ncol+1+i)*N_(i,0);
-	  bottomRow = matrix bottomRow;
-	  return inverse(phi || bottomRow);
-	  );
-     
-     -- Invert and calculate row minors:
-     {*if r == 1 then (
 	  M = inverse(phi);
 	  bottomRow = mutableMatrix(R,1,ncol);
 	  for i from 0 to ncol-1 do bottomRow_(0,i) = (-1)^(ncol+1+i)*rowMinor(M,i);
 	  bottomRow = matrix bottomRow;
 	  print("Used shortcut 2.2.1 2");
 	  return inverse(phi || bottomRow);
-	  );
-     *}
+     );    
       
-     Ai := phi;
-     ai := Ai^{0};
-     Ui := qsAlgorithmRow(ai);
+     Ai = phi;
+     ai = Ai^{0};
+     Ui = qsAlgorithmRow(ai);
      Ai = Ai*Ui;
      for i from 1 to nrow-1 do (
-	  Bi := submatrix(Ai,{i..nrow-1},{i..ncol-1});
-	  bi := Bi^{0};
-	  Ui' := qsAlgorithmRow(bi);
-	  idi := map(R^i);
-	  Ui'' := idi++Ui';
+	  Bi = submatrix(Ai,{i..nrow-1},{i..ncol-1});
+	  bi = Bi^{0};
+	  Ui' = qsAlgorithmRow(bi);
+	  idi = map(R^i);
+	  Ui'' = idi++Ui';
 	  Ui = Ui*Ui'';
 	  Ai = Ai*Ui'';
-	  );
-     Vi := prune image Ai;
-     V := (gens Vi // map(R^nrow,R^ncol,Ai))|(map(R^(nrow-r),R^r,0_R)||map(R^r));
+     );
+     Vi = prune image Ai;
+     V = (gens Vi // map(R^nrow,R^ncol,Ai))|(map(R^(nrow-r),R^r,0_R)||map(R^r));
      Ui*V
-     )
+)
+
+
+-- General algorithm to compute solution to the unimodular
+-- row problem using the procedure from Logar-Sturmfels.
+
+qsAlgorithmRow = method()
+qsAlgorithmRow(Matrix) := f -> (
+     local R; local n; local varList; local U;
+     
+     -- If a shortcut applies, use it.
+     
+     U = applyRowShortcut(f);
+     if U =!= null then (
+	  return U;
+     );
+     
+     -- If not, enter the general algorithm.
+     
+     R = ring f;
+     n = rank source vars R; -- n = number of variables.
+     varList = new List from {};
+     
+     -- Check if there is only 1 variable and the coefficient ring is a field.
+     -- Then use qsAlgorithmPID.
+     
+     if isField(coefficientRing(R)) == true and n == 1 then (
+	  return qsAlgorithmPID(f);
+     );
+     
+     
+)     
+
 
 -- Finds a maximal ideal containing a given ideal.
 -- Only works over QQ.
@@ -382,7 +405,7 @@ findMaxIdeal(Ideal) := (I) -> (
 	  m = m + ideal(f);
 	  h = codim m;
 	  print h;
-	  );
+     );
      m
 )
 
@@ -448,12 +471,12 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
      
      if leadCoeffVar(f_(0,0),currVar) != 1_R then (
 	  print("Error: The first element of the row is not monic in the given variable.");
-	  return (null,null);
+	  return null;
      );
 
      if isUnimodular(f) == false then (
 	  print("Error: The given row is not unimodular.");
-	  return(null,null);
+	  return null;
      );
 
      nCol = rank source f;
@@ -540,11 +563,26 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	       	    M_(1,i) = 1;
 	       	    f = f*matrix(M);
 	       	    U = U*matrix(M);
-		    
-	       -- Use suslinLemma to find g in (f1,f2)
-	       -- whose leading coefficient with
-	       -- respect to currVar is a unit
-	       -- in the localization.
+		
+	       -- If the leading coefficient of f2 is already
+	       -- a unit, use it to reduce the degree of f1.
+	       
+	            if leadCoeffVar(f_(0,1),currVar) % I =!= 0 then (
+		    	 print("Leading coefficient of f2 already a unit.  Using f2 to reduce degree of f1."); -- Debugging.
+			 while degVar(f_(0,0),currVar) >= degVar(f_(0,1),currVar) do (
+			      M = mutableIdentity(R,nCol);     
+			      M_(0,0) = leadCoeffVar(f_(0,1),currVar);
+			      M_(1,0) = -leadCoeffVar(f_(0,0),currVar)*currVar^(degVar(f_(0,0),currVar)-degVar(f_(0,1),currVar));
+			      f = f*matrix(M);
+			      U = U*matrix(M);
+			 );
+	            );    
+	       
+	       -- If the leading coefficient of f2 is not
+	       -- a unit, then use suslinLemma to find g
+	       -- in (f1,f2) whose leading coefficient with
+	       -- respect to currVar is a unit in the
+	       -- localization.
 		    
 		    print("Computing g."); -- Debugging.
 		    g = suslinLemma(f_(0,0),f_(0,1),currVar,I);
@@ -633,45 +671,50 @@ getLocalSolutions(Matrix,List,RingElement) := (f,ringVars,currVar) -> (
      I = sub(ideal(0),R);
      maxIdeal = sub(findMaxIdeal(I),S);
      matrixList = new List from {};
-     denomList = new List from {};
-     (U,r) = horrocks(f,currVar,maxIdeal);
-     I = ideal(sub(r,R));
-     matrixList#0 = sub(U,frac(S));
-     denomList#0 = sub(r,R);
+     U = horrocks(f,currVar,maxIdeal);
+     I = ideal(sub(commonDenom(U),R));
+     matrixList = append(matrixList,sub(U,frac(S)));
      while I =!= R do (
 	  maxIdeal = sub(findMaxIdeal(I),S);
-	  (U,r) = horrocks(f,maxIdeal,currVar);
-	  I = I+ideal(sub(r,R));
+	  U = horrocks(f,currVar,maxIdeal);
+	  I = I+ideal(sub(commonDenom(U),R));
 	  matrixList = append(matrixList,sub(U,frac(S)));
-	  denomList = append(denomList,sub(r,R));
      );
-     return(matrixList,denomList);
+     return matrixList;
 )
 
 
 -- Method to patch together the local solutions obtained
 -- by getLocalSolutions as in Logar-Sturmfels.
+
 -- Do we really need denom#i^m as a common denominator?
 -- It seems that Fabianska doesn't use this, at least
 -- sometimes, and it makes the output simpler.
 -- Patching code can definitely be improved.
 
+-- 9/6/2010: The matrix n is added to improve this issue.
+-- Still need to write down a proof that this always works.
+
 patch = method();
-patch(List,List,RingElement) := (matrixList,denomList,currVar) -> (
-     local R; local m; local k; local g; local U;
+patch(List,RingElement) := (matrixList,currVar) -> (
+     local R; local m; local k; local g; local U; local n; local j;
+     local inverseList; local denomList; local inverseDenom; local deltaDenom;
      R = ring currVar;
      m = rank source matrixList#0; -- m = length of unimodular row.
      k = #matrixList; -- k = number of local solutions.
-     denomList2 = new List from {};
-     apply(0..(k-1), i -> (denomList2 = append(denomList2,(denomList#i)^m))); -- We can do better than ^m here.
-     g = map(R^1) // matrix{denomList2};
-     print(g);
      inverseList = new List from {};
      apply(0..(k-1), i -> (inverseList = append(inverseList,inverse(matrixList#i)))); -- Compute inverse for each local solution in frac(R).
+     denomList = new List from {};
+     apply(0..(k-1), i -> (denomList = append(denomList,commonDenom(matrixList#i))));
      inverseDenom = new List from {};
      apply(0..(k-1), i -> (inverseDenom = append(inverseDenom,commonDenom(inverseList#i)))); -- Compute common denominators for inverse matrices.
-     U = matrixList#0 * sub(sub(sub(inverseDenom#0*inverseList#0,R),{currVar => (currVar - currVar*(g_(0,0))*(denomList2#0))}),frac(R)) * (1/inverseDenom#0);
-     apply(1..(k-1), i -> (U = U*(1/denomList#i)*sub(sub(sub((denomList#i)*(matrixList#i),R),{currVar => (currVar - (sum(0..(i-1), j -> currVar*g_(j,0)*denomList2#j)))}),frac(R))*(1/(inverseDenom#i))*sub(sub(sub((inverseDenom#i)*(inverseList#i),R),{currVar => (currVar - (sum(0..i, j -> currVar*g_(j,0)*denomList2#j)))}),frac(R))));
+     n = mutableMatrix(ZZ,1,k);
+     apply(0..(k-1), i -> (while inverseDenom#i % ((denomList#i)^(n_(0,i)+1)) == 0 do (n_(0,i) = n_(0,i) + 1;);)); -- Set n_(0,i) to be the number of times that denomList#i occurs as a factor of inverseDenom#i.
+     deltaDenom = new List from {};
+     apply(0..(k-1), i -> (deltaDenom  = append(deltaDenom,(denomList#i)^(n_(0,i)+1))));
+     g = map(R^1) // matrix{deltaDenom};
+     U = matrixList#0 * sub(sub(sub(inverseDenom#0*inverseList#0,R),{currVar => (currVar - currVar*(g_(0,0))*(deltaDenom#0))}),frac(R)) * (1/inverseDenom#0);
+     apply(1..(k-1), i -> (U = U*(1/denomList#i)*sub(sub(sub((denomList#i)*(matrixList#i),R),{currVar => (currVar - (sum(0..(i-1), j -> currVar*g_(j,0)*deltaDenom#j)))}),frac(R))*(1/(inverseDenom#i))*sub(sub(sub((inverseDenom#i)*(inverseList#i),R),{currVar => (currVar - (sum(0..i, j -> currVar*g_(j,0)*deltaDenom#j)))}),frac(R))));
      return sub(U,R);  -- U is a unimodular matrix over R such that f*U does not involve currVar.
 )
 

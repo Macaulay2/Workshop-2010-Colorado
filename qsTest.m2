@@ -12,19 +12,20 @@ currVar = y
 M1 = matrix{{0,0,1},{0,1,0},{1,0,0}}
 f = f*M1 -- Put monic component first.
 isUnimodular(f)
-I1 = ideal(2_R,x_R)
-(U1,denom1) = horrocks(f,y,I1)
+I1 = ideal(2,x)
+U1 = horrocks(f,y,I1)
 det(U1)
 f*U1
+denom1 = commonDenom(U1)
 ideal(denom1) == R  -- Need to compute another local solution.
 I2 = ideal(2,x^2+x+1) -- Maximal ideal containing ideal(denom1).
-(U2,denom2) = horrocks(f,y,I2)
+U2 = horrocks(f,y,I2)
 det(U2)
 f*U2
+denom2 = commonDenom(U2)
 ideal(denom1,denom2) == R -- Can proceed to the patching step.
 matrixList = {U1,U2}
-denomList = {denom1,denom2}
-M2 = patch(matrixList,denomList,y)
+M2 = patch(matrixList,y)
 det(M2)
 f = f*M2
 M3 = applyRowShortcut(f)
@@ -34,37 +35,17 @@ U = M1*M2*M3
 det(U)
 
 
--- Matrices from Fabianska's Horrocks' Theorem algorithm
-
-M1 = (1/(-9*x+3*x^2-1))*sub(matrix{{-9*x+3*x^2-1,0,0},{-(3*y+3*x^2-1)*x^2,-3*(x+x^2*y+y^2),3*y+3*x^2-1},{9*x^2,3*(3*y+1),-9}},frac(R))
-M2 = (1/x^2)*sub(matrix{{1,-(3*y+1),-(x+x^2*y+y^2)},{0,x^2,0},{0,0,x^2}},frac(R))
-denom1 = commonDenom(M1)
-denom2 = commonDenom(M2)
-matrixList = {M1,M2}
-denomList = {denom1,denom2}
-M3 = patch(matrixList,denomList,y)
-det(M3)
-f*M3
-
---Ex. GagoVargas (Works fine.)
+--Ex. GagoVargas (Works fine, uses shortcut 2.2.2(2).)
 
 restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
-R = QQ[x]
-f = matrix{{x^2-1,2*x-5}}
+R = ZZ[x]
+f = matrix{{13,x^2-1,2*x-5}}
 isUnimodular(f)
-U = applyRowShortcut(f)
-V = qsAlgorithmPID(f)
-W = qsAlgorithm(f)
-time applyRowShortcut(f) -- ~.004 seconds
-time qsAlgorithmPID(f) -- ~.012 seconds
-time qsAlgorithm(f) -- ~0.? seconds (fast shortcut method for (p-1) x p matrices)
+U = applyRowShortcut(f) -- Uses shortcut 2.2.2(2).
+time applyRowShortcut(f) -- ~.016 seconds
 det(U)
-det(V)
-det(W)
 f*U
-f*V
-f*W
 
 
 --Ex. LaubenbacherWoodburn (Works fine.)
@@ -91,6 +72,17 @@ det(U)
 f*U
 
 
+--Ex.2 Yengui (Works fine, uses shortcut 2.2.2(2).)
+
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = ZZ[x]
+f = matrix{{x^2+2*x+2,3,2*x^2+2*x}}
+U = applyRowShortcut(f) -- Uses shortcut 2.2.2(2).
+det(U)
+f*U
+
+
 --Ex.3 Yengui (Works fine, uses shortcut 2.2.2(2).)
 
 restart;
@@ -102,6 +94,25 @@ U = applyRowShortcut(f)
 time applyRowShortcut(f) -- ~.016 seconds
 det(U)
 f*U
+
+
+--Ex. Park (Doesn't work, uses shortcut 2.2.1(2).)
+
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = ZZ[x,y,z]
+f = matrix{{1-x*y-2*z-4*x*z-x^2*z-2*x*y*z+2*x^2*y^2*z-2*x*z^2-2*x*z^2-2*x^2*z^2+2*x*z^2+2*x^2*y*z^2,2+4*x+x^2+2*x*y-2*x^2*y^2+2*x*z+2*x^2*z-2*x^2*y*z,1+2*x+x*y-x^2*y^2+x*z+x^2*z-x^2*y*z,2+x+y-x*y^2+z-x*y*z}}
+U = applyRowShortcut(f) -- Uses shortcut 2.2.1(2).
+det(U)
+f*U
+
+
+--Ex. Van den Essen (No shortcut method works.)
+
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = QQ[t,x,y,z]
+f = matrix{{2*t*x*z+t*y^2+1,2*t*x*y+t^2,t*x^2}}
 
 
 --Ex. CoxLittleOShea10 (Works fine, uses shortcut 2.2.2(1).)
@@ -151,7 +162,7 @@ f = matrix{{x^2+1,x-2,0}} -- Row contains a zero.
 U = applyRowShortcut(f)
 det(U)
 f*U
-f = matrix{{x^2+1,x-2,x^2+3,x-2}} -- Row contains a redundant entry.
+f = matrix{{x^2+1,x-2,x^2+3,x-3}} -- Row contains a redundant entry.
 U = applyRowShortcut(f)
 det(U)
 f*U
