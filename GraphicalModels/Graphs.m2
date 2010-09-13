@@ -47,8 +47,7 @@ export {Graph,
      degreeMatrix,
      laplacianMatrix,
      incidenceMatrix,
-     pathConnected,
-     adjacencyHashTable
+     reachable
      }
 exportMutable {dotBinary,jpgViewer}
 
@@ -73,7 +72,7 @@ Graph = new Type of Digraph
      -- version removes the redunancy of each edge appearing twice. 
      -- simpleGraph is an internal conversion function. 
 
-Bigraph = new Type of HashTable
+Bigraph = new Type of Digraph
      -- a bigraph is a hash table in the form { A => set {B,C, ...}, 
      -- where the set consists of the neighbors of A. This in only
      -- used in GraphicalModels and MixedGraph.  
@@ -93,14 +92,16 @@ digraph HashTable := (g) -> (
      --         If a value x of the hash table g is not a Set or VisibleList, it is converted into a set {x}.
      C := new MutableHashTable;
      C#cache = new CacheTable from {};
-     if g === (new HashTable) then (C#graph = g;
+     if g === (new HashTable) then (
+	  C#graph = g;
 	  new Digraph from C) 
      else (
-     	  G := applyValues(g, x->if instance(x,VisibleList) then set x else if (class x) =!= Set then set {x} else x);
+	  -- convert values of input hash table to sets
+     	  G := applyValues(g, x->if instance(x,VisibleList) then set x else if instance(x,Set) then x else set {x});
+	  -- find vertices which were referenced as values in the hash tables but do not show up as keys
      	  nullVertices := toList (sum(values G) - keys G);
      	  C#graph = merge(G,hashTable apply(nullVertices,i->{i,set {}}),plus);
-     	  new Digraph from C
-     	  )
+	  new Digraph from C)
      )
 
 digraph List := (g) -> (
@@ -115,10 +116,15 @@ digraph List := (g) -> (
      	  C#cache = new CacheTable from {};
 	  C#graph = new HashTable;
 	  new Digraph from C) 
-     else(
-     	  G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if (class x#1) =!= Set then set {x#1} else x#1});
+     else (
+	  -- convert second element of input pairs to sets
+     	  G := apply(g, x->{x#0,if instance(x#1,VisibleList) then set x#1 else if instance(x#1,Set) then x#1 else set {x#1}});
+	  -- create an empty hashtable and add pairs to the hashtable
+	  -- we did this instead of directly creating a hashtable from the pairs
+	  -- because several pairs could have the same first element
      	  H := new MutableHashTable from apply(G,x->{x#0,set {}});     
      	  scan(G, x -> H#(x#0) = H#(x#0) + x#1);
+	  -- create digraph from the hash table, to add 'null vertices' to the digraph (see digraph constructor for hash tables)
      	  digraph (new HashTable from H)
 	  )
      )
@@ -127,14 +133,16 @@ graph = method(Options => {Singletons => null})
 graph HashTable := opts -> (g) -> (
      -- Input:  A hash table with keys the names of the nodes of 
      --         the graph and the values the neighbors of that node. 
+     --         If the set of Singletons clashes with data in the hash table, the hash table data takes precedence.
      -- Output: A hash table of type Graph. 
-     G := digraph g;
-     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
+     G := digraph (if opts.Singletons === null then g else merge(g,hashTable apply(toList(set(opts.Singletons)-keys g),i->{i,set {}}),plus));
      if G === digraph({}) then new Graph from G else (
 	  C := new MutableHashTable;
      	  C#cache = G#cache;
      	  C#graph = new MutableHashTable from G#graph;
+          -- make sure that for every edge A-B, B appears in the value of A and vice versa.
 	  scan(keys G#graph, i->scan(toList G#graph#i, j-> C#graph#j=C#graph#j+set{i}));
+	  -- convert MutableHashTable to HashTable
      	  C#graph = new HashTable from C#graph;
      	  new Graph from C)
      )
@@ -148,12 +156,13 @@ graph List := opts -> (g) -> (
      ---- hypergraphs as hash tables with again, nodes as keys and
      ---- neighbors as values.
      G := digraph (g|if opts.Singletons === null then {} else apply(opts.Singletons,i->{i,{}}));
-     -- make sure that for every edge A-B, B appears in the value of A and vice versa.
      if G === digraph({}) then new Graph from G else (
 	  C := new MutableHashTable;
      	  C#cache = G#cache;
      	  C#graph = new MutableHashTable from G#graph;
+          -- make sure that for every edge A-B, B appears in the value of A and vice versa.
      	  scan(keys G#graph, i->scan(toList G#graph#i, j-> C#graph#j=C#graph#j+set{i}));
+	  -- convert MutableHashTable to HashTable
      	  C#graph = new HashTable from C#graph;
      	  new Graph from C)
      )
@@ -189,9 +198,9 @@ mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
     C := new MutableHashTable;
     C#cache = new CacheTable from {};
     h := new MutableHashTable;
-    h#(class g) = g;
-    h#(class d) = d;
-    h#(class b) = b;
+    h#Graph = g;
+    h#Digraph = d;
+    h#Bigraph = b;
     C#graph = new HashTable from h;
     new MixedGraph from C)
 
@@ -236,11 +245,15 @@ labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
      -- Input:  A graph and a list of lists with two elements one of
      --         which is a list giving an edge and the other is the labels. 
-     --         The list of labels are of the form {{A,B},edgeName} for the directed edge A->B.
-     --         For undirected graphs,  
-     -- Output:  A list of two hash tables, the first of which is the
+     --         For directed graphs, the list of labels are of the form {{A,B},edgeName} for the directed edge A->B.
+     --         For undirected graphs, the labels could be {{A,B},edgeName} or {{B,A},edgeName} for the edges A-B.
+     -- Output:  A hash table of two hash tables, the first of which is the
      --      	 base graph and the second of which has for keys edges of the
-     --      	 graph whose values are the name of the edge.  
+     --      	 graph whose values are the name of the edge.
+     --          For directed graphs, the keys are {A,B} for the edge A->B.
+     --          For undirected graphs, the keys are {A,B} for the edge A-B if {A,B} is in the list returned by the function 'edges'.
+     --          To access the graph and labels, call 'L = graph G' where G is the LabeledGraph.
+     --          Then, L#graphData is the hash table encoding the base graph, while L#labels is the hash table of labels.
      ---- Note to Selves --- this code should also nicely build
      ---- hypergraphs as hash tables with again, nodes as keys and
      ---- neighbors as values. 
@@ -249,19 +262,23 @@ labeledGraph (Digraph,List) := (g,L) -> (
      lg := new MutableHashTable;
      lg#graphData = g;
      label := new MutableHashTable;
-     if (class g) === Graph then (
+     if instance(g,Graph) then (
+       -- want to make sure that the label is attached to an edge {A,B} that shows up 
+       -- in the list of edges returned by the function 'edges', and not to {B,A}
+       -- one way to avoid this complication is to have 'edges' return a list of sets {A,B}
+       -- rather than a list of lists {A,B}.
        sg := simpleGraph g;
        scan(L, i -> (
-  	 if (sg#(i#0#0))#?(i#0#1) then
+  	 if (sg#graph#(i#0#0))#?(i#0#1) then
 	   label#(i#0) = i#1
-	 else if (sg#(i#0#1))#?(i#0#0) then
+	 else if (sg#graph#(i#0#1))#?(i#0#0) then
 	   label#({i#0#1,i#0#0}) = i#1
 	 else
 	   error (toString(i#0)|" is not an edge of the graph");
        ));
      ) else (
        scan(L, i -> (
-	 if (g#(i#0#0))#?(i#0#1) then
+	 if (g#graph#(i#0#0))#?(i#0#1) then
 	   label#(i#0) = i#1
 	 else
 	   error (toString(i#0)|" is not an edge of the graph");
@@ -512,7 +529,7 @@ edges = method()
      -- Output: A list of sets of order 2, each corresponding to an edge
 edges(Digraph) := G -> (
      if G#cache#?edges then G#cache#edges else (
-     	  G1 = graph G;
+     	  G1 := graph G;
      	  E := flatten apply(keys(G1),i->apply(toList G1#i,j->{i,j}));
 	  G#cache#edges = E;
 	  E)
@@ -803,17 +820,13 @@ inducedSubgraph(Digraph, List) := (G,v) -> (
 adjacencyMatrix = method()
      -- Input:  A digraph
      -- Output:  A matrix M, such that M_(i,j)=1 iff there exists an arc from i to j
-adjacencyMatrix(Digraph) := G -> matrix apply(keys(G),i->apply(keys(G),j->#positions(toList G#i,k->k===j)))
-
-adjacencyHashTable = method()
-adjacencyHashTable (Digraph) := (G) -> (
-    -- Input: A digraph G.
-    -- Output: The hash table M of mutable hash tables storing the adjacency 
-    --         matrix of G,where M#a#b is true if a->b, and false otherwise.
-
-    vertices := keys G;
-    hashTable apply(vertices, i->{i,hashTable apply(vertices,j->{j,#positions(toList G#i,k->k===j)})})
-)
+adjacencyMatrix(Digraph) := G -> (
+     if G#cache#?adjacencyMatrix then G#cache#adjacencyMatrix else (
+     	  G1 := graph G;
+     	  VV := vertices G;
+     	  AM := matrix apply(VV,i->apply(VV,j->#positions(toList G1#i,k->k===j)));
+	  G#cache#adjacencyMatrix = AM;
+	  AM))
 
 degreeMatrix = method()
 degreeMatrix(Graph) := G -> matrix apply(#keys(G),i->apply(#keys(G),j->if i==j then #(G#((keys G)_i)) else 0))
@@ -826,27 +839,26 @@ incidenceMatrix = method()
      -- Output: A matrix M, such that M_(i,j)=1 iff vertex i is incident to edge j     
 incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edges G,j->(if j#?i then 1 else 0))))
 
-pathConnected = method()
-pathConnected (Set,HashTable) := (A,M) -> (
+reachable = method()
     -- Input: A directed graph G and subset A of vertices.
     -- Output: Set of vertices of G which have a directed path from A.
-
-    vertices := keys M;
-    reachable := new MutableHashTable from apply(vertices,i->{i,false});
+reachable (Digraph, Set) := (G,A) -> (
+    G1 := graph G;
+    V := vertices G;
+    reached := new MutableHashTable from apply(V,i->{i,false});
     queue := toList A;   
     while #queue > 0 do (
       topVertex := first queue;
-      if not reachable#topVertex then (
-        reachable#topVertex = true;
-        queue = join(drop(queue,1),select(vertices,i->M#topVertex#i>0));
+      if not reached#topVertex then (
+        reached#topVertex = true;
+        queue = join(drop(queue,1),toList G1#topVertex);
       ) else (
         queue = drop(queue,1);
       );
     );
-    set select(vertices,i->reachable#i)
-)
-
-pathConnected (Set,Digraph) := (A,G) -> pathConnected(A,adjacencyHashTable G)
+    set select(V,i->reached#i)
+    )
+reachable (Digraph,List) := (G,A) -> toList reachable(G,set A)
 
 floydWarshall = method()
      -- Input:  A digraph
@@ -926,7 +938,7 @@ isCyclic = method()
      -- Output:  Whether the digraph contains a cycle
      -- uses Cormen Lemma 22.11 and Exercise 22.3-4
 isCyclic(Digraph) := G -> (
-     if class G === Graph then error ("must be a digraph") else (
+     if instance(G,Graph) then error ("must be a digraph") else (
      	  D := DFS G;
      	  member(true,flatten unique apply(select(keys G,u->#children(G,u)>0),u->(
 	       	    	 apply(children(G,u),v->(
@@ -949,11 +961,11 @@ completeGraph = method()
      -- Input: a positive integer n
      -- Output: the complete graph on n nodes labeled 0 through n-1
 completeGraph(ZZ) := n -> (
-      i:= 0;
+      i := 0;
       G := new MutableHashTable;
       L := while i < n list i do i = i+1;
       apply(L, i-> G#i =  set L - set {i});
-      G = graph(new HashTable from G)
+      graph(new HashTable from G)
       )   
 
 cycleGraph = method()
@@ -966,7 +978,7 @@ cycleGraph(ZZ) := n -> (
 	  G#i = set{(i-1)%n,(i+1)%n}; 
 	  i = i+1;
 	  );
-     G = graph(new HashTable from G)
+     graph(new HashTable from G)
      )
   
 
@@ -1121,9 +1133,9 @@ doc ///
     The function that creates a mixed graph.
   Usage
     mixedGraph(G,D,B) 
-    digraph(G,D) 
-    digraph(D,B) 
-    digraph(D)
+    mixedGraph(G,D) 
+    mixedGraph(D,B) 
+    mixedGraph(D)
   Inputs
     G:Graph
     D:Digraph
@@ -1134,7 +1146,7 @@ doc ///
     Text
       A mixed graph is stored as a HashTable whose keys are the types
       Graph, Digraph, and Bigraph.  The values are the corresponding
-      graphs.   The order of the imput matters.  An error is issued if
+      graphs.   The order of the input matters.  An error is issued if
       the first argument is not a graph, the second a Digraph and the
       third a Bigraph.  
    Example
@@ -1292,6 +1304,32 @@ doc ///
      vertices D 
 ///
 
+doc ///
+  Key
+    reachable
+    (reachable,Digraph,List)
+    (reachable,Digraph,Set)
+  Headline
+    Computes the vertices which are reachable from a vertex set by a path
+  Usage
+    reachable(G,A)
+  Inputs
+    G:Digraph
+    A:Set 
+      or @ofClass List@ of vertices of the digraph
+  Outputs
+    :Set 
+      or @ofClass List@ of vertices which are reachable from A by a path
+  Description
+    Text
+      If the user inputs a set A, then the output will be a set of vertices. 
+      If the user inputs a list A, then the output will be a list of vertices.
+    Example
+      G = digraph {{1,2},{2,3},{4,5},{2,5}}
+      reachable(G,{2})
+///
+
+
 
 end
 
@@ -1411,6 +1449,7 @@ doc ///
   Description
     Text
 ///
+
 
 end
 

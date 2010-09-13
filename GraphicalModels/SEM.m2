@@ -136,7 +136,7 @@ trekSeparation MixedGraph := (G) -> (
 	  Alist := delete({},subsetsBetween(CA,aVertices));
           while #Alist > 0 do (
 	    minA := first Alist;
-	    pC := pathConnected(set minA,MC);
+	    pC := reachable(MC,set minA);
 	    A := toList ((pC*(set aVertices)) + set CA);
 	    Alist = Alist - (set subsetsBetween(minA,A));
 	    B := toList ((set bVertices) - pC);
