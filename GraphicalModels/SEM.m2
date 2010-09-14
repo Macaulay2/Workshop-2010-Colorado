@@ -10,44 +10,24 @@ newPackage("SEM",
 
 
 
-export {directedEdges, bidirectedEdges, Bigraph, pos, bigraph, identify, trekSeparation, trekIdeal}
+export {pos, 
+	identify, 
+	trekSeparation, 
+	trekIdeal}
 
 needsPackage "Graphs"
+needsPackage "GraphicalModels"
 
-Bigraph = new Type of Graph
--- labeled different to tell the difference between undirected and bidirected edges
+--returns the position in hash table h of the key x
+pos(HashTable, Thing) := (h, x) -> position(keys(h), i->i===x)
+getPositionOfKeys = (G,S) -> apply(S, v -> pos(G,v))
 
-bigraph = method()
-bigraph Graph := g -> (
-	new Bigraph from g
-)
 
-bigraph List := g -> (
-        new Bigraph from graph g
-)
-
-directedEdges = method()
-directedEdges(MixedGraph) := (g) -> (
-	scanKeys(g, i-> if class g#i === Digraph then u=g#i);
-	u
-)
-
-bidirectedEdges = method()
-bidirectedEdges(MixedGraph) := (g) -> (
-	scanKeys(g, i-> if class g#i === Bigraph then v=g#i);
-	v
-)
-
-pos = method()
-pos(HashTable, Thing) := (h, x) -> (
-	--returns the position in hash table h of the key x
-	position(keys(h), i->i===x)
-)
-	
 identify = method()
 identify(MixedGraph) := (g) -> (
-	u := directedEdges(g);
-	v := bidirectedEdges(g);
+        G := graph g;
+	u := G#Digraph;
+	v := G#Bigraph;
 	n := #u;
 	
 	m := #edges(u)+#edges(v)+n;
@@ -105,12 +85,13 @@ setToBinary := (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then
 subsetsBetween := (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
 
 trekSeparation = method()
-trekSeparation MixedGraph := (G) -> (
+trekSeparation MixedGraph := (g) -> (
     -- Input: A mixed graph containing a directed graph and a bidirected graph.
     -- Output: A list L of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B.
 
-    u := directedEdges(G);
-    v := bidirectedEdges(G);
+    G := graph g;
+    u := G#Digraph;
+    v := G#Bigraph;
     vertices := keys u;     
 
     -- Construct canonical double DAG cdG associated to mixed graph G
@@ -176,8 +157,9 @@ trekSeparation MixedGraph := (G) -> (
 trekIdeal = method()
 trekIdeal(Ring, MixedGraph) := (SLP, g) -> (
 	use SLP;
-	u := directedEdges(g);
-	v := bidirectedEdges(g);
+	G := graph g;
+	u := G#Digraph;
+	v := G#Bigraph;
 	n := #u;
 	c := trekSeparation(g);
 	I := {};

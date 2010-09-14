@@ -521,7 +521,7 @@ vertices(Digraph) := G -> (
 vertices(MixedGraph) := G -> (
      if G#cache#?vertices then G#cache#vertices else(
 	  G1 := graph G;
-	  V := toList sum(apply(keys(G),i->set keys(G#i)));
+	  V := toList sum(apply(keys(G1),i->set keys(graph G1#i)));
 	  G#cache#vertices = V;
 	  V))
 
