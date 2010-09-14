@@ -48,7 +48,8 @@ export {Graph,
      laplacianMatrix,
      incidenceMatrix,
      reachable,
-     floydWarshall
+     floydWarshall,
+     collateVertices
      }
 exportMutable {dotBinary,jpgViewer}
 
@@ -222,28 +223,6 @@ mixedGraph (Digraph) := (d) -> (
     --         which is the union of the vertex sets of the input
     --         digraphs.
     mixedGraph(graph {},d, bigraph {}))
-
-
-collateVertices = method()
-collateVertices (MixedGraph) := (g) -> (
-    -- Input: A MixedGraph
-    -- Output: A MixedGraph where the hash tables for the graph, bigraph and digraph all have the same keys (vertices)
-    v := vertices(g);
-    hh := new MutableHashTable;
-    G := graph g;
-    -- Graph
-    x := graph G#Graph;
-    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
-    gg := graph(new HashTable from hh);
-    -- Digraph
-    x = graph G#Digraph;
-    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
-    dd := digraph(new HashTable from hh);
-    -- Bigraph
-    x = graph G#Bigraph;
-    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
-    bb := bigraph(new HashTable from hh);
-    mixedGraph(gg,dd,bb))
 
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
@@ -881,6 +860,27 @@ floydWarshall(Digraph) := G -> (
 	  );
      new HashTable from D
      )
+
+collateVertices = method()
+collateVertices (MixedGraph) := (g) -> (
+    -- Input: A MixedGraph
+    -- Output: A MixedGraph where the hash tables for the graph, bigraph and digraph all have the same keys (vertices)
+    v := vertices(g);
+    hh := new MutableHashTable;
+    G := graph g;
+    -- Graph
+    x := graph G#Graph;
+    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
+    gg := graph(new HashTable from hh);
+    -- Digraph
+    x = graph G#Digraph;
+    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
+    dd := digraph(new HashTable from hh);
+    -- Bigraph
+    x = graph G#Bigraph;
+    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
+    bb := bigraph(new HashTable from hh);
+    mixedGraph(gg,dd,bb))
 
 ----------------------
 -- Topological Sort --
