@@ -1,0 +1,293 @@
+\documentclass[10pt]{article}
+
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{mathrsfs}
+\usepackage{bm}
+\usepackage{url}
+%\usepackage[all]{xypic}
+%\usepackage{epsfig}
+%\usepackage{lscape}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{conj}[thm]{Conjecture}
+\newtheorem{assumption}[thm]{Assumption}
+
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}%[section]
+\newtheorem{example}[thm]{Example}
+\newtheorem{remark}[thm]{Remark}
+\newtheorem{algorithm}[thm]{Algorithm}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\A}{\mathbb{A}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\Prob}{{\rm Prob}}
+\newcommand{\pa}{{\rm pa}}
+\newcommand{\nd}{{\rm nd}}
+\def\ci{\perp\!\!\!\perp}
+
+\title{Conditional Independence and Identifiability\\ in Graphical Models}
+\author{Alexander Diaz, Luis David Garcia-Puente, Shaowei Lin, \\Sonja Petrovic, Michael Stillman}
+\date{}
+%%\date{\today}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+We introduce a new {\it Macaulay2} package
+{\tt GraphicalModels}, which constructs ideals corresponding to
+discrete graphical models and to Gaussian graphical models used in
+algebraic statistics. It computes conditional independence statements in the form
+of trek separation and trek ideals using variants of the Bayes ball algorithm, and
+determines the identifiability of Gaussian graphical models.
+\end{abstract}
+
+\section{Introduction}
+This package extends an existing package {\tt Markov}. It is used to
+construct ideals corresponding to discrete graphical models, as
+described in several places \cite{GSS}.
+
+The package also constructs ideals of Gaussian Bayesian networks and
+Gaussian graphical models (graphs containing both directed and
+bidirected edges), as described in the papers \cite{S,STD}.
+
+Further, the package contains procedures to solve the identifiability
+problem for Gaussian graphical models as described in the paper \cite{GPSS}
+
+\section{Mathematical Background}
+
+\subsection{Discrete Graphical Models}
+Let $X_1, \ldots, X_n$ be discrete random variables where $X_i$ takes
+values in the finite set $[d_i] = \{1, 2, \ldots, d_i\}$. Let $p_{x_1\cdots x_n}$ be an indeterminate representing the
+probability $\Prob(X=x), X =(X_1, \ldots, X_n), x=(x_1,\ldots,x_n)$, and consider
+the polynomial ring $\R[p]$ by these indeterminates.
+
+Let $A$, $B$, and $C$ be pairwise disjoint subsets of $\{X_1, \ldots, X_n\}$
+where $A$ and $B$ are non-empty. We say that $A$ is independent of $B$
+given $C$ if 
+\begin{eqnarray*}
+&\Prob(A =a,B=b,C=c) \cdot \Prob(A=a',B=b',C=c)& \\&= \Prob(A
+=a,B=b',C=c) \cdot \Prob(A=a',B=b,C=c)&
+\end{eqnarray*}
+for all values $a,a',b,b',c$ which the random variables in $A,B,C$ can
+take. Symbolically, we write this as $A \ci B \mid C$. By marginalizing
+over values of random variables not in $A \cup B \cup C$, each of the
+terms $\Prob(A =a,B=b,C=c)$ can be expanded as a sum of indeterminates
+$p_{i_1i_2\cdots i_n}$. Thus, conditional independence statements
+translate into homogeneous quadratic polynomials in $\R[p]$.
+
+Given a directed acyclic graph $G$ on vertices $\{1, \ldots,
+n\}$, let $\pa(i)$ denote the set of parents of a vertex $i$, and
+$\nd(i)$ the set of its nondescendents. We say that $X$ factors according to $G$ if
+$$\Prob(X=x) = \prod_{i=1}^n \Prob(X_i=x_i \mid X_{\pa(i)} = x_{\pa(i)}).
+$$
+for all values $x \in D$. It can be shown that if $X$ factors
+according to $G$, then the following conditional independence
+statements are satisfied.
+\begin{enumerate}
+\item Pairwise Markov. If $i \rightarrow j$ is not an edge
+  of $G$, then 
+$X_i \ci X_j \mid X_{\nd(i)\setminus j}  $.
+\item Local Markov. For all vertices $i$ of $G$,
+then $X_i \ci X_{\nd(i)} \mid X_{\pa(i)}$.
+\item Global Markov. If $C$ d-separates $A$ and $B$, then $A \ci B
+  \mid C$.
+\end{enumerate}
+Here, we say that $C$ d-separates (direct separates) $A$ and $B$ in $G$ if
+every path (not necessarily directed) from $A$ to $B$ contains either a
+noncollider $i \in C$ or a collider $i$ with $C \subseteq \nd(i)$,
+where a vertex $i$ is a collider if $a\rightarrow i
+\leftarrow b$ on the path.
+
+Compute conditional independence statements using the Bayes ball
+algorithm.
+
+\subsection{Gaussian Graphical Models}
+
+Consider a mixed graph $G$ with vertices $V=\{1, \ldots, n\}$ and edges
+$E $ which could be directed $i \rightarrow j$,
+undirected $i - j$ or bidirected $i \leftrightarrow
+j$. We assume that there is a partition $U \cup W = \{1, \ldots, k\} \cup
+\{k+1,\ldots, n\}$ of $V$ such that all undirected edges have
+their vertices in $U$, all bidirected edges have
+their vertices in $W$, and there are no directed edges $w \rightarrow
+u$ with $w \in W$ and $u \in U$. 
+
+Let $\Lambda$ be an $n{\times}n$ matrix with $\Lambda_{ij}=0$ if $i
+\rightarrow j \notin E$ and $\Lambda_{ii}=0$ for all $i$. Let $K$ and $\Phi$ be symmetric positive
+definite matrices, with rows and columns indexed by $U$ and by $W$ respectively, such that $K_{ij}=0$ if
+$i-j \notin E$, $\Phi_{ij}=0$ if $i\leftrightarrow j \notin E$ and
+$K_{ii}, \Phi_{ii} > 0$ for all $i$. Now, consider normal random
+variables $X_1, \ldots, X_n$ with zero means and covariance matrix
+$$
+(I-\Lambda)^{-T} \begin{pmatrix} K^{-1} & 0 \\ 0 & \Phi \end{pmatrix}
+(I-\Lambda)^{-1}.
+$$
+Hence, the joint distribution of these random variables is
+parametrized by the $\Lambda_{ij}, K_{ij}, \Phi_{ij}$ corresponding to
+directed, undirected and bidirected edges of $G$, as well as the
+$K_{ii}, \Phi_{ii}$ corresponding to vertices in $U$ and $W$.
+
+conditional independence coming from trek separation,
+they translate to rank conditions on $\Sigma$
+
+Algorithm for computing using Theorem so and so in Seth's
+paper. Creating an auxiliary DAG.
+
+\subsection{Identifiability of Gaussian Graphical Models}
+
+%% markovIdeal from the statements
+%% trekIdeal from the statements
+%% markovMatrices?
+%% marginMap? (change of variables, should see Piotr paper on cumulants)
+%% hidemap? (marginalizing a hidden variable)
+
+\section{Examples}
+
+Use {\tt Graphs} package to create graphs for the models.
+
+Here is a typical use of this package. We create the ideal in 16
+variables whose zero set represents the probability distributions on
+four binary random variables which satisfy the conditional
+independence statements coming from the "diamond" graph $d \rightarrow
+c$, $b \rightarrow a$.
+
+\begin{verbatim}
+i1 : G = digraph  {{a,{}},{b,{a}},{c,{a}},{d,{b,c}}}
+o1 = Digraph{a => set {}    }
+             b => set {a}
+             c => set {a}
+             d => set {b, c}
+o1 : Digraph
+i2 : R = markovRing (2,2,2,2)
+o2 = R
+o2 : PolynomialRing
+i3 : S = globalMarkovStmts G
+o3 = {{{a}, {d}, {b, c}}, {{b}, {c}, {d}}}
+o3 : List
+i4 : I = markovIdeal(R,G,S);
+o4 : Ideal of R
+i5 : netList pack(2,I_*)
+\end{verbatim}
+
+Sometime an ideal can be simplified by changing variables. Very often, by using, marginMap (missing documentation), such ideals can be transformed to binomial ideals. This is the case here.
+
+\begin{verbatim}
+i6 : F = marginMap(1,R)
+o6 = map(R,R,{p        - p       , p        - p       , p        - p       ,
+               1,1,1,1    2,1,1,1   1,1,1,2    2,1,1,2   1,1,2,1    2,1,2,1   
+              p        - p       , p        - p       , p        - p       , 
+               1,1,2,2    2,1,2,2   1,2,1,1    2,2,1,1   1,2,1,2    2,2,1,2  
+              p        - p       , p        - p       , p       , p       , 
+               1,2,2,1    2,2,2,1   1,2,2,2    2,2,2,2   2,1,1,1   2,1,1,2  
+              p       , p       , p       , p       , p       , p       })
+               2,1,2,1   2,1,2,2   2,2,1,1   2,2,1,2   2,2,2,1   2,2,2,2
+o6 : RingMap R <--- R
+i7 : I = F I;
+o7 : Ideal of R
+i8 : netList pack(2,I_*)
+     +-------------------------------------+-------------------------------------+
+o8 = |- p       p        + p       p       |- p       p        + p       p       |
+     |   1,1,1,2 2,1,1,1    1,1,1,1 2,1,1,2|   1,1,2,2 2,1,2,1    1,1,2,1 2,1,2,2|
+     +-------------------------------------+-------------------------------------+
+     |- p       p        + p       p       |- p       p        + p       p       |
+     |   1,2,1,2 2,2,1,1    1,2,1,1 2,2,1,2|   1,2,2,2 2,2,2,1    1,2,2,1 2,2,2,2|
+     +-------------------------------------+-------------------------------------+
+     |- p       p        + p       p       |- p       p        + p       p       |
+     |   1,1,2,1 1,2,1,1    1,1,1,1 1,2,2,1|   1,1,2,2 1,2,1,2    1,1,1,2 1,2,2,2|
+     +-------------------------------------+-------------------------------------+
+\end{verbatim}
+
+This ideal has 5 primary components. The first component is the one that has statistical significance. It is the defining ideal of the variety parameterized by the the factorization of the probability distributions according to the graph G. The remaining components lie on the boundary of the simplex and are still poorly understood.
+
+\begin{verbatim}
+i9 : netList primaryDecomposition I
+\end{verbatim}
+
+The following example illustrates the caveat below.
+\begin{verbatim}
+i10 : H = digraph {{d,{b,a}},{c,{}},{b,{c}},{a,{c}}}
+o10 = Digraph{a => set {c}   }
+              b => set {c}
+              c => set {}
+              d => set {a, b}
+o10 : Digraph
+i11 : T = globalMarkovStmts H
+o11 = {{{a}, {b}, {d}}, {{c}, {d}, {a, b}}}
+o11 : List
+i12 : J = markovIdeal(R,H,T);
+o12 : Ideal of R
+i13 : netList pack(2,J_*)
+
+i14 : F = marginMap(3,R);
+o14 : RingMap R <--- R
+i15 : J = F J;
+o15 : Ideal of R
+i16 : netList pack(2,J_*)
+      +-------------------------------------+-------------------------------------+
+o16 = |- p       p        + p       p       |- p       p        + p       p       |
+      |   1,2,1,1 2,1,1,1    1,1,1,1 2,2,1,1|   1,2,1,2 2,1,1,2    1,1,1,2 2,2,1,2|
+      +-------------------------------------+-------------------------------------+
+      |- p       p        + p       p       |- p       p        + p       p       |
+      |   1,1,1,2 1,1,2,1    1,1,1,1 1,1,2,2|   1,2,1,2 1,2,2,1    1,2,1,1 1,2,2,2|
+      +-------------------------------------+-------------------------------------+
+      |- p       p        + p       p       |- p       p        + p       p       |
+      |   2,1,1,2 2,1,2,1    2,1,1,1 2,1,2,2|   2,2,1,2 2,2,2,1    2,2,1,1 2,2,2,2|
+      +-------------------------------------+-------------------------------------+
+\end{verbatim}
+
+Note that the graph H is isomorphic to G, we have just relabeled the vertices. Observe that the vertices of H are stored in lexicographic order. Also note that the this graph isomorphism lifts to an isomorphism of ideals.
+ 
+This package requires Graphs.m2, as a consequence it can do
+computations with graphs whose vertices are not necessarily labeled by
+integers. This could potentially create some confusion about what does
+$p_{i_1i_2\ldots i_n}$  mean. The package orders the vertices lexicographically, so
+$p_{i_1i_2\ldots i_n}  = p(X_1 = i_1, X_2 = i_2, \ldots, X_n  = i_n)$ where the labels
+$X_1,X_2,\ldots,X_n$  have been ordered lexicographically. Therefore, the user
+is encouraged to label the vertices in a consistent way (all numbers,
+or all letters, etc). how to find the internal sorting?
+
+-MixedGraphs \\
+-trekSeparation \\
+-trekIdeal \\
+-parameter identification \\
+-GraphicalModels.info? \\
+
+\bigskip \bigskip
+
+\noindent {\bf Acknowledgements.} Dan Grayson. Amelia Taylor.
+
+\bigskip
+
+\begin{thebibliography}{2}
+
+\bibitem{GSS} L.~D.~Garcia, M.~Stillman and B.~Sturmfels: Algebraic geometry of Bayesian networks, {\em J. Symbolic Comput.}
+  {\bf 39} (2005) 331-–355.
+
+\bibitem{S} S.~Sullivant: Algebraic geometry of Gaussian Bayesian
+  networks, {\em Adv. in Appl. Math.} {\bf 40} (2008) 482--513.
+
+\bibitem{STD}
+S.~Sullivant, K.~Talaska, and J.~Draisma: Trek separation for Gaussian
+graphical models, {\em Ann. Statist.} {\bf 38} (2010) 1665--1685. 
+
+\bibitem{GPSS} L.~D.~Garcia-Puente, S.~Spielvogel and S.~Sullivant: Identifying
+causal effects with computer algebra, accepted in {\em Proceedings of the 26th
+Conference of Uncertainty in Artificial Intelligence}.
+
+\end{thebibliography}
+\end{document}
+
+
+

@@ -623,7 +623,7 @@ doc ///
     GraphicalModels. A package for discrete and Gaussian statistical graphical models
   Description
     Text
-      This package extends Markov.lib. It is used to construct ideals corresponding to discrete graphical models,
+      This package extends Markov.m2. It is used to construct ideals corresponding to discrete graphical models,
       as described in several places, including the paper: Luis David Garcia, Michael Stillman and Bernd Sturmfels,
       "The algebraic geometry of Bayesian networks", J. Symbolic Comput., 39(3-4):331–355, 2005.
   
