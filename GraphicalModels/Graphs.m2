@@ -524,6 +524,13 @@ edges(Graph) := G -> (
 	  E)
      )
 
+edges(Bigraph) := G -> (
+     if G#cache#?edges then G#cache#edges else (
+     	  E := edges simpleGraph G;
+	  G#cache#edges = E;
+	  E)
+     )
+
 
 descendents = method()
 descendents(Digraph,Thing) := (G,v) -> (
