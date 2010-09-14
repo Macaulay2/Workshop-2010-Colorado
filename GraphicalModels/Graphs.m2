@@ -193,9 +193,6 @@ mixedGraph (Graph, Digraph, Bigraph) := (g,d,b) -> (
     -- Output: A hashtable of digraphs with the same vertex set,
     --         which is the union of the vertex sets of the input
     --         digraphs.
-    if not instance(g, Graph) then error "expected first argument to be a Graph";
-    if not instance(d, Digraph) then error "expected second argument to be a Digraph";
-    if not instance(b, Bigraph) then error "expected third argument to be a Bigraph";
     C := new MutableHashTable;
     C#cache = new CacheTable from {};
     h := new MutableHashTable;
@@ -227,20 +224,26 @@ mixedGraph (Digraph) := (d) -> (
     mixedGraph(graph {},d, bigraph {}))
 
 
---mixedGraph = method()
---mixedGraph HashTable := (g) -> (
-    -- Input: A hashtable of digraphs.
-    -- Output: A hashtable of digraphs with the same vertex set,
-    --         which is the union of the vertex sets of the input digraphs.
---	scanKeys(g, i-> if not instance(g#i, Digraph) then error "expected HashTable of Digraphs");
---	vertices := toList sum(apply(keys(g),i->set keys(g#i)));
---	new MixedGraph from applyValues(g, i->(
---	  hh := new MutableHashTable;
---	  scan(vertices,j->if i#?j then hh#j=i#j else hh#j={});
---	  new class(i) from hh
---	))
---)     
-
+collateVertices = method()
+collateVertices (MixedGraph) := (g) -> (
+    -- Input: A MixedGraph
+    -- Output: A MixedGraph where the hash tables for the graph, bigraph and digraph all have the same keys (vertices)
+    v := vertices(g);
+    hh := new MutableHashTable;
+    G := graph g;
+    -- Graph
+    x := graph G#Graph;
+    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
+    gg := graph(new HashTable from hh);
+    -- Digraph
+    x = graph G#Digraph;
+    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
+    dd := digraph(new HashTable from hh);
+    -- Bigraph
+    x = graph G#Bigraph;
+    scan(v,j->if x#?j then hh#j=x#j else hh#j={});
+    bb := bigraph(new HashTable from hh);
+    mixedGraph(gg,dd,bb))
 
 labeledGraph = method()
 labeledGraph (Digraph,List) := (g,L) -> (
