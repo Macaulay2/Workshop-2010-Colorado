@@ -47,7 +47,8 @@ export {Graph,
      degreeMatrix,
      laplacianMatrix,
      incidenceMatrix,
-     reachable
+     reachable,
+     floydWarshall
      }
 exportMutable {dotBinary,jpgViewer}
 
