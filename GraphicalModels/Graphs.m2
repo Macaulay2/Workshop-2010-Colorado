@@ -385,13 +385,14 @@ dotBinary = "dot"
 jpgViewer = "open"
 
 simpleGraph = method()
-simpleGraph(Graph) := H -> (
+simpleGraph(Digraph) := H -> (
      -- Input: A Graph.
      -- Output: A new Graph in which the keys are still the nodes but
      --         the values are the lists of neighbors so that if an
      --         edge has already appeared before, it will not appear
      --         again.
      --if (H#cache)#?simpleGraph then H#cache#simpleGraph else 
+     if not (instance(H,Graph) or instance(H,Bigraph)) then error "simpleGraph only works for Graphs and Bigraphs";
      H = graph H;
      pairH := new MutableList from pairs H;
      for k from 1 to #pairH-1 do (
@@ -1005,7 +1006,7 @@ A = graph({{a,b},{c,d},{a,d},{b,c}}, Singletons => {f})
 B = digraph({{a,{b,d}},{b,{c}},{d,{a,c}}})
 C = digraph({{a,{b,c}}, {b,{d}}, {c,{}}, {d,{}}})
 H = digraph({{a,{d,f}}, {d,{h,e}}, {f,{e,c}}, {h,{g}}, {e,{g,b}}, {g,{}}, {b,{}}, {c,{}}})
-inducedSubgraph(H,{a,f,h,g})
+errorinducedSubgraph(H,{a,f,h,g})
 K = graph({{a,b},{b,c},{c,d},{d,e},{a,e},{b,e}})
 inducedSubgraph(K,{a,e,b})
 ///
