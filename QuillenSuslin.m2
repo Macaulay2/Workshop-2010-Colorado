@@ -145,11 +145,7 @@ computeFreeBasis(Matrix) := Matrix => phi -> (
 
 
 -- Shortcuts from Fabianska's PhD thesis.
--- There is a problem with shortcut 2.2.1(2).
--- To see this, run the following commands:
--- R = QQ[x,y]
--- f = matrix{{x^2+1,x-2,x^2+3,x-3}}
--- U = applyRowShortcut(f)
+-- 9/7/2010: Fixed shortcut 2.2.1(2).
 
 applyRowShortcut = method()
 applyRowShortcut(Matrix) := g -> (
@@ -166,10 +162,7 @@ applyRowShortcut(Matrix) := g -> (
 	  print("Using shortcut 2.2.1(1).");
 	  -- Swap g1 and gs.
 	  M1 = mutableIdentity(R,n);
-	  M1_(0,0) = 0;
-	  M1_(s,s) = 0;
-	  M1_(0,s) = 1;
-	  M1_(s,0) = 1;
+	  M1 = columnSwap(M1,0,s);
 	  gSwap = g*matrix(M1);
 	  S = map(R^1) // matrix{{gSwap_(0,0)}};
 	  M2 = mutableIdentity(R,n);
@@ -180,37 +173,32 @@ applyRowShortcut(Matrix) := g -> (
 	  );
      
      -- Fabianska shortcut 2.2.1(2).
-     -- Needs to be fixed.
      S = subsets(f,2);
-     h = scan ( #S, i -> ( 
+     s = scan ( #S, i -> ( 
 	       if ideal S_i == R 
 	       then break S_i;
 	       )
 	  );
-     if h =!= null
+     if s =!= null
      then (
 	  print("Using shortcut 2.2.1(2).");
-	  ss = position( f, i -> ( i == h_0 ) );
-	  t = position( f, i -> ( i == h_1 ) );
-	  	  
-	  H = 1_R//gens ideal h;
-	  W = mutableIdentity(R,n);
-	  W_(ss,0) = H_(0,0);
-	  W_(t,0) = H_(1,0);
-	  W_(ss,1) = -h_1;
-	  W_(t,1) = h_0;
-	  if ( ss>1 or t>1 )
-	  then (
-	       r = first rsort {ss,t};
-	       W_(1,1) = 0;
-	       W_(1,r) = 1;
-	       W_(r,r) = 0;
-	       );
-	  G = delete( h_1, delete( h_0, f ) );
-	  V = mutableIdentity(R,n);
-	  scan(2..(n-1), i -> ( V_(0,i) = -G_(i-2) ) );
-	  U2 = matrix W*matrix V;
-	  return U2;
+	  p1 = position(f, i -> (i == s_0));
+	  p2 = position(f, i -> (i == s_1));
+	  M1 = map(R^1) // matrix{s};
+	  M2 = mutableIdentity(R,n);
+     -- Swap so that the first two elements of g generate R.
+	  M2 = columnSwap(M2,0,p1);
+	  M2 = columnSwap(M2,1,p2);
+	  M3 = mutableIdentity(R,n);
+	  gSwap = g*matrix(M2);
+	  M3_(0,0) = M1_(0,0);
+	  M3_(1,0) = M1_(1,0);
+	  M3_(0,1) = -gSwap_(0,1);
+	  M3_(1,1) = gSwap_(0,0);
+	  M4 = mutableIdentity(R,n);
+	  apply(2..(n-1), i -> (M4_(0,i) = -(gSwap)_(0,i)));
+	  U5 = matrix(M2)*matrix(M3)*matrix(M4);
+	  return U5;
      );
     
      -- Fabianska shortcut 2.2.1(3).
@@ -218,10 +206,7 @@ applyRowShortcut(Matrix) := g -> (
      if s =!= null then (
 	  print("Using shortcut 2.2.1(3).");
 	  M1 = mutableIdentity(R,n);
-	  M1_(0,0) = 0;
-	  M1_(s,s) = 0;
-	  M1_(0,s) = 1;
-	  M1_(s,0) = 1;
+	  M1 = columnSwap(M1,0,s);
           gSwap = g*matrix(M1);
 	  -- Now gSwap_(0,1) = 0.
 	  h = map(R^1) // submatrix'(gSwap,,{0});
@@ -234,20 +219,18 @@ applyRowShortcut(Matrix) := g -> (
      );
 
      -- Fabianska shortcut 2.2.2(1).
-     l := flatten entries (map(R^1) // g);
-     w := scan( n, i -> ( if ideal l_i == R then break i ) );
+     l = flatten entries (map(R^1) // g);
+     w = scan( n, i -> ( if ideal l_i == R then break i ) );
      if w =!= null
      then (
 	  print("Using shortcut 2.2.2(1).");
-	  scan( n, i -> ( U4_(i,w) = l_i ) );
 	  M1 = mutableIdentity(R,n);
-	  M1_(0,0) = 0;
-	  M1_(w,w) = 0;
-	  M1_(w,0) = 1;
-	  M1_(0,w) = 1;
+	  M1 = columnSwap(M1,0,w);
 	  M2 = mutableIdentity(R,n);
-	  apply(1..(n-1), i -> (M2_(0,i) = -(g*matrix(M1))_(0,i)));
-	  U4 = matrix(M1)*matrix(M2);
+	  apply(0..(n-1), i -> (M2_(i,0) = (matrix{l}*matrix(M1))_(0,i)));
+	  M3 = mutableIdentity(R,n);
+	  apply(1..(n-1), i -> (M3_(0,i) = -(g*matrix(M1))_(0,i)));
+	  U4 = matrix(M1)*matrix(M2)*matrix(M3);
 	  return matrix U4;
 	  );
      
@@ -258,17 +241,11 @@ applyRowShortcut(Matrix) := g -> (
 	  print("Using shortcut 2.2.2(2).");
 	  p1 = position(l, i -> (i == s_0));
 	  p2 = position(l, i -> (i == s_1));
-	  M1 = map(R^1) // gens ideal s;
+	  M1 = map(R^1) // matrix{s};
 	  M2 = mutableIdentity(R,n);
      -- Swap so that the first two elements of l generate R.
-	  M2_(0,0) = 0;
-	  M2_(p1,p1) = 0;
-	  M2_(1,1) = 0;
-	  M2_(p2,p2) = 0;	  
-	  M2_(0,p1) = 1;
-	  M2_(p1,0) = 1;
-	  M2_(1,p2) = 1;
-	  M2_(p2,1) = 1;
+          M2 = columnSwap(M2,0,p1);
+	  M2 = columnSwap(M2,1,p2);
 	  M3 = mutableIdentity(R,n);
 	  lSwap = matrix{l}*matrix(M2);
 	  gSwap = g*matrix(M2);
@@ -358,29 +335,90 @@ qsAlgorithm(Matrix) := Matrix => phi -> (
 
 qsAlgorithmRow = method()
 qsAlgorithmRow(Matrix) := f -> (
-     local R; local n; local varList; local U;
+     local R; local n; local varList; local U; local f; local currVar;
      
-     -- If a shortcut applies, use it.
+     -- If a shortcut applies, return it.
      
-     U = applyRowShortcut(f);
-     if U =!= null then (
-	  return U;
+     if applyRowShortcut(f) =!= null then (
+	  print("A shortcut method applies.");
+	  return applyRowShortcut(f);
      );
-     
+
      -- If not, enter the general algorithm.
      
      R = ring f;
      n = rank source vars R; -- n = number of variables.
-     varList = new List from {};
+     m = rank source f; -- m = length of the row.
+     U = map(R^m);
+     varList = flatten entries vars R;
+     currVar = last varList; -- Set the last variable to be the current variable to eliminate.
+     varList = take(varList,#varList - 1);
      
-     -- Check if there is only 1 variable and the coefficient ring is a field.
-     -- Then use qsAlgorithmPID.
+     print(varList,currVar);
      
-     if isField(coefficientRing(R)) == true and n == 1 then (
-	  return qsAlgorithmPID(f);
+     -- Determine if the coefficient ring is a field or not.
+     
+     
+     if isField(coefficientRing(R)) == true then (
+	  
+	  -- Iteratively reduce the number of variables in f.
+	  
+	  while #varList >= 1 do (
+	       
+	       print("Entering the local loop. currVar = "|toString(currVar));
+	       
+	       s = scan(m, i -> (if degVar(f_(0,i),currVar) > 0 then break i;));
+	       
+	       -- If f doesn't involve currVar, then move to the next variable.
+	       	  
+	       if s =!= null then (
+		    t = scan(m, i -> (if leadCoeffVar(f_(0,i),currVar) == 1 then break i;)); -- Does f have a component which is monic in currVar?
+	       	    if t =!= null then (
+	       	    	 print("f has a component which is monic with respect to "|currVar);
+			 M1 = mutableIdentity(R,m);
+			 M1 = columnSwap(M1,0,t);  -- Swap f1 and ft.
+			 f = f*matrix(M1); -- Now f1 is monic in currVar.
+			 U = U*matrix(M1); -- Record this transformation in U.
+		    )
+	       
+	       	    else ( -- If f does not contain a component which is monic in currVar.
+			 print("Does not contain monic component.  Performing normalization step.");
+			 (f,phi) = changeVar(f,y); -- Normalize the row so that the first component is monic with respect to currVar.
+		    	 print("The first element of the row is now monic in "|toString(currVar)|": "|toString(f));
+		    );
+	            print("Computing local solutions.");
+		    localSolutions = getLocalSolutions(f,varList,currVar); -- Collect a list of unimodular matrices over frac(R) which solve the unimodular row problem for g.
+		    print("Patching local solutions.");
+		    U1 = patch(localSolutions,currVar); -- U1 is a unimodular matrix such that g*U does not involve currVar.
+		    f = f*U1;
+		    f = phi(f); -- Now f does not involve currVar.
+		    print("Row now has one less variable: "|toString(f));
+		    U = U*phi(U1); -- Update U.
+	       );
+	       
+	       if applyRowShortcut(f) =!= null then(
+		    print("A shortcut method applied.");
+		    U2 = applyRowShortcut(f);
+		    return U*U2;
+	       );
+	       
+	       currVar = last varList; -- Set currVar to the next variable.
+	       varList = take(varList,#varList - 1); -- Shorten the list of variables by one.
+	  
+	       -- Now repeat the loop until only one variable is left.
+	  
+	  );
+     	  
+	  -- The while loop will terminate when varList is empty, ie. the row only involves one variable.
+     	  -- Then R = k[x1] is a PID, so we can use qsAlgorithmPID.
+	  
+	  return U*qsAlgorithmPID(f);
      );
-     
-     
+
+     if coefficientRing(R) == ZZ then (
+	  print("Doesn't work over ZZ yet.");  
+     	  return null;
+     );
 )     
 
 
@@ -413,25 +451,37 @@ findMaxIdeal(Ideal) := (I) -> (
 -- Outputs: (1) new unimodular row with leading term of first entry a pure power
 -- of the "last" variable. (2) a function to reverse the change of variable.
 
+-- 9/9/2010: Oops, I messed it up.  Fix this.
+
 changeVar = method()
 changeVar( Matrix, RingElement ) := (M,x) -> (
-     f := first flatten entries M;
-     m := first degree f + 1;
+     local f; local m; local R; local var; local varTail;
+     local y; local N1; local N2; local lc; local phi;
+     f = first flatten entries M;
+     m = first degree f + 1;
 
-     R := ring f;
-     var := flatten entries vars R;
-     s := position( var, i -> ( i == x ) ); -- Very much depends on the way the user inputs the variables 
-     varTail := drop( var, s );
-     y := apply( s+1 , i -> ( var_i ) );
+     R = ring f;
+     var = flatten entries vars R;
+     s = position( var, i -> ( i == x ) ); -- Very much depends on the way the user inputs the variables 
+     varTail = drop( var, s );
+     y = apply( s+1 , i -> ( var_i ) );
                
-     y = toList apply( 0..(s-1) , i -> ( y_i - x^(m^(s-i)) ) );
-     y = y|varTail;
-     N1 := sub( M , matrix{ y } );
+     y = toList apply( 0..(s-1) , i -> ( y_i - x^(m^(s-i)) ) ); -- Create the substitution for the first s-1 variables and keep x the same.
+     print(y);
+     y = y|varTail; -- Append the tail.  All variables after x stay the same.
+     print(y);
+     N1 = sub( M , matrix{ y } );
+     lc = leadCoeffVar(N1_(0,0),x);
+     print(lc);
+     y = replace(s,sub((1/lc),R)*x,y);
+     print(y);
+     N2 = sub(M, matrix{y});
      y = toList apply( 0..(s-1) , i -> ( var_i + x^(m^(s-i)) ) );
      y = y|varTail;
-     print y;
-     phi := (map(ring matrix{ y },ring M,matrix{ y }));
-     (N1,phi)
+     y = replace(s,lc*x,y);
+     print(y);
+     phi = (map(ring matrix{ y },ring M,matrix{ y }));
+     (N2,phi)
 )
 
 
@@ -522,9 +572,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	       	    f = f*matrix(M);
 	       	    U = U*matrix(M);
 	       	    r = r-1;
-		    print(matrix(M));
 	       );
-	       print(U,f);
 	       
 	       -- Is fi a unit?  If so, swap it with f1 and finish.
 	       
@@ -557,10 +605,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
                if j < s then (
 		    print("Found a unit coefficient in f"|i+1); -- Debugging.
 	       	    M = mutableIdentity(R,nCol);
-	       	    M_(1,1) = 0;
-	       	    M_(i,i) = 0;
-	       	    M_(i,1) = 1;
-	       	    M_(1,i) = 1;
+	       	    M = columnSwap(M,1,i);
 	       	    f = f*matrix(M);
 	       	    U = U*matrix(M);
 		
@@ -637,10 +682,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	            
 		    print("Swapping f1 and f3."); -- Debugging.
 	       	    M = mutableIdentity(R,nCol);
-		    M_(0,0) = 0;
-		    M_(2,0) = 1;
-		    M_(0,2) = 1;
-		    M_(2,2) = 0;
+		    M = columnSwap(M,0,2);
 		    f = f*matrix(M);
 		    U = U*matrix(M);
 		    break; -- Repeat the main while loop.
@@ -671,11 +713,13 @@ getLocalSolutions(Matrix,List,RingElement) := (f,ringVars,currVar) -> (
      I = sub(ideal(0),R);
      maxIdeal = sub(findMaxIdeal(I),S);
      matrixList = new List from {};
+     print("Using horrocks with maximal ideal "|toString(maxIdeal)|" with respect to the variable "|toString(currVar));
      U = horrocks(f,currVar,maxIdeal);
      I = ideal(sub(commonDenom(U),R));
      matrixList = append(matrixList,sub(U,frac(S)));
      while I =!= R do (
 	  maxIdeal = sub(findMaxIdeal(I),S);
+	  print("Denominators did not generate the unit ideal.  Repeating horrocks with ideal "|toString(maxIdeal));
 	  U = horrocks(f,currVar,maxIdeal);
 	  I = I+ideal(sub(commonDenom(U),R));
 	  matrixList = append(matrixList,sub(U,frac(S)));
@@ -715,7 +759,7 @@ patch(List,RingElement) := (matrixList,currVar) -> (
      g = map(R^1) // matrix{deltaDenom};
      U = matrixList#0 * sub(sub(sub(inverseDenom#0*inverseList#0,R),{currVar => (currVar - currVar*(g_(0,0))*(deltaDenom#0))}),frac(R)) * (1/inverseDenom#0);
      apply(1..(k-1), i -> (U = U*(1/denomList#i)*sub(sub(sub((denomList#i)*(matrixList#i),R),{currVar => (currVar - (sum(0..(i-1), j -> currVar*g_(j,0)*deltaDenom#j)))}),frac(R))*(1/(inverseDenom#i))*sub(sub(sub((inverseDenom#i)*(inverseList#i),R),{currVar => (currVar - (sum(0..i, j -> currVar*g_(j,0)*deltaDenom#j)))}),frac(R))));
-     return sub(U,R);  -- U is a unimodular matrix over R such that f*U does not involve currVar.
+     return sub(U,R);  -- U is a unimodular matrix over R such that f*U does not involve currVar (it is the same as f evaluated when currVar = 0).
 )
 
 --------------------------------------------------

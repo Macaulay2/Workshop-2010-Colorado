@@ -48,14 +48,14 @@ det(U)
 f*U
 
 
---Ex. LaubenbacherWoodburn (Works fine.)
+--Ex. LaubenbacherWoodburn (Works fine, uses shortcut 2.2.1(2).)
 
 restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
 R = QQ[x,y]
 f = matrix{{x^2*y+1,x+y-2,2*x*y}}
 isUnimodular(f)
-U = applyRowShortcut(f)
+U = applyRowShortcut(f) -- Uses shortcut 2.2.1(2).
 det(U)
 f*U
 
@@ -96,12 +96,14 @@ det(U)
 f*U
 
 
---Ex. Park (Doesn't work, uses shortcut 2.2.1(2).)
+--Ex. Park (Works fine, uses shortcut 2.2.1(2).)
 
 restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
 R = ZZ[x,y,z]
 f = matrix{{1-x*y-2*z-4*x*z-x^2*z-2*x*y*z+2*x^2*y^2*z-2*x*z^2-2*x*z^2-2*x^2*z^2+2*x*z^2+2*x^2*y*z^2,2+4*x+x^2+2*x*y-2*x^2*y^2+2*x*z+2*x^2*z-2*x^2*y*z,1+2*x+x*y-x^2*y^2+x*z+x^2*z-x^2*y*z,2+x+y-x*y^2+z-x*y*z}}
+isUnimodular(f)
+ideal(f_(0,1),f_(0,2)) == R
 U = applyRowShortcut(f) -- Uses shortcut 2.2.1(2).
 det(U)
 f*U
@@ -113,7 +115,11 @@ restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
 R = QQ[t,x,y,z]
 f = matrix{{2*t*x*z+t*y^2+1,2*t*x*y+t^2,t*x^2}}
-
+(g,phi) = changeVar(f,z)
+phi(g)
+U = qsAlgorithmRow(f)
+det(U)
+f*U
 
 --Ex. CoxLittleOShea10 (Works fine, uses shortcut 2.2.2(1).)
 
@@ -133,7 +139,6 @@ restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
 R = QQ[x,y]
 f = matrix{{1+x*y+x^4,y^2+x-1,x*y-1}}
-g = map(R^1) // f
 isUnimodular(f)
 U = applyRowShortcut(f)
 time applyRowShortcut(f) -- ~.012 seconds
@@ -162,6 +167,7 @@ f = matrix{{x^2+1,x-2,0}} -- Row contains a zero.
 U = applyRowShortcut(f)
 det(U)
 f*U
+
 f = matrix{{x^2+1,x-2,x^2+3,x-3}} -- Row contains a redundant entry.
 U = applyRowShortcut(f)
 det(U)
