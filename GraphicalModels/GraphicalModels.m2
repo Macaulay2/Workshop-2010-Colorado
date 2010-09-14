@@ -620,7 +620,7 @@ doc ///
   Key
     GraphicalModels
   Headline
-    GraphicalModels. A package for discrete and Gaussian statistical graphical models
+    GraphicalModels. A package for discrete and Gaussian statistical graphical models 
   Description
     Text
       This package extends Markov.m2. It is used to construct ideals corresponding to discrete graphical models,
@@ -649,7 +649,7 @@ doc ///
        netList pack(2,I_*)
        
     Text
-      Sometime an ideal can be simplified by changing variables.  Very often, 
+      Sometimes an ideal can be simplified by changing variables.  Very often, 
       by using, @TO marginMap@,
       such ideals can be transformed to binomial ideals.  This is the case here.
     Example
@@ -678,16 +678,22 @@ doc ///
       Note that the graph $H$ is isomorphic to $G$, we have just relabeled the vertices. 
       Observe that the vertices of $H$ are stored
       in lexicographic order. Also note that the this graph isomorphism lifts to an isomorphism of ideals.     
- Caveat
+  Caveat
      This package requires Graphs.m2, as a consequence it can do computations with graphs
      whose vertices are not necessarily labeled by integers. This could potentially create some confusion about what does
      $p_{i_1i_2\cdots i_n}$ mean. The package orders the vertices lexicographically, so 
      $p_{i_1i_2\cdots i_n} = p(X_1 = i_1, X_2 = i_2, \dots, X_n = i_n)$ where the labels
      $X_1,X_2,\dots,X_n$ have been ordered lexicographically. Therefore, the user is encouraged
      to label the vertices in a consistent way (all numbers, or all letters, etc).
-///
+///;
 
-end 
+
+
+--------------------------------------
+--------------------------------------
+--end
+--------------------------------------
+--------------------------------------
 
 doc ///
   Key
