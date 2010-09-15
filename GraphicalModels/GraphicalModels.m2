@@ -431,7 +431,7 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
 -- the following function retrieves the position of the keys in the graph G
 -- for all keys contained in the list S
 getPositionOfKeys = (G,S) -> 
-     apply(S, v -> position(keys G, k-> k===v))
+     apply(S, v -> position(sort keys G, k-> k===v))
 
 -- cartesian ({d_1,...,d_n}) returns the cartesian product 
 -- of {0,...,d_1-1} x ... x {0,...,d_n-1}
