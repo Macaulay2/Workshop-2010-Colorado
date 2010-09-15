@@ -760,8 +760,8 @@ nonneighbors = method()
      -- Output: The set of vertices that are not neighbors of the vertex 
      --	    	of interest.
 nonneighbors(Graph, Thing) := (G,v) -> (
-     if G.cache#?nonneighbors then G.cache#nonneighbors else (
-     	  n := set keys (graph G) - neighbors(G,v) - set{v};
+     if G.cache#?nonneighbors and G.cache#nonneighbors#?v then G.cache#nonneighbors#v else (
+     	  n := set vertices G - neighbors(G,v) - set{v};
 	  if G.cache#?nonneighbors then (
 	       h := new MutableHashTable from G.cache#nonneighbors;
 	       h#v = n;
@@ -774,7 +774,7 @@ nonneighbors(Graph, Thing) := (G,v) -> (
      )
 nonneighbors(MixedGraph,Thing) := (G,v) -> (
      G1 := (graph G)#Graph;
-     if G1.cache#?nonneighbors then G1.cache#nonneighbors else (
+     if G1.cache#?nonneighbors and G1.cache#nonneighbors#?v then G1.cache#nonneighbors#v else (
 	  n := nonneighbors(G1, v);
 	  if G1.cache#?nonneighbors then (
 	       h := new MutableHashTable from G1.cache#nonneighbors;
