@@ -76,7 +76,8 @@ newPackage(
 export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts, 
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
        gaussRing, gaussMatrices, gaussIdeal, trekIdeal, 
-       Coefficients, VariableName} 
+       Coefficients, VariableName,
+       paramRing,covMatrix,diMatrix,biMatrix,identify,trekSeparation} 
      
 needsPackage "Graphs"
 
@@ -477,18 +478,34 @@ gaussRing ZZ := opts -> (n) -> (
      R
      )
      -- we want to be able to do s_{a,b} for example:
-gaussRing Digraph := opts -> (G) -> (
+
+gaussRing Digraph := opts -> (g) -> (
      --I want the input to be the Digraph G, 
      --and I'm just gonna read off the list of labels from the keys.
      -- This is done to avoid any ordering confusion. 
      -- DO NOT make an option for inputting list of labels!
      x := opts.VariableName;
      kk := opts.Coefficients;
-     v := flatten apply(keys G, i -> apply(keys G, j -> x_(i,j)));
+     vv := sort vertices g;
+     v := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else x_(i,j))));
      R := kk[v, MonomialSize=>16];
-     R#gaussRing = #keys G;
+     R#gaussRing = #vv;
      R
      )
+
+-- Shaowei 9/15: old version of gaussRing
+-- gaussRing Digraph := opts -> (G) -> (
+     --I want the input to be the Digraph G, 
+     --and I'm just gonna read off the list of labels from the keys.
+     -- This is done to avoid any ordering confusion. 
+     -- DO NOT make an option for inputting list of labels!
+--     x := opts.VariableName;
+--     kk := opts.Coefficients;
+--     v := flatten apply(keys G, i -> apply(keys G, j -> x_(i,j)));
+--     R := kk[v, MonomialSize=>16];
+--     R#gaussRing = #keys G;
+--     R
+--     )
 
 
 gaussMinors = method()
@@ -601,6 +618,219 @@ trekIdeal(Ring, Digraph) := (R,G) -> (
 ------------------------------
 -- Gaussian mixed graphs    --
 ------------------------------
+
+
+
+-- INTERNAL FUNCTIONS --
+
+-- returns the position in list h of the key x
+pos = (h, x) -> position(h, i->i===x)
+
+-- returns the hash table M of hash tables storing the adjacency matrix of a digraph G,where M#a#b is true if a->b, and false otherwise.
+adjacencyHashTable = (G) -> (
+        G1 := graph G;
+     	VV := vertices G;
+     	hashTable apply(VV,i->{i,hashTable apply(VV,j->{j,#positions(toList G1#i,k->k===j)})}))
+
+-- takes a list A, and a sublist B of A, and converts the membership sequence of 0's and 1's of elements of B in A to binary
+setToBinary = (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then 1 else 0)))
+
+-- returns all subsets of B which contain A
+subsetsBetween = (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
+
+
+
+-- RINGS AND MATRICES --
+
+paramRing = method(Options=>{Coefficients=>QQ, VariableNameCovariance=>value "symbol s", 
+	                                       VariableNameDigraph=>value "symbol l", 
+					       VariableNameBigraph=>value "symbol p"})
+-- makes a ring of parameters, l_(i,j) for all vertices i,j of a digraph G, and p_(i,j) for i<j,
+-- and of the entries of the covariance matrix s_(i,j)
+-- later, given the edges, we will set some of these parameters to zero
+-- the reason we included all the other variables is so that it is easy to make the corresponding matrices
+paramRing MixedGraph := opts -> (g) -> (
+     G := graph collateVertices g;
+     dd := graph G#Digraph;
+     bb := graph G#Bigraph;
+     vv := sort vertices g;
+     s := opts.VariableNameCovariance;
+     l := opts.VariableNameDigraph;
+     p := opts.VariableNameBigraph;
+     kk := opts.Coefficients;
+     sL := delete(null, flatten apply(vv, x-> apply(vv,          y->if pos(vv,x)>pos(vv,y) then null else s_(x,y))));
+     lL := delete(null, flatten apply(vv, x-> apply(toList dd#x, y->l_(x,y))));	 
+     pL := join(apply(vv, i->p_(i,i)),delete(null, flatten apply(vv, x-> apply(toList bb#x, y->if pos(vv,x)>pos(vv,y) then null else p_(x,y)))));
+     m := #lL+#pL;
+     R := kk[lL,pL,sL,MonomialOrder => Eliminate m];
+     R#paramRing = {#vv,s,l,p};
+     R
+     )
+
+covMatrix = method()
+covMatrix Ring := (R) -> (
+       n := R#gaussRing; 
+       genericSymmetricMatrix(R,n))
+covMatrix (Ring,MixedGraph) := (R,g) -> (
+     vv := sort vertices g;
+     n := R#paramRing#0;
+     s := value R#paramRing#1;
+     SM := mutableMatrix(R,n,n);
+     scan(vv,i->scan(vv, j->SM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then s_(i,j) else s_(j,i)));
+     matrix SM) 
+
+diMatrix = method()
+diMatrix (Ring,MixedGraph) := (R,g) -> (
+     G := graph collateVertices g;
+     dd := graph G#Digraph;
+     vv := sort vertices g;
+     n := R#paramRing#0;
+     l := value R#paramRing#2;
+     LM := mutableMatrix(R,n,n);
+     scan(vv,i->scan(toList dd#i, j->LM_(pos(vv,i),pos(vv,j))=l_(i,j)));
+     matrix LM) 
+
+biMatrix = method()
+biMatrix (Ring,MixedGraph) := (R,g) -> (
+     G := graph collateVertices g;
+     bb := graph G#Bigraph;
+     vv := sort vertices g;
+     n := R#paramRing#0;
+     p := value R#paramRing#3;
+     PM := mutableMatrix(R,n,n);
+     scan(vv,i->PM_(pos(vv,i),pos(vv,i))=p_(i,i));
+     scan(vv,i->scan(toList bb#i, j->PM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then p_(i,j) else p_(j,i)));
+     matrix PM) 
+
+
+
+-- IDENTIFIABILITY --
+
+identify = method()
+-- Input: a MixedGraph
+-- Output: a hash table H where for each parameter t, H#t is the ideal of relations involving t and the entries of the covariance matrix.
+identify (Ring,MixedGraph) := (R,g) -> (
+     SM := covMatrix(R,g);    
+     PM := biMatrix(R,g);     
+     LM := diMatrix(R,g);
+     
+     -- equate \Sigma with (I-\Lambda)^{-T}\Phi(I-\Lambda)^{-1}
+     Linv := inverse(1-matrix(LM));
+     LiPL := transpose(Linv)*matrix(PM)*Linv;
+     MPmLiPL := SM-LiPL;
+     -- form ideal of relations from this matrix equation
+     J := ideal unique flatten entries MPmLiPL;
+     -- print(MPmLiPL);
+     -- print(J);
+	
+     -- create hash table of relations between a particular parameter t and the entries of \Sigma 
+     G := graph g;
+     m := #edges(G#Digraph)+#edges(G#Bigraph)+#vertices(g);
+     plvars := toList apply(0..m-1,i->(flatten entries vars R)#i);
+     H := new MutableHashTable;
+     scan(plvars,t->H#t=eliminate(delete(t,plvars),J));
+     new HashTable from H
+
+	-- for t in plvars do
+	-- (
+	  -- Jmt := eliminate(delete(t,plvars),J);
+	  
+      	  -- the parameter we are checking identifiability with
+	  -- print(t);
+	  
+	  -- whether the image of the parameterization is dense in the probability space
+	  -- non-zero if it is dense, 0 if it is not dense
+	  -- print(min(apply(Jmt_*, q->degree(t,q))));
+	  
+	  -- minimum number of points in the fiber over a point in the image
+	  -- print(min(delete(0,apply(Jmt_*, q->degree(t,q)))));
+	  
+	  -- ideal of equations containing s_(i,j) and the parameter t
+	  -- print(Jmt);
+	--);
+)
+
+
+
+-- CONDITIONAL INDEPENDENCE --
+
+trekSeparation = method()
+    -- Input: A mixed graph containing a directed graph and a bidirected graph.
+    -- Output: A list L of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B.
+trekSeparation MixedGraph := (g) -> (
+    G := graph collateVertices g;
+    dd := graph G#Digraph;
+    bb := graph G#Bigraph; 
+    vv := vertices g;
+
+    -- Construct canonical double DAG cdG associated to mixed graph G
+    cdG:= digraph join(
+      apply(vv,i->{(a,i),join(
+        apply(toList parents(G#Digraph,i),j->(a,j)),
+        {(b,i)}, apply(toList bb#i,j->(b,j)))}),
+      apply(vv,i->{(b,i),apply(toList dd#i,j->(b,j))}));
+    aVertices := apply(vv, i->(a,i));
+    bVertices := apply(vv, i->(b,i));
+    allVertices := aVertices|bVertices;
+    
+    statements := {};
+    cdC0 := new MutableHashTable;
+    cdC0#cache = new CacheTable from {};
+    cdC0#graph = new MutableHashTable from apply(allVertices,i->{i,cdG#graph#i});
+    cdC := new Digraph from cdC0;
+    for CA in (subsets aVertices) do (
+      for CB in (subsets bVertices) do (
+	CAbin := setToBinary(aVertices,CA);
+	CBbin := setToBinary(bVertices,CB);
+	if CAbin <= CBbin then (
+          C := CA|CB;
+	  scan(allVertices,i->cdC#graph#i=cdG#graph#i);
+          scan(C, i->scan(allVertices, j->(
+			 cdC#graph#i=cdC#graph#i-{j};
+			 cdC#graph#j=cdC#graph#j-{i};
+			 )));
+	  Alist := delete({},subsetsBetween(CA,aVertices));
+          while #Alist > 0 do (
+	    minA := first Alist;
+	    pC := reachable(cdC,set minA);
+	    A := toList ((pC*(set aVertices)) + set CA);
+	    Alist = Alist - (set subsetsBetween(minA,A));
+	    B := toList ((set bVertices) - pC);
+	    
+	    -- remove redundant statements
+	    if #CA+#CB < min{#A,#B} then (
+	    if not ((CAbin==CBbin) and (setToBinary(aVertices,A) > setToBinary(bVertices,B))) then (
+	      nS := {apply(A,i->i#1),apply(B,i->i#1),apply(CA,i->i#1),apply(CB,i->i#1)};
+	      appendnS := true;
+	      statements = select(statements, cS->
+		if cS#0===nS#0 and cS#1===nS#1 then (
+		  if isSubset(cS#2,nS#2) and isSubset(cS#3,nS#3) then 
+		    (appendnS = false; true)
+		  else if isSubset(nS#2,cS#2) and isSubset(nS#3,cS#3) then 
+		    false
+		  else
+		    true)
+		else if cS#2===nS#2 and cS#3===nS#3 then (
+		  if isSubset(cS#0,nS#0) and isSubset(cS#1,nS#1) then 
+		    false
+		  else if isSubset(nS#0,cS#0) and isSubset(nS#1,cS#1) then 
+		    (appendnS = false; true)
+		  else
+		    true)		  
+		else true		
+	      );
+              if appendnS then statements = append(statements, nS);
+            ););
+     	  );
+        );
+      );
+    );
+    statements
+)
+
+
+
+
 
 ----------------------
 -- Parameterization --
@@ -1198,6 +1428,41 @@ scan(F, g -> (
 	  J = trim ideal(gens J % linears);
 	  << g << codim J << ", " << betti res J << endl;
 	  ))
+
+-- tests for Gaussian Mixed Graphs
+
+restart
+loadPackage "GraphicalModels"
+g = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+R = gaussRing g
+M = covMatrix R
+g = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+R = paramRing g
+M = covMatrix(R,g)
+--     | s_(a,a) s_(a,b) s_(a,c) s_(a,d) |
+--     | s_(a,b) s_(b,b) s_(b,c) s_(b,d) |
+--     | s_(a,c) s_(b,c) s_(c,c) s_(c,d) |
+--     | s_(a,d) s_(b,d) s_(c,d) s_(d,d) |
+D = diMatrix(R,g)
+--     | 0 0 0       0       |
+--     | 0 0 l_(b,c) l_(b,d) |
+--     | 0 0 0       l_(c,d) |
+--     | 0 0 0       0       |
+B = biMatrix(R,g)
+--     | p_(a,a) 0       0       p_(a,d) |
+--     | 0       p_(b,b) 0       0       |
+--     | 0       0       p_(c,c) 0       |
+--     | p_(a,d) 0       0       p_(d,d) |
+identify(R,g)
+--      new HashTable from {p_(a,d) => ideal(s_(a,c),s_(a,b),p_(a,d)-s_(a,d)), p_(d,d) =>
+--      ideal(s_(a,c),s_(a,b),p_(d,d)*s_(b,c)^2-p_(d,d)*s_(b,b)*s_(c,c)-s_(b,d)^2*s_(c,c)+2*s_(b,c)*s_(b,d)*s_(c,d)-s_(b,b)*s_(c,d)^2-s_(b,c)^2*s_(d,d)+s_(b,
+--      b)*s_(c,c)*s_(d,d)), p_(c,c) => ideal(s_(a,c),s_(a,b),p_(c,c)*s_(b,b)+s_(b,c)^2-s_(b,b)*s_(c,c)), p_(b,b) => ideal(s_(a,c),s_(a,b),p_(b,b)-s_(b,b)),
+--      p_(a,a) => ideal(s_(a,c),s_(a,b),p_(a,a)-s_(a,a)), l_(b,c) => ideal(s_(a,c),s_(a,b),l_(b,c)*s_(b,b)-s_(b,c)), l_(b,d) =>
+--      ideal(s_(a,c),s_(a,b),l_(b,d)*s_(b,c)^2-l_(b,d)*s_(b,b)*s_(c,c)+s_(b,d)*s_(c,c)-s_(b,c)*s_(c,d)), l_(c,d) =>
+--      ideal(s_(a,c),s_(a,b),l_(c,d)*s_(b,c)^2-l_(c,d)*s_(b,b)*s_(c,c)-s_(b,c)*s_(b,d)+s_(b,b)*s_(c,d))}
+trekSeparation(g)
+--     {{{a}, {c, b}, {}, {}}, {{a, b}, {c, b}, {}, {b}}, {{b, c}, {a, b}, {}, {b}}, {{b, c}, {c, a}, {}, {c}}, {{b, c}, {d, a}, {}, {d}}}
+
 
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=Markov pre-install"
