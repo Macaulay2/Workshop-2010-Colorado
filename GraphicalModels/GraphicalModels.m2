@@ -102,8 +102,6 @@ needsPackage "Graphs"
 ---- isMonomial works well as long as m is actually a polynomial or monomial and not 
 ---- an element of ZZ, QQ, RR, etc.
 
----- NOTE ALL basic graph functionality has been moved to Graphs.m2
----- Should removeNodes also be moved? --it's already there!
 
 --------------------------
 --   Markov relations   --
@@ -195,7 +193,7 @@ bayesBall = (A,C,G) -> (
      --G = graph G;
      n := #keys  G; -- n := #G;
      -- DEVELOPMENT NOTES: 
-     -- "keys G" should be replaced by "keys graph G":
+     -- "keys G" should be replaced by "keys graph G": but this does not fix all the errors!!
      visited := new MutableHashTable from apply(keys  G,k-> k=>false);
      blocked :=  new MutableHashTable from apply(keys G,k-> k=>false);
      up :=  new MutableHashTable from apply(keys  G,k-> k=>false);
@@ -445,6 +443,12 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
 getPositionOfKeys = (G,S) -> 
      --apply(S, v -> position(sort keys G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
      apply(S, v -> position(keys G, k-> k===v)) 
+--********DEVELOPMENT NOTES ********
+--9/17 Sonja: 
+--i believe that in the line above "keys G" should again be replaced by "keys graph G" (Graphs.m2 compatibility issues?)
+--however, I am not going to change this for the moment untill I check what happens with all the code that uses
+--this function. So for now I'm calling it from gaussIdeal, and I've inserted the word "graph" there!!! 
+--********DEVELOPMENT NOTES ********
      
 -- cartesian ({d_1,...,d_n}) returns the cartesian product 
 -- of {0,...,d_1-1} x ... x {0,...,d_n-1}
@@ -537,8 +541,8 @@ gaussMinors = method()
 gaussMinors(Digraph,Matrix,List) := (G,M,Stmt) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list Stmts is one statement {A,B,C}.
-     rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2));
-     cols := join(getPositionOfKeys(G,Stmt#1), getPositionOfKeys(G,Stmt#2)); 
+     rows := join(getPositionOfKeys(graph G,Stmt#0), getPositionOfKeys(graph G,Stmt#2)); --see 9/17 notes @getPositionOfKeys
+     cols := join(getPositionOfKeys(graph G,Stmt#1), getPositionOfKeys(graph G,Stmt#2));  
      M1 = submatrix(M,rows,cols);
      minors(#Stmt#2+1,M1)     
      )
@@ -585,21 +589,11 @@ gaussMatrices = method()
 gaussMatrices(Digraph,Matrix,List) := (G,M,s) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list s is a statement of the form {A,B,C}.
-     --flatten apply(Stmts, s-> (
-     	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));
-     	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2)); 
+     	       rows := join(getPositionOfKeys(graph G,s#0), getPositionOfKeys(graph G,s#2));  --see 9/17 notes @getPositionOfKeys
+     	       cols := join(getPositionOfKeys(graph G,s#1), getPositionOfKeys(graph G,s#2));  --see 9/17 notes @getPositionOfKeys
      	       submatrix(M,rows,cols)
-     --	       )
-     --	  )
      )
-///--EXAMPLE: 
-gaussIdeal(R,G,D)
-gaussIdeal(R,G)
---gaussMatrices(G,M,Stmts)
-sta=Stmts_0
-gaussMatrices(G,M,sta)
-apply(Stmts, sta-> gaussMatrices(G,M,sta))
-///
+
 
 
 -- THE FOLLOWING NEEDS TO BE COPIED TO THE GAUSSIAN STUFF:
@@ -891,7 +885,7 @@ doc ///
        netList pack(2,I_*)
     Text
       Sometimes an ideal can be simplified by changing variables.  Very often, 
-      by using, @TO marginMap@,
+      by using @TO marginMap@
       such ideals can be transformed to binomial ideals.  This is the case here.
     Example
        F = marginMap(1,R)
@@ -1026,7 +1020,7 @@ doc ///
       For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
       we get the following global Markov statements:
     Example
-      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} -- L = globalMarkovStmts D
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} -- L = globalMarkovStmts D --NEEDS TO BE UNCOMMENTED ONCE BAYESBALL IS FIXED!
     Text
       Note that the method displays only non-redundant statements.
   Caveat
@@ -1156,10 +1150,11 @@ doc ///
     optional input to choose the base field
   Description
     Text
-      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in the function markovRing or gaussRing
+      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in the function @TO markovRing@ or @TO gaussRing@
   SeeAlso
     markovRing
     gaussRing
+    paramRing
 ///;
 
 
@@ -1170,10 +1165,11 @@ doc ///
     optional input to choose the letter for the variable name
   Description
     Text
-      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function markovRing or gaussRing
+      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function @TO markovRing@ or @TO gaussRing@
   SeeAlso
     markovRing
     gaussRing
+    paramRing
 ///;
 
 
@@ -1197,8 +1193,8 @@ doc ///
       a ring with indeterminates $s_(i,j)$ for $1 \leq i \leq j \leq n$
   Description
     Text
-      The routines  {gaussIdeal} {gaussTrekIdeal} 
-      all require that the ring      be created by this function.
+      The routines  @TO gaussIdeal@ and @TO trekIdeal@ require that the ring      
+      be created by this function.
     Example
       R = gaussRing 5;
       gens R
@@ -1207,53 +1203,115 @@ doc ///
     gaussIdeal
     trekIdeal
 ///
+
+
+
+
+doc ///
+   Key
+     gaussIdeal
+     (gaussIdeal,Ring,Digraph)
+     (gaussIdeal,Ring,Digraph,List)
+   Headline
+     correlation ideal of a Bayesian network of joint Gaussian variables
+   Usage
+     I = gaussIdeal(R,G) or I = gaussIdeal(R,G,S)
+   Inputs
+     R:Ring
+       created with @TO gaussRing@
+     G:Digraph
+       an acyclic directed graph
+     S:List
+       a list of independence statements for the graph G
+   Outputs
+     I:Ideal
+        in R, of the relations in the correlations of the random variables implied by the independence statements 
+	of the graph G, or the list of independence statements G
+   Description
+     Text
+       The ideal corresponding to a conditional independence statement {A,B,C} (where A,B,C,
+       are disjoint lists of integers in the range 1..n (n is the number of random variables)
+       is the #C+1 x #C+1 minors of the submatrix of the generic symmetric matrix M = (s_(i,j)), whose
+       rows are in A union C, and whose columns are in B union C.  In general, this ideal need not be prime.
+       
+       These ideals were first written down by Seth Sullivant, in "Algebraic geometry of Gaussian Bayesian networks". 
+       The routines in this package involving Gaussian variables are all based on that paper.
+     Example
+       R = gaussRing 5;
+       G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } --(globalMarkovStmts G)/print; --J = gaussIdeal(R,G) --this is broken until globalMarkovStmts gets fixed!!!
+     Text
+       A list of independence statments (as for example returned by globalMarkovStmts)
+       can be provided instead of a graph:
+     Example
+       S=pairMarkovStmts G --change to global!!!!
+       I = gaussIdeal(R,G,S) --- {{{1,2},{4,5},{3}}, {{1},{2},{3,4,5}}}) ---THIS LIST OF STMTS IS AN OLD EXAMPLE. erase?
+       codim I
+   SeeAlso
+     globalMarkovStmts
+     localMarkovStmts
+     gaussRing
+     gaussMatrices
+     trekIdeal
+///
+
+
+doc///
+   Key
+     gaussMatrices
+     (gaussMatrices,Digraph,Matrix,List)
+   Headline
+     matrices whose minors form the ideal corresponding to a conditional independence statement s
+   Usage
+     mat = gaussMatrices(G,M,s)
+   Inputs
+     G:Digraph
+       a directed acyclic graph
+     M:Matrix
+       an n by n symmetric matrix, where s mentions variables 1..n (at most)
+     s:List
+       a conditional independence statement that holds for the graph G
+   Outputs
+     mat:Matrix
+       whose minors belong to the ideal corresponding to a conditional independence statement s.
+   Description 
+     Text
+       In case user just wnats to see the mtces we are taking minors of, here they are:
+     Example
+       G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } ;
+       Stmts = localMarkovStmts G;
+       sta=Stmts_0 --take the first statement from the list
+       R = gaussRing (# keys graph G); --we need as many variables as there are nodes in the graph
+       M = genericSymmetricMatrix(R, R#gaussRing);
+       gaussMatrices(G,M,sta)
+     Text
+       In fact, we can see, at once, all matrices whose minors form the ideal @TO gaussIdeal@ of G:
+     Example
+       apply(Stmts, sta-> gaussMatrices(G,M,sta))
+   SeeAlso
+///
+
 --------------------------------------
 --------------------------------------
 end
 --------------------------------------
 --------------------------------------
 
-
-
-
-document { 
-     Key => {gaussIdeal, (gaussIdeal,Ring,Digraph), (gaussIdeal,Ring,List)},
-     Headline => "correlation ideal of a Bayesian network of joint Gaussian variables",
-     Usage => "gaussIdeal(R,G)",
-     Inputs => { 
-	  "R" => Ring => {"created with ", TO  "gaussRing", ""},
-	  "G" => {ofClass Digraph, " or ", ofClass List}
-	   },
-     Outputs => {
-	  "the ideal in R of the relations in the correlations of the random variables implied by the
-	  independence statements of the graph G or the list of independence statements G"
-	  },
-     "These ideals were first written down by Seth Sullivant, in \"Algebraic geometry of Gaussian Bayesian networks\". 
-     The routines in this package involving Gaussian variables are all based on that paper.",
-     EXAMPLE lines ///
-          R = gaussRing 5;
-	  G = makeGraph {{2},{3},{4,5},{5},{}}
-	  (globalMarkovStmts G)/print;
-	  J = gaussIdeal(R,G)
-          ///,
-     PARA{},
-     "A list of independence statments (as for example returned by globalMarkovStmts)
-     can be provided instead of a graph.",
-     PARA{},
-     "The ideal corresponding to a conditional independence statement {A,B,C} (where A,B,C,
-     are disjoint lists of integers in the range 1..n (n is the number of random variables)
-     is the #C+1 x #C+1 minors of the submatrix of the generic symmetric matrix M = (s_(i,j)), whose
-     rows are in A union C, and whose columns are in B union C.  In general, this does not need to
-     be a prime ideal.",
-     EXAMPLE lines ///
-          I = gaussIdeal(R,{{{1,2},{4,5},{3}}, {{1},{2},{3,4,5}}})
-	  codim I
-          ///,
-     SeeAlso => {"makeGraph", "globalMarkovStmts", "localMarkovStmts", "gaussRing", "gaussMinors", "gaussTrekIdeal"}
-     }
-
-end
-
+--blank documentation node:
+doc/// 
+   Key
+     gaussMatrices
+     (gaussMatrices,Digraph,Matrix,List) 
+   Headline
+   Usage
+   Inputs
+   Outputs
+   Description 
+     Text
+     Example
+     Text
+     Example
+   SeeAlso
+///
 
 uninstallPackage "GraphicalModels"
 restart
