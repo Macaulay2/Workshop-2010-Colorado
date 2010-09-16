@@ -76,7 +76,7 @@ newPackage(
 export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts, 
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
        gaussRing, gaussMatrices, gaussIdeal, trekIdeal, 
-       Coefficients, VariableName,
+       Coefficients, VariableName,VariableNameBigraph, VariableNameDigraph, VariableNameCovariance, 
        paramRing,covMatrix,diMatrix,biMatrix,
        identify,trekSeparation} 
      
@@ -411,9 +411,9 @@ markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
      -- independence statements
      d := R.markov;
      flatten apply(Stmts, stmt -> (
-     	       Avals := possibleValues(d,getPositionOfKeys(G,stmt#0));
-     	       Bvals := possibleValues(d,getPositionOfKeys(G,stmt#1));
-     	       Cvals := possibleValues(d,getPositionOfKeys(G,stmt#2));
+     	       Avals := possibleValues(d,getPositionOfKeys(graph G,stmt#0)); --see 9/17 notes @getPositionOfKeys
+     	       Bvals := possibleValues(d,getPositionOfKeys(graph G,stmt#1)); --see 9/17 notes @getPositionOfKeys
+     	       Cvals := possibleValues(d,getPositionOfKeys(graph G,stmt#2)); --see 9/17 notes @getPositionOfKeys
      	       apply(Cvals, c -> (
                   matrix apply(Avals, 
 		       a -> apply(Bvals, b -> (
@@ -434,6 +434,7 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
 -------------------------------------------------------
 -- Constructing the ideal of a independence relation --
 -------------------------------------------------------
+
 -- NOTE: ALL THE FUNCTIONS BELOW ARE DECLARED GLOBAL INSTEAD OF LOCAL
 -- FOR THE REASON THAT LOCAL DEFINITIONS WOULD INEXPLICABLY 
 -- CREATE ERRORS.
@@ -449,6 +450,7 @@ getPositionOfKeys = (G,S) ->
 --however, I am not going to change this for the moment untill I check what happens with all the code that uses
 --this function. So for now I'm calling it from gaussIdeal, and I've inserted the word "graph" there!!! 
 --********DEVELOPMENT NOTES ********
+     
      
 -- cartesian ({d_1,...,d_n}) returns the cartesian product 
 -- of {0,...,d_1-1} x ... x {0,...,d_n-1}
@@ -470,7 +472,6 @@ possibleValues = (d,A) ->
 	       else {0}))
      
 -- prob((d_1,...,d_n),(s_1,dots,s_n))
-
 prob = (d,s) -> (
      L := cartesian toList apply (#d, i -> 
 	   if s#i === 0 
@@ -483,7 +484,7 @@ prob = (d,s) -> (
 -----------------------------------------
 
 gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>symbol s})
-gaussRing ZZ := opts -> (n) -> (
+gaussRing ZZ :=  Ring => opts -> (n) -> (
      -- s_{1,2} is the (1,2) entry in the covariance matrix.
      --this assumes r.v.'s are labeled by integers.
      x := opts.VariableName;
@@ -495,7 +496,7 @@ gaussRing ZZ := opts -> (n) -> (
      )
      -- we want to be able to do s_{a,b} for example:
 
-gaussRing Digraph := opts -> (g) -> (
+gaussRing Digraph :=  Ring => opts -> (g) -> (
      --I want the input to be the Digraph G, 
      --and I'm just gonna read off the list of labels from the keys.
      -- This is done to avoid any ordering confusion. 
@@ -538,7 +539,7 @@ gaussMinors = method()
 --     M1 = submatrix(M,rows,cols);
 --     minors(#D#2 + 1, M1)
 --     )
-gaussMinors(Digraph,Matrix,List) := (G,M,Stmt) -> (
+gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list Stmts is one statement {A,B,C}.
      rows := join(getPositionOfKeys(graph G,Stmt#0), getPositionOfKeys(graph G,Stmt#2)); --see 9/17 notes @getPositionOfKeys
@@ -562,7 +563,7 @@ gaussMinors(G,M,D)
 
 
 gaussIdeal = method()
-gaussIdeal(Ring, Digraph, List) := (R,G,Stmts) -> (
+gaussIdeal(Ring, Digraph, List) := Ideal =>  (R,G,Stmts) -> (
      -- for each statement, we take a set of minors
      -- Stmts = global markov statements of G
      -- R = gaussRing of G
@@ -573,7 +574,7 @@ gaussIdeal(Ring, Digraph, List) := (R,G,Stmts) -> (
      )
 
 --in case the global sttmts are not computed already :
-gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
+gaussIdeal(Ring,Digraph) := Ideal =>  (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
 
 --gaussIdeal(Ring, List) := (R,Stmts) -> (
 --     -- for each statement, we take a set of minors
@@ -586,7 +587,7 @@ gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
 
 --in case user just wnats to see the mtces we are taking minors of, here they are:
 gaussMatrices = method()
-gaussMatrices(Digraph,Matrix,List) := (G,M,s) -> (
+gaussMatrices(Digraph,Matrix,List) := List =>  (G,M,s) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list s is a statement of the form {A,B,C}.
      	       rows := join(getPositionOfKeys(graph G,s#0), getPositionOfKeys(graph G,s#2));  --see 9/17 notes @getPositionOfKeys
@@ -598,7 +599,7 @@ gaussMatrices(Digraph,Matrix,List) := (G,M,s) -> (
 
 -- THE FOLLOWING NEEDS TO BE COPIED TO THE GAUSSIAN STUFF:
 trekIdeal = method()
-trekIdeal(Ring, Digraph) := (R,G) -> (
+trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --for a Digraph, the method is faster--so we just need to overload it for a DAG. 
      --    G = convertToIntegers(G);
      --    n := max keys G;
@@ -649,7 +650,7 @@ paramRing = method(Options=>{Coefficients=>QQ, VariableNameCovariance=>value "sy
 -- and of the entries of the covariance matrix s_(i,j)
 -- later, given the edges, we will set some of these parameters to zero
 -- the reason we included all the other variables is so that it is easy to make the corresponding matrices
-paramRing MixedGraph := opts -> (g) -> (
+paramRing MixedGraph := Ring => opts -> (g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      bb := graph G#Bigraph;
@@ -668,7 +669,7 @@ paramRing MixedGraph := opts -> (g) -> (
      )
 
 covMatrix = method()
-covMatrix Ring := (R) -> (
+covMatrix Ring := Matrix => (R) -> (
        n := R#gaussRing; 
        genericSymmetricMatrix(R,n))
 covMatrix (Ring,MixedGraph) := (R,g) -> (
@@ -680,7 +681,7 @@ covMatrix (Ring,MixedGraph) := (R,g) -> (
      matrix SM) 
 
 diMatrix = method()
-diMatrix (Ring,MixedGraph) := (R,g) -> (
+diMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      vv := sort vertices g;
@@ -691,7 +692,7 @@ diMatrix (Ring,MixedGraph) := (R,g) -> (
      matrix LM) 
 
 biMatrix = method()
-biMatrix (Ring,MixedGraph) := (R,g) -> (
+biMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      bb := graph G#Bigraph;
      vv := sort vertices g;
@@ -709,7 +710,7 @@ biMatrix (Ring,MixedGraph) := (R,g) -> (
 identify = method()
 -- Input: a MixedGraph
 -- Output: a hash table H where for each parameter t, H#t is the ideal of relations involving t and the entries of the covariance matrix.
-identify (Ring,MixedGraph) := (R,g) -> (
+identify (Ring,MixedGraph) := HashTable => (R,g) -> (
      SM := covMatrix(R,g);    
      PM := biMatrix(R,g);     
      LM := diMatrix(R,g);
@@ -757,7 +758,7 @@ identify (Ring,MixedGraph) := (R,g) -> (
 trekSeparation = method()
     -- Input: A mixed graph containing a directed graph and a bidirected graph.
     -- Output: A list L of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B.
-trekSeparation MixedGraph := (g) -> (
+trekSeparation MixedGraph := List => (g) -> (
     G := graph collateVertices g;
     dd := graph G#Digraph;
     bb := graph G#Bigraph; 
@@ -828,7 +829,7 @@ trekSeparation MixedGraph := (g) -> (
     statements
 )
 
-trekIdeal (Ring,MixedGraph,List) := (R,g,Stmts) -> (
+trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
      G := graph g;
      vv := sort vertices g;
      SM := covMatrix(R,g);	
@@ -921,13 +922,6 @@ doc ///
      to label the vertices in a consistent way (all numbers, or all letters, etc).
 ///;
 
-
-
---------------------------------------
---------------------------------------
---end
---------------------------------------
---------------------------------------
 
 doc ///
   Key
@@ -1150,12 +1144,13 @@ doc ///
     optional input to choose the base field
   Description
     Text
-      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in the function @TO markovRing@ or @TO gaussRing@
+      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in 
+      the function @TO markovRing@ or @TO gaussRing@ or @TO paramRing@. 
   SeeAlso
     markovRing
     gaussRing
     paramRing
-///;
+///
 
 
 doc ///
@@ -1170,7 +1165,7 @@ doc ///
     markovRing
     gaussRing
     paramRing
-///;
+///
 
 
 doc ///
@@ -1288,8 +1283,200 @@ doc///
      Example
        apply(Stmts, sta-> gaussMatrices(G,M,sta))
    SeeAlso
+     gaussRing
+     gaussIdeal
 ///
 
+doc/// 
+   Key
+     markovIdeal
+     (markovIdeal,Ring,Digraph,List) 
+   Headline
+     the ideal associated to the list of independence statements of the graph
+   Usage
+     I = markovIdeal(R,G,Statements)
+   Inputs
+     R:Ring
+       which should a markovRing 
+     G:Digraph
+       directed acyclic graph
+     Statements:List
+       a list of independence statements that are true for the DAG G
+   Outputs
+     I:Ideal
+       of R
+   Description 
+     Text
+       This function computes the ideal of independence relations for the list of statements provided. 
+       NEED TO INSERT THE DEFINITION OF WHAT THESE ARE !!!! 
+     Example
+       G = digraph { {1,{2,3}}, {2,{4}}, {3,{4}} } ;
+       d = (4:2) -- we have five binary random variables
+       R = markovRing d ;
+       Statements = localMarkovStmts G
+       I = markovIdeal ( R, G, Statements)
+   SeeAlso
+     markovRing
+     markovMatrices
+///
+
+doc/// 
+   Key
+     markovMatrices
+     (markovMatrices,Ring,Digraph,List) 
+   Headline
+     the matrices whose minors form the ideal associated to the list of independence statements of the graph
+   Usage
+     matrices = markovMatrices(R,G,Statements)
+   Inputs
+     R:Ring
+       which should a markovRing 
+     G:Digraph
+       directed acyclic graph
+     Statements:List
+       a list of independence statements that are true for the DAG G
+   Outputs
+     matrices:List
+       whose elements are instances of Matrix. Minors of these matrices form the independence ideal for statements.
+   Description 
+     Text
+       This function gives the list of matrices whose minors form the ideal of independence relations for the list of statements provided. 
+       NEED TO INSERT THE DEFINITION OF WHAT THESE ARE !!!! 
+     Example
+       G = digraph { {1,{2,3}}, {2,{4}}, {3,{4}} } ;
+       d = (4:2) -- we have five binary random variables
+       R = markovRing d ;
+       Statements = localMarkovStmts G
+       matrices = markovMatrices ( R, G, Statements)
+   SeeAlso
+     markovRing
+     markovIdeal
+///
+
+doc/// 
+   Key
+     trekIdeal
+     (trekIdeal,Ring,MixedGraph,List)
+   Headline
+     write me 
+   Usage
+     I = trekIdeal(R,G,L)
+   Inputs
+     R:Ring
+       which should be a gaussRing???
+     G:MixedGraph
+       blabla
+     L:List
+       Independence statements that hold for G
+   Outputs
+     I:Ideal
+       the trek separation ideal implied by statements S for the graph G
+   Description 
+     Text
+       DEFINE THE TREK IDEAL HERE!!
+     Example
+       R=gaussRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
+     Text
+       ANOTHER COMMENT HERE!!
+   SeeAlso
+     trekSeparation
+///
+
+doc/// 
+   Key
+     trekSeparation
+     (trekSeparation,MixedGraph)
+   Headline
+     write me 
+   Usage
+     trek = trekSeparation(G)
+   Inputs
+     G:MixedGraph
+       blabla
+   Outputs
+     trek:List
+        of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B
+   Description 
+     Text
+       DEFINE TREK SEPARATION HERE!!
+     Example
+       R=gaussRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
+     Text
+       ANOTHER COMMENT HERE!!
+   SeeAlso
+     trekIdeal
+///
+
+
+
+doc/// 
+   Key
+     paramRing
+     (paramRing,MixedGraph) 
+     [paramRing, Coefficients, VariableNameCovariance, VariableNameDigraph, VariableNameBigraph]
+   Headline
+     write me 
+   Usage
+     P = paramRing G
+   Inputs
+     G:MixedGraph
+       any required properties? if no, delete this line!
+   Outputs
+     P:Ring
+       properties!! insert here.
+   Description 
+     Text
+       -- makes a ring of parameters, $l_(i,j)$ for all vertices $i,j$ of a digraph G, and $p_(i,j)$ for i<j,
+       -- and of the entries of the covariance matrix $s_(i,j)$
+       -- later, given the edges, we will set some of these parameters to zero
+       -- the reason we included all the other variables is so that it is easy to make the corresponding matrices
+     Example
+     Text 
+       insert examples to show HOW TO USE EACH OF THE OPTIONAL INPUTS HERE!! For an example,
+       see the documentation for optional arguments for the function @TO markovRing@.
+       (Note htat we also have to document all htese optional inputs!!!!)
+   SeeAlso
+///
+
+doc ///
+  Key
+    VariableNameCovariance
+  Headline
+    optional input to choose the name for the covariance variables
+  Description
+    Text
+      Put {\tt  VariableNameCovariance=>value "symbol s"} for a choice of a variable name as an argument in the function @TO paramRing@.
+  SeeAlso
+    paramRing
+///
+
+doc ///
+  Key
+    VariableNameDigraph
+  Headline
+    optional input to choose the name for the digraph variables
+  Description
+    Text
+      Put {\tt  VariableNameDigraph=>value "symbol l"} for a choice of a variable name as an argument  in the function @TO paramRing@.
+  SeeAlso
+    paramRing
+///
+
+doc ///
+  Key
+    VariableNameBigraph
+  Headline
+    optional input to choose the name for the bigraph variables
+  Description
+    Text
+      Put {\tt VariableNameBigraph=>value "symbol p"} for a choice of a variable name as an argument  in the function @TO paramRing@.
+  SeeAlso
+    paramRing
+///
+
+
+
+				     
 --------------------------------------
 --------------------------------------
 end
@@ -1313,6 +1500,7 @@ doc///
    SeeAlso
 ///
 
+
 uninstallPackage "GraphicalModels"
 restart
 --installPackage("Graphs", UserMode=>true)
@@ -1322,6 +1510,12 @@ installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
 
 
 
+
+
+
+
+
+---- TESTS GO HERE! ------
 
 
 
