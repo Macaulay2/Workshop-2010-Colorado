@@ -886,8 +886,8 @@ doc ///
     Example
        G = digraph  {{a,{}},{b,{a}},{c,{a}},{d,{b,c}}}
        R = markovRing (2,2,2,2)
-       S = localMarkovStmts G --global
-       I = markovIdeal(R,G,S);
+       S = pairMarkovStmts G --global
+       I = markovIdeal(R,G,S)
        netList pack(2,I_*)
     Text
       Sometimes an ideal can be simplified by changing variables.  Very often, 
@@ -895,7 +895,7 @@ doc ///
       such ideals can be transformed to binomial ideals.  This is the case here.
     Example
        F = marginMap(1,R)
-       I = F I;
+       I = F I
        netList pack(2,I_*)
     Text
       This ideal has 5 primary components.  The first component is the one that has statistical significance.
@@ -908,7 +908,7 @@ doc ///
       The following example illustrates the caveat below.
     Example
        H = digraph {{d,{b,a}},{c,{}},{b,{c}},{a,{c}}}
-       T = localMarkovStmts H  --global
+       T = pairMarkovStmts H  --global
        J = markovIdeal(R,H,T);
        netList pack(2,J_*)
        F = marginMap(3,R);
