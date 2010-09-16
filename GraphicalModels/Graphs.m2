@@ -527,7 +527,7 @@ edges(Graph) := G -> (
 
 edges(Bigraph) := G -> (
      if G#cache#?edges then G#cache#edges else (
-     	  E := edges simpleGraph G;
+     	  E := apply(edges simpleGraph G,set);
 	  G#cache#edges = E;
 	  E)
      )
