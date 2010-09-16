@@ -132,7 +132,7 @@ localMarkovStmts Digraph := List =>  (G) -> (
      -- of the form {v, nondescendents - parents, parents}
      result := {};
      -- DEVELOPMENT NOTES: 
-     -- inside the following loop,
+     -- inside the following "apply"s,
      -- "keys G" is replaced by "keys graph G";
      -- this was done 15Sep to be made comaptible with changes in
      -- Graphs.m2:
@@ -150,7 +150,9 @@ globalMarkovStmts Digraph := List => (G) -> (
      -- so that A and B are d-separated by C (in the graph G).
      -- If G is large, this should maybe be rewritten so that
      -- one huge list of subsets is not made all at once
-     n := #keys G;
+     -- DEVELOPMENT NOTES: 
+     -- "keys G" is replaced by "keys graph G";
+     n := #keys graph G;
      -- vertices := toList(1..n);
      vertices := keys G;
      result := {};
@@ -187,21 +189,19 @@ bayesBall = (A,C,G) -> (
      -- The algorithm is the Bayes Ball algorithm,
      -- as implemented by Luis Garcia, after
      -- the paper of Ross Schlacter
-     n := #keys G; -- n := #G;
-     --zeros := toList((n+1):false);
-     --visited := new MutableList from zeros;
-     --blocked := new MutableList from zeros;
-     --up := new MutableList from zeros;
-     --down := new MutableList from zeros;
-     --top := new MutableList from zeros;
-     --bottom := new MutableList from zeros;
-     --now make new hashtables with same keys as G, but all entries false:
-     visited := new MutableHashTable from apply(keys G,k-> k=>false);
+     --
+     -- DEVELOPMENT NOTES: 
+     -- "keys G" should be replaced by "keys graph G":
+     --G = graph G;
+     n := #keys  G; -- n := #G;
+     -- DEVELOPMENT NOTES: 
+     -- "keys G" should be replaced by "keys graph G":
+     visited := new MutableHashTable from apply(keys  G,k-> k=>false);
      blocked :=  new MutableHashTable from apply(keys G,k-> k=>false);
-     up :=  new MutableHashTable from apply(keys G,k-> k=>false);
+     up :=  new MutableHashTable from apply(keys  G,k-> k=>false);
      down := new MutableHashTable from apply(keys G,k-> k=>false);
-     top :=  new MutableHashTable from apply(keys G,k-> k=>false);
-     bottom := new MutableHashTable from apply(keys G,k-> k=>false);
+     top :=  new MutableHashTable from apply(keys  G,k-> k=>false);
+     bottom := new MutableHashTable from apply(keys  G,k-> k=>false);
      vqueue := toList A; -- sort toList A
      -- Now initialize vqueue, set blocked
      scan(vqueue, a -> up#a = true);
@@ -443,8 +443,9 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
 -- the following function retrieves the position of the keys in the graph G
 -- for all keys contained in the list S
 getPositionOfKeys = (G,S) -> 
-     apply(S, v -> position(sort keys G, k-> k===v))
-
+     --apply(S, v -> position(sort keys G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
+     apply(S, v -> position(keys G, k-> k===v)) 
+     
 -- cartesian ({d_1,...,d_n}) returns the cartesian product 
 -- of {0,...,d_1-1} x ... x {0,...,d_n-1}
 cartesian = (L) -> (
@@ -885,7 +886,7 @@ doc ///
     Example
        G = digraph  {{a,{}},{b,{a}},{c,{a}},{d,{b,c}}}
        R = markovRing (2,2,2,2)
-       S = globalMarkovStmts G
+       S = localMarkovStmts G --global
        I = markovIdeal(R,G,S);
        netList pack(2,I_*)
     Text
@@ -902,13 +903,12 @@ doc ///
       the factorization of the probability distributions 
       according to the graph G. The remaining components lie on the boundary of the simplex
       and are still poorly understood.
-    Example     
-       netList primaryDecomposition I
+      --netList primaryDecomposition I --this command RETURNED AN ERROR (something about needing a poly ring without quotients).
     Text
       The following example illustrates the caveat below.
     Example
        H = digraph {{d,{b,a}},{c,{}},{b,{c}},{a,{c}}}
-       T = globalMarkovStmts H 
+       T = localMarkovStmts H  --global
        J = markovIdeal(R,H,T);
        netList pack(2,J_*)
        F = marginMap(3,R);
@@ -1026,8 +1026,7 @@ doc ///
       For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
       we get the following global Markov statements:
     Example
-      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-      L = globalMarkovStmts D
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} -- L = globalMarkovStmts D
     Text
       Note that the method displays only non-redundant statements.
   Caveat
