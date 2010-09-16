@@ -627,12 +627,6 @@ trekIdeal(Ring, Digraph) := (R,G) -> (
 -- returns the position in list h of the key x
 pos = (h, x) -> position(h, i->i===x)
 
--- returns the hash table M of hash tables storing the adjacency matrix of a digraph G,where M#a#b is true if a->b, and false otherwise.
-adjacencyHashTable = (G) -> (
-        G1 := graph G;
-     	VV := vertices G;
-     	hashTable apply(VV,i->{i,hashTable apply(VV,j->{j,#positions(toList G1#i,k->k===j)})}))
-
 -- takes a list A, and a sublist B of A, and converts the membership sequence of 0's and 1's of elements of B in A to binary
 setToBinary = (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then 1 else 0)))
 
