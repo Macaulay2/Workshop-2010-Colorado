@@ -77,7 +77,8 @@ export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts,
        markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
        gaussRing, gaussMatrices, gaussIdeal, trekIdeal, 
        Coefficients, VariableName,
-       paramRing,covMatrix,diMatrix,biMatrix,identify,trekSeparation} 
+       paramRing,covMatrix,diMatrix,biMatrix,
+       identify,trekSeparation} 
      
 needsPackage "Graphs"
 
@@ -828,6 +829,12 @@ trekSeparation MixedGraph := (g) -> (
     statements
 )
 
+trekIdeal (Ring,MixedGraph,List) := (R,g,Stmts) -> (
+     G := graph g;
+     vv := sort vertices g;
+     SM := covMatrix(R,g);	
+     sum apply(Stmts,s->minors(#s#2+#s#3+1, submatrix(SM,apply(s#0,x->pos(vv,x)),apply(s#1,x->pos(vv,x))))))
+
 
 
 
@@ -1460,8 +1467,13 @@ identify(R,g)
 --      p_(a,a) => ideal(s_(a,c),s_(a,b),p_(a,a)-s_(a,a)), l_(b,c) => ideal(s_(a,c),s_(a,b),l_(b,c)*s_(b,b)-s_(b,c)), l_(b,d) =>
 --      ideal(s_(a,c),s_(a,b),l_(b,d)*s_(b,c)^2-l_(b,d)*s_(b,b)*s_(c,c)+s_(b,d)*s_(c,c)-s_(b,c)*s_(c,d)), l_(c,d) =>
 --      ideal(s_(a,c),s_(a,b),l_(c,d)*s_(b,c)^2-l_(c,d)*s_(b,b)*s_(c,c)-s_(b,c)*s_(b,d)+s_(b,b)*s_(c,d))}
-trekSeparation(g)
+Stmts = trekSeparation(g)
 --     {{{a}, {c, b}, {}, {}}, {{a, b}, {c, b}, {}, {b}}, {{b, c}, {a, b}, {}, {b}}, {{b, c}, {c, a}, {}, {c}}, {{b, c}, {d, a}, {}, {d}}}
+trekIdeal(R,g,Stmts)
+--     ideal(s_(a,c),s_(a,b),s_(a,c)*s_(b,b)-s_(a,b)*s_(b,c),-s_(a,c)*s_(b,b)+s_(a,b)*s_(b,c),s_(a,c)*s_(b,c)-s_(a,b)*s_(c,c),s_(a,c)*s_(b,d)-s_(a,b)*s_(c,d))
+
+
+
 
 
 -- Local Variables:
