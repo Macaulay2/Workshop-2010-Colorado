@@ -115,7 +115,12 @@ pairMarkovStmts Digraph := List => (G) -> (
      -- where A,B,C are disjoint sets, and for every vertex v
      -- and non-descendent w of v,
      -- {v, w, nondescendents(G,v) - w}
-     removeRedundants flatten apply(keys G, v -> (
+     -- DEVELOPMENT NOTES: 
+     -- inside the following loop,
+     -- "keys G" is replaced by "keys graph G";
+     -- this was done 15Sep to be made comaptible with changes in
+     -- Graphs.m2:
+     removeRedundants flatten apply(keys graph G, v -> (
 	       ND := nondescendents(G,v);
 	       W := ND - parents(G,v);
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
@@ -126,7 +131,12 @@ localMarkovStmts Digraph := List =>  (G) -> (
      -- Given a digraph G, return a list of triples {A,B,C}
      -- of the form {v, nondescendents - parents, parents}
      result := {};
-     scan(keys G, v -> (
+     -- DEVELOPMENT NOTES: 
+     -- inside the following loop,
+     -- "keys G" is replaced by "keys graph G";
+     -- this was done 15Sep to be made comaptible with changes in
+     -- Graphs.m2:
+     scan(keys graph G, v -> (
 	       ND := nondescendents(G,v);
 	       P := parents(G,v);
 	       if #(ND - P) > 0 then
@@ -878,7 +888,6 @@ doc ///
        S = globalMarkovStmts G
        I = markovIdeal(R,G,S);
        netList pack(2,I_*)
-       
     Text
       Sometimes an ideal can be simplified by changing variables.  Very often, 
       by using, @TO marginMap@,
@@ -1249,6 +1258,7 @@ end
 
 uninstallPackage "GraphicalModels"
 restart
+--installPackage("Graphs", UserMode=>true)
 installPackage ("GraphicalModels", RemakeAllDocumentation => true, UserMode=>true)
 viewHelp GraphicalModels
 installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
