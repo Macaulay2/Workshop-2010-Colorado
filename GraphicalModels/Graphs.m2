@@ -313,11 +313,11 @@ net LabeledGraph := g -> (
 	  "}" 
      	  ))
 
-expression Graph := (I) -> new FunctionApplication from { graph,
-unsequence apply(toSequence edges I, expression) }
+-- expression Graph := (I) -> new FunctionApplication from { graph,
+-- unsequence apply(toSequence edges I, expression) }
 
-net Ideal := (I) -> net expression I
-toString Ideal := toExternalString Ideal := (I) -> toString expression I
+-- net Ideal := (I) -> net expression I
+-- toString Ideal := toExternalString Ideal := (I) -> toString expression I
 
 toString Digraph := g -> (
      concatenate(
