@@ -1,28 +1,22 @@
 -- -*- coding: utf-8 -*-
 
-needsPackage"Graphs"
+needsPackage "Graphs"
 
 newPackage(
      "GraphicalModels",
-     Version => "1.4",
+     Version => "0.1",
+     Date => "September 15, 2010",
      Authors => {
-	  {Name => "Luis Garcia-Puente"},
-	  {Name => "Mike Stillman"},
-       	  {Name => ""}
+	  {Name => "Luis Garcia-Puente",
+	   Email => "lgarcia@shsu.edu",
+	   HomePage => "http://www.shsu.edu/~ldg005"},
+	  {Name => "Mike Stillman",
+	   Email => "mike@math.cornell.edu",
+	   HomePage => "http://www.math.cornell.edu/~mike/"} 
 	  },
      Headline => "A package for discrete and Gaussian statistical graphical models",
      DebuggingMode => true
      )
-
-------- 7-12 Aug 2010 -------------
--- updates, changes, bugs, typos, organization, documentation 
--- by the algstats grp at colorado!
------------------------------------
-
----- 28.10.09 ---- 
----- Version by the Working group at Aim  and MSRI
----- Amelia Taylor and Augustine O'Keefe
----- Comments from this group have 4 dashes, those with 2 are Mike/Luis. 
 
 ------------------------------------------
 -- Algebraic Statistics in Macaulay2
@@ -73,35 +67,31 @@ newPackage(
 ------------------------------------------
 
 
-export {pairMarkovStmts, localMarkovStmts, globalMarkovStmts, 
-       markovRing, marginMap, hideMap, markovMatrices, markovIdeal,
-       gaussRing, gaussMatrices, gaussIdeal, trekIdeal, 
-       Coefficients, VariableName,VariableNameBigraph, VariableNameDigraph, VariableNameCovariance, 
-       paramRing,covMatrix,diMatrix,biMatrix,
-       identify,trekSeparation} 
+export {pairMarkovStmts, 
+        localMarkovStmts, 
+	globalMarkovStmts, 
+        markovRing, 
+	marginMap, 
+	hideMap, 
+	markovMatrices, 
+	markovIdeal,
+        gaussRing, 
+	gaussMatrices, 
+	gaussIdeal, 
+	trekIdeal, 
+        Coefficients, 
+	VariableName,
+	VariableNameBigraph, 
+	VariableNameDigraph, 
+	VariableNameCovariance, 
+        paramRing,
+	covMatrix,
+	diMatrix,
+	biMatrix,
+        identify,
+	trekSeparation} 
      
 needsPackage "Graphs"
-
-----  parameterizations and for toric varieties the corresponding matrix. 
-----  In the case of toric varieties the matrix is easy.  Here is the code, 
-----  commented out to be used later when we are ready. 
----- 
-----  toAMatrix = method()
-----  toAMatrix List := Matrix => (M) -> (
-----      if any(M,isMonomial)
-----         then error "this parameterization does not correspond to a toric ideal." 
-----         else (
-----              Mexp := apply(M, exponents);
-----              transpose matrix apply(Mexp, flatten)))
-----
----- isMonomial = method()
----- isMonomial RingElement := Boolean => (m) -> (
-----      termList := terms m;
-----      if #termList == 1 then true else false)
-
----- isMonomial works well as long as m is actually a polynomial or monomial and not 
----- an element of ZZ, QQ, RR, etc.
-
 
 --------------------------
 --   Markov relations   --
@@ -113,12 +103,7 @@ pairMarkovStmts Digraph := List => (G) -> (
      -- where A,B,C are disjoint sets, and for every vertex v
      -- and non-descendent w of v,
      -- {v, w, nondescendents(G,v) - w}
-     -- DEVELOPMENT NOTES: 
-     -- inside the following loop,
-     -- "keys G" is replaced by "keys graph G";
-     -- this was done 15Sep to be made comaptible with changes in
-     -- Graphs.m2:
-     removeRedundants flatten apply(keys graph G, v -> (
+     removeRedundants flatten apply(vertices G, v -> (
 	       ND := nondescendents(G,v);
 	       W := ND - parents(G,v);
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
@@ -129,12 +114,7 @@ localMarkovStmts Digraph := List =>  (G) -> (
      -- Given a digraph G, return a list of triples {A,B,C}
      -- of the form {v, nondescendents - parents, parents}
      result := {};
-     -- DEVELOPMENT NOTES: 
-     -- inside the following "apply"s,
-     -- "keys G" is replaced by "keys graph G";
-     -- this was done 15Sep to be made comaptible with changes in
-     -- Graphs.m2:
-     scan(keys graph G, v -> (
+     scan(vertices G, v -> (
 	       ND := nondescendents(G,v);
 	       P := parents(G,v);
 	       if #(ND - P) > 0 then
@@ -148,18 +128,14 @@ globalMarkovStmts Digraph := List => (G) -> (
      -- so that A and B are d-separated by C (in the graph G).
      -- If G is large, this should maybe be rewritten so that
      -- one huge list of subsets is not made all at once
-     -- DEVELOPMENT NOTES: 
-     -- "keys G" is replaced by "keys graph G";
-     n := #keys graph G;
-     -- vertices := toList(1..n);
-     vertices := keys G;
+     V := vertices G;
      result := {};
-     AX := subsets vertices;
+     AX := subsets V;
      AX = drop(AX,1); -- drop the empty set
      AX = drop(AX,-1); -- drop the entire set
      scan(AX, A -> (
 	       A = set A;
-	       Acomplement := toList(set vertices - A);
+	       Acomplement := toList(set V - A);
 	       CX := subsets Acomplement;
 	       CX = drop(CX,-1); -- we don't want C to be the entire complement
 	       scan(CX, C -> (
@@ -185,21 +161,18 @@ bayesBall = (A,C,G) -> (
      -- Returns the subset B of 1..n which is
      --   independent of A given C.
      -- The algorithm is the Bayes Ball algorithm,
-     -- as implemented by Luis Garcia, after
+     -- as implemented by Luis Garcia-Puente, after
      -- the paper of Ross Schlacter
      --
+     V := vertices G;
      -- DEVELOPMENT NOTES: 
-     -- "keys G" should be replaced by "keys graph G":
-     --G = graph G;
-     n := #keys  G; -- n := #G;
-     -- DEVELOPMENT NOTES: 
-     -- "keys G" should be replaced by "keys graph G": but this does not fix all the errors!!
-     visited := new MutableHashTable from apply(keys  G,k-> k=>false);
-     blocked :=  new MutableHashTable from apply(keys G,k-> k=>false);
-     up :=  new MutableHashTable from apply(keys  G,k-> k=>false);
-     down := new MutableHashTable from apply(keys G,k-> k=>false);
-     top :=  new MutableHashTable from apply(keys  G,k-> k=>false);
-     bottom := new MutableHashTable from apply(keys  G,k-> k=>false);
+     -- 
+     visited := new MutableHashTable from apply(V, k-> k=>false);
+     blocked :=  new MutableHashTable from apply(V, k-> k=>false);
+     up :=  new MutableHashTable from apply(V, k-> k=>false);
+     down := new MutableHashTable from apply(V, k-> k=>false);
+     top :=  new MutableHashTable from apply(V, k-> k=>false);
+     bottom := new MutableHashTable from apply(V, k-> k=>false);
      vqueue := toList A; -- sort toList A
      -- Now initialize vqueue, set blocked
      scan(vqueue, a -> up#a = true);
@@ -241,7 +214,7 @@ bayesBall = (A,C,G) -> (
 		    );
 	       );
 	  ); -- while loop
-     set toList select(keys G, i -> not blocked#i and not bottom#i)     
+     set toList select(V, i -> not blocked#i and not bottom#i)     
      )
 
 
@@ -845,7 +818,25 @@ trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
 
 ---- We need this for both directed and undirected graphs. 
 
+----  parameterizations and for toric varieties the corresponding matrix. 
+----  In the case of toric varieties the matrix is easy.  Here is the code, 
+----  commented out to be used later when we are ready. 
+---- 
+----  toAMatrix = method()
+----  toAMatrix List := Matrix => (M) -> (
+----      if any(M,isMonomial)
+----         then error "this parameterization does not correspond to a toric ideal." 
+----         else (
+----              Mexp := apply(M, exponents);
+----              transpose matrix apply(Mexp, flatten)))
+----
+---- isMonomial = method()
+---- isMonomial RingElement := Boolean => (m) -> (
+----      termList := terms m;
+----      if #termList == 1 then true else false)
 
+---- isMonomial works well as long as m is actually a polynomial or monomial and not 
+---- an element of ZZ, QQ, RR, etc.
 
 --------------------
 -- Documentation  --
@@ -857,7 +848,7 @@ doc ///
   Key
     GraphicalModels
   Headline
-    GraphicalModels. A package for discrete and Gaussian statistical graphical models 
+    A package for discrete and Gaussian statistical graphical models 
   Description
     Text
       This package extends Markov.m2. It is used to construct ideals corresponding to discrete graphical models,
@@ -881,7 +872,7 @@ doc ///
     Example
        G = digraph  {{a,{}},{b,{a}},{c,{a}},{d,{b,c}}}
        R = markovRing (2,2,2,2)
-       S = pairMarkovStmts G --global
+       S = globalMarkovStmts G 
        I = markovIdeal(R,G,S)
        netList pack(2,I_*)
     Text
@@ -898,12 +889,13 @@ doc ///
       the factorization of the probability distributions 
       according to the graph G. The remaining components lie on the boundary of the simplex
       and are still poorly understood.
-      --netList primaryDecomposition I --this command RETURNED AN ERROR (something about needing a poly ring without quotients).
+    Example  
+      netList primaryDecomposition I 
     Text
       The following example illustrates the caveat below.
     Example
        H = digraph {{d,{b,a}},{c,{}},{b,{c}},{a,{c}}}
-       T = pairMarkovStmts H  --global
+       T = globalMarkovStmts H  
        J = markovIdeal(R,H,T);
        netList pack(2,J_*)
        F = marginMap(3,R);
@@ -1511,15 +1503,11 @@ installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
 
 
 
-
-
-
-
 ---- TESTS GO HERE! ------
 
 
 
-
+--- OLD CODE THAT SHOULD BE REMOVED ----
 
 
 restart
