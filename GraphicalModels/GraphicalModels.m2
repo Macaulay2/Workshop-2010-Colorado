@@ -251,7 +251,7 @@ under = (d) -> (
       		    {set{d01_0 - set x, d01_1 - set y}, set x + set y +  d_1})));-- see comment at removeRedundants
            z2 := flatten apply(e0, x -> apply(e1, y -> (
       		    {set{d01_0 - set x, d01_1 - set y},  d_1})));-- see comment at removeRedundants
-           z = join(z1,z2);
+           z := join(z1,z2);
            z = select(z, z0 -> not member(set{}, z0_0));
            set z
            )
@@ -317,21 +317,26 @@ removeRedundants = (Ds) -> (
 -------------------
      
 markovRingList := new MutableHashTable;
---the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
-markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>value "symbol p"})
+-- the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
+-- in principle, we can assign different names for the ring variable. 
+-- But this is still not yet fully implemented in 
+-- marginMap, hideMap, and prob.
+markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>getGlobalSymbol "p"})
 markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
      then error "useMarkovRing expected positive integers";
      kk := opts.Coefficients;
-     p = opts.VariableName;
-     if (not markovRingList#?(d,kk,toString symbol p)) then (
+     p := opts.VariableName;
+     if (not markovRingList#?(d,kk,toString p)) then (
      	  start := (#d):1;
-     	  markovRingList#(d,kk,toString symbol p) = kk[p_start .. p_d]; 
-          markovRingList#(d,kk,toString symbol p).markov = d; 
-	  --so that for any poly ring R it can be tested if R is a markovRing
+	  markovRingList#(d,kk,toString p) = kk[p_start .. p_d]; 
+	  -- markovRingList#(d,kk,toString p) = kk(monoid [p_start .. p_d]); -- does not work
+     	  markovRingList#(d,kk,toString p).markov = d;
+	  -- this is part of a first attempt to be able to use arbitrary symbols to denote the indeterminates of markovRing 
+	  markovRingList#(d,kk,toString p).variable = p;
 	  );
-     markovRingList#(d,kk,toString symbol p)
+     markovRingList#(d,kk,toString p)
      )
 
   --------------
@@ -347,7 +352,12 @@ marginMap(ZZ,Ring) := RingMap => (v,R) -> (
      -- R should be a Markov ring
      v = v-1;
      d := R.markov;
-     use R;
+     -- CAVEAT: The following line does not work as intended, 
+     -- it gives the following error
+     -- no method for binary operator - applied to objects
+     -- p_1,1  (of class IndexedVariable)
+     -- p := R.variable;
+     -- use R; -- Dan suggested to delete this line
      F := toList apply(((#d):1) .. d, i -> (
 	       if i#v > 1 then p_i
 	       else (
@@ -356,6 +366,10 @@ marginMap(ZZ,Ring) := RingMap => (v,R) -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
 			      p_newi))))));
      map(R,R,F))
+
+ --------------
+ -- hideMap
+ --------------
 
 hideMap = method()
 hideMap(ZZ,Ring) := RingMap => (v,A) -> (
@@ -366,7 +380,8 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
      e := drop(d, {v,v});
      S := markovRing e;
      dv := d#v;
-     use A;
+     -- use A; -- Dan suggested to delete this line
+     -- same problem with p_newi if we change the name of the ring variable
      F := toList apply(((#e):1) .. e, i -> (
 	       sum(apply(toList(1..dv), j -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
@@ -377,6 +392,12 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 -- Markov ideals --
 -------------------
 
+-- the following function retrieves the position of the keys in the graph G
+-- for all keys contained in the list S
+getPositionOfKeys = (G,S) -> 
+     --apply(S, v -> position(sort vertices G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
+     apply(S, v -> position(vertices G, k-> k===v)) 
+
 markovMatrices = method()
 markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
      -- R should be a markovRing, G a digraph 
@@ -384,9 +405,9 @@ markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
      -- independence statements
      d := R.markov;
      flatten apply(Stmts, stmt -> (
-     	       Avals := possibleValues(d,getPositionOfKeys(graph G,stmt#0)); --see 9/17 notes @getPositionOfKeys
-     	       Bvals := possibleValues(d,getPositionOfKeys(graph G,stmt#1)); --see 9/17 notes @getPositionOfKeys
-     	       Cvals := possibleValues(d,getPositionOfKeys(graph G,stmt#2)); --see 9/17 notes @getPositionOfKeys
+     	       Avals := possibleValues(d,getPositionOfKeys(G,stmt#0)); 
+     	       Bvals := possibleValues(d,getPositionOfKeys(G,stmt#1)); 
+     	       Cvals := possibleValues(d,getPositionOfKeys(G,stmt#2)); 
      	       apply(Cvals, c -> (
                   matrix apply(Avals, 
 		       a -> apply(Bvals, b -> (
@@ -411,19 +432,6 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
 -- NOTE: ALL THE FUNCTIONS BELOW ARE DECLARED GLOBAL INSTEAD OF LOCAL
 -- FOR THE REASON THAT LOCAL DEFINITIONS WOULD INEXPLICABLY 
 -- CREATE ERRORS.
-
--- the following function retrieves the position of the keys in the graph G
--- for all keys contained in the list S
-getPositionOfKeys = (G,S) -> 
-     --apply(S, v -> position(sort keys G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
-     apply(S, v -> position(keys G, k-> k===v)) 
---********DEVELOPMENT NOTES ********
---9/17 Sonja: 
---i believe that in the line above "keys G" should again be replaced by "keys graph G" (Graphs.m2 compatibility issues?)
---however, I am not going to change this for the moment untill I check what happens with all the code that uses
---this function. So for now I'm calling it from gaussIdeal, and I've inserted the word "graph" there!!! 
---********DEVELOPMENT NOTES ********
-     
      
 -- cartesian ({d_1,...,d_n}) returns the cartesian product 
 -- of {0,...,d_1-1} x ... x {0,...,d_n-1}
@@ -456,27 +464,31 @@ prob = (d,s) -> (
 -- Gaussian directed acyclic graphs    --
 -----------------------------------------
 
-gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>symbol s})
+-- gaussRingList still not fully implemented
+gaussRingList := new MutableHashTable;
+gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>getGlobalSymbol "s"})
 gaussRing ZZ :=  Ring => opts -> (n) -> (
      -- s_{1,2} is the (1,2) entry in the covariance matrix.
-     --this assumes r.v.'s are labeled by integers.
+     -- this assumes r.v.'s are labeled by integers.
      x := opts.VariableName;
      kk := opts.Coefficients;
      v := flatten apply(1..n, i -> apply(i..n, j -> x_(i,j)));
-     R := kk[v, MonomialSize=>16];
+     -- xsR := kk[v, MonomialSize=>16];
+     R := kk(monoid [v, MonomialSize=>16]);
      R#gaussRing = n;
      R
      )
      -- we want to be able to do s_{a,b} for example:
 
-gaussRing Digraph :=  Ring => opts -> (g) -> (
-     --I want the input to be the Digraph G, 
-     --and I'm just gonna read off the list of labels from the keys.
+gaussRing Digraph :=  Ring => opts -> (G) -> (
+     -- Luis Garcia: Who wrote the 4 lines below?
+     -- I want the input to be the Digraph G, 
+     -- and I am just going to read off the list of labels from the keys.
      -- This is done to avoid any ordering confusion. 
      -- DO NOT make an option for inputting list of labels!
      x := opts.VariableName;
      kk := opts.Coefficients;
-     vv := sort vertices g;
+     vv := vertices G; -- sort vertices G
      v := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else x_(i,j))));
      R := kk[v, MonomialSize=>16];
      R#gaussRing = #vv;
@@ -515,8 +527,8 @@ gaussMinors = method()
 gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list Stmts is one statement {A,B,C}.
-     rows := join(getPositionOfKeys(graph G,Stmt#0), getPositionOfKeys(graph G,Stmt#2)); --see 9/17 notes @getPositionOfKeys
-     cols := join(getPositionOfKeys(graph G,Stmt#1), getPositionOfKeys(graph G,Stmt#2));  
+     rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2)); --see 9/17 notes @getPositionOfKeys
+     cols := join(getPositionOfKeys(G,Stmt#1), getPositionOfKeys(G,Stmt#2));  
      M1 = submatrix(M,rows,cols);
      minors(#Stmt#2+1,M1)     
      )
@@ -563,8 +575,8 @@ gaussMatrices = method()
 gaussMatrices(Digraph,Matrix,List) := List =>  (G,M,s) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list s is a statement of the form {A,B,C}.
-     	       rows := join(getPositionOfKeys(graph G,s#0), getPositionOfKeys(graph G,s#2));  --see 9/17 notes @getPositionOfKeys
-     	       cols := join(getPositionOfKeys(graph G,s#1), getPositionOfKeys(graph G,s#2));  --see 9/17 notes @getPositionOfKeys
+     	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));  --see 9/17 notes @getPositionOfKeys
+     	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2));  --see 9/17 notes @getPositionOfKeys
      	       submatrix(M,rows,cols)
      )
 
