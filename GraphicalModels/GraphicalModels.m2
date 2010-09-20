@@ -511,7 +511,6 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
 
 
 gaussMinors = method()
---since this method is not exported, this is obsolete!
 --gaussMinors(Matrix,List) := (M,D) -> (
 --     -- DO WE LEAVE THIS? WHERE WE DO NOT FORCE THE USER TO PASS THE DIGRAPH G???
 --     -- M should be an n by n symmetric matrix, D mentions variables 1..n (at most)
