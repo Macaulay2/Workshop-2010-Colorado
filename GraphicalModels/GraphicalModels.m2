@@ -76,7 +76,7 @@ export {pairMarkovStmts,
 	markovMatrices, 
 	markovIdeal,
         gaussRing, 
-	gaussMatrices, 
+	gaussMatrix, 
 	gaussIdeal, 
 	trekIdeal, 
         Coefficients, 
@@ -527,13 +527,13 @@ gaussMinors = method()
 gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list Stmt is one statement {A,B,C}.
+     -- this function is NOT exported; it is called from gaussIdeal!
      -- This function does not work if called directly but it works within gaussIdeal!!!
      rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2)); 
      cols := join(getPositionOfKeys(G,Stmt#1), getPositionOfKeys(G,Stmt#2));  
-     M1 = submatrix(M,rows,cols);
+     M1 := submatrix(M,rows,cols);
      minors(#Stmt#2+1,M1)     
      )
---this is NOT exported; it is called from gaussIdeal!
 ///EXAMPLE:
 G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
 R=gaussRing G
@@ -546,8 +546,6 @@ D=Stmts_0
 gaussMinors(G,M,D)
 ///
 
-
-
 gaussIdeal = method()
 gaussIdeal(Ring, Digraph, List) := Ideal =>  (R,G,Stmts) -> (
      -- for each statement, we take a set of minors
@@ -555,11 +553,11 @@ gaussIdeal(Ring, Digraph, List) := Ideal =>  (R,G,Stmts) -> (
      -- R = gaussRing of G
      --NOTE we force the user to give us the digraph G due to flexibility in labeling!!
      if not R#?gaussRing then error "expected a ring created with gaussRing";
-     M = genericSymmetricMatrix(R, R#gaussRing);
+     M := genericSymmetricMatrix(R, R#gaussRing);
      sum apply(Stmts, D -> gaussMinors(G,M,D))     
      )
 
---in case the global sttmts are not computed already :
+--in case the global Stmts are not computed already :
 gaussIdeal(Ring,Digraph) := Ideal =>  (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
 
 --gaussIdeal(Ring, List) := (R,Stmts) -> (
@@ -571,15 +569,26 @@ gaussIdeal(Ring,Digraph) := Ideal =>  (R,G) -> gaussIdeal(R,G,globalMarkovStmts 
 --gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,globalMarkovStmts G)
 
 
---in case user just wnats to see the mtces we are taking minors of, here they are:
-gaussMatrices = method()
-gaussMatrices(Digraph,Matrix,List) := List =>  (G,M,s) -> (
+--in case user just wants to see the matrices we are taking minors of, here they are:
+gaussMatrix = method()
+gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list s is a statement of the form {A,B,C}.
      	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));  --see 9/17 notes @getPositionOfKeys
      	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2));  --see 9/17 notes @getPositionOfKeys
      	       submatrix(M,rows,cols)
      )
+
+-- This is Luis's take but it still does not work correctly
+-- gaussMatrices = method()
+-- gaussMatrices(R,Digraph,List) := List =>  (R,G,S) -> (
+--        apply(S, s -> (
+-- 	       M := genericSymmetricMatrix(R, R#gaussRing);
+--      	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));  
+--      	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2));  
+--      	       submatrix(M,rows,cols)))
+--      )
+-- gaussMatrices(Ring,Digraph) := List =>  (R,G) -> gaussMatrices(R,G,globalMarkovStmts G)
 
 
 
@@ -1250,19 +1259,19 @@ doc ///
      globalMarkovStmts
      localMarkovStmts
      gaussRing
-     gaussMatrices
+     gaussMatrix
      trekIdeal
 ///
 
 
 doc///
    Key
-     gaussMatrices
-     (gaussMatrices,Digraph,Matrix,List)
+     gaussMatrix
+     (gaussMatrix,Digraph,Matrix,List)
    Headline
      matrices whose minors form the ideal corresponding to a conditional independence statement s
    Usage
-     mat = gaussMatrices(G,M,s)
+     mat = gaussMatrix(G,M,s)
    Inputs
      G:Digraph
        a directed acyclic graph
@@ -1282,11 +1291,11 @@ doc///
        sta=Stmts_0 --take the first statement from the list
        R = gaussRing (# keys graph G); --we need as many variables as there are nodes in the graph
        M = genericSymmetricMatrix(R, R#gaussRing);
-       gaussMatrices(G,M,sta)
+       gaussMatrix(G,M,sta)
      Text
        In fact, we can see, at once, all matrices whose minors form the ideal @TO gaussIdeal@ of G:
      Example
-       apply(Stmts, sta-> gaussMatrices(G,M,sta))
+       apply(Stmts, sta-> gaussMatrix(G,M,sta))
    SeeAlso
      gaussRing
      gaussIdeal
@@ -1491,8 +1500,8 @@ end
 --blank documentation node:
 doc/// 
    Key
-     gaussMatrices
-     (gaussMatrices,Digraph,Matrix,List) 
+     gaussMatrix
+     (gaussMatrix,Digraph,Matrix,List) 
    Headline
    Usage
    Inputs
