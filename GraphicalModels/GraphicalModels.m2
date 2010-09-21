@@ -394,9 +394,9 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 
 -- the following function retrieves the position of the keys in the graph G
 -- for all keys contained in the list S
-getPositionOfKeys = (G,S) -> 
+getPositionOfKeys := (G,S) -> (
      --apply(S, v -> position(sort vertices G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
-     apply(S, v -> position(vertices G, k-> k===v)) 
+     apply(S, w -> position(vertices G, v -> v===w)))
 
 markovMatrices = method()
 markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
@@ -453,6 +453,7 @@ possibleValues = (d,A) ->
 	       else {0}))
      
 -- prob((d_1,...,d_n),(s_1,dots,s_n))
+-- this function assumes that the indeterminates are called p_*
 prob = (d,s) -> (
      L := cartesian toList apply (#d, i -> 
 	   if s#i === 0 
@@ -525,8 +526,9 @@ gaussMinors = method()
 --     )
 gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
-     -- the list Stmts is one statement {A,B,C}.
-     rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2)); --see 9/17 notes @getPositionOfKeys
+     -- the list Stmt is one statement {A,B,C}.
+     -- This function does not work if called directly but it works within gaussIdeal!!!
+     rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2)); 
      cols := join(getPositionOfKeys(G,Stmt#1), getPositionOfKeys(G,Stmt#2));  
      M1 = submatrix(M,rows,cols);
      minors(#Stmt#2+1,M1)     
@@ -535,7 +537,7 @@ gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
 ///EXAMPLE:
 G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
 R=gaussRing G
-R --is a Poly ring!!
+describe R --is a Poly ring!!
 M = genericSymmetricMatrix(R, R#gaussRing);
 peek M
 submatrix(M,{0},{1})
