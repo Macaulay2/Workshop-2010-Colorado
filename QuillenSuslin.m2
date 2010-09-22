@@ -5,7 +5,7 @@ newPackage(
     	Authors => {
 	     {Name => "Hirotachi Abo", Email => "abo@uidaho.edu", HomePage => "http://www.webpages.uidaho.edu/~abo/"},
 	     {Name => "Brett Barwick", Email => "barwicjb@mailbox.sc.edu", HomePage => "http://www.math.sc.edu/~barwicjb/"},
-	     {Name => "Branden Stone", Email => "", HomePage => ""}	     
+	     {Name => "Branden Stone", Email => "bstone@math.ku.edu", HomePage => "http://www.math.ku.edu/~bstone"}	     
 	     },
     	Headline => "QuillenSuslin",
     	DebuggingMode => true
