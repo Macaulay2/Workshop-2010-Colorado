@@ -2844,6 +2844,32 @@ Node
    chern_3 E <- 44
    E
    chern_3 E
+Node
+  Key
+    toSchubertBasis
+    (toSchubertBasis,RingElement)
+  Headline
+    Express cycles on G(k,n) in terms of the Schubert basis
+  Usage
+    toSchubertBasis c
+  Inputs
+    c:RingElement
+      An element of the intersection ring of a Grassmannian of $k$-dimensional subspaces of a
+      rank-$n$ vector bundle
+  Outputs
+    :
+      An element $c'$ of a polynomial ring $B[s_\lambda]$ where $B$ is the base ring of G and
+      $\lambda$ runs over all diagrams in a $k\times n$ rectangle.  The element $c'$ is the
+      representation of $c$ in terms of the Schubert basis of the intersection ring of G over B.
+  Description
+    Example
+      A = flagBundle({3,3},VariableNames => H)
+      S = first A.Bundles
+      G = flagBundle({1,2},S,VariableNames => K)
+      RG = intersectionRing G
+      c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
+      toSchubertBasis c
+
 -- Local Variables:
 -- mode: M2
 -- coding: utf-8

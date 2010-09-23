@@ -21,7 +21,8 @@ export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety",
      "intersectionRing", "PullBack", "PushForward", "Rank", "ChernClassVariableTable",
      "schur", "SectionClass", "sectionClass", "segre", "StructureMap", "TangentBundle", "tangentBundle", "cotangentBundle", "todd",
      "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle","Pullback",
-     "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base"}
+     "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base", 
+     "toSchubertBasis"}
 
 -- not exported, for now: "logg", "expp", "reciprocal", "ToddClass"
 
@@ -30,6 +31,10 @@ protect ChernClass
 protect IntersectionRing
 protect TangentBundle
 protect ToddClass
+protect htoschubert
+protect schuberttoh
+protect schubertring
+protect intersectionmap
 
 fixvar = s -> if instance(s,String) then getSymbol s else s
 
@@ -817,6 +822,53 @@ schubertCycle'(List,FlagBundle) := (b,X) -> (
 	  if not (bi <= r) then error("expected a list of integers bounded by ",toString(r));
 	  );
      giambelli(r',E,b))
+
+diagrams = method()
+diagrams(ZZ,ZZ) := (k,n) -> ( --diagrams {k>=a_1>=...>=a_n>=0}
+     if n==1 then apply(k+1, i->{i})
+     else flatten apply(k+1, i -> apply(diagrams(i,n-1), l -> flatten {i,l})))     
+diagrams(ZZ,ZZ,ZZ) := (k,n,d) -> (--partitions of d of above form
+     select(diagrams(k,n), i -> (sum(i) == d)))
+
+toSchubertBasis = method()
+toSchubertBasis(RingElement) := c -> (
+     try G := variety c else error "expected an element of an intersection ring"; 
+     if not (instance(G,FlagBundle) and #G.BundleRanks == 2) then error "expected a Grassmannian";
+     R := intersectionRing G;
+     B := intersectionRing (G.Base);
+     (k,q) := toSequence(G.BundleRanks);
+     P := diagrams(q,k);
+     M := apply(P, i-> schubertCycle'(i,G));
+     E := flatten entries basis(R);
+     local T';
+     if R.cache.?htoschubert then T' = R.cache.htoschubert else (
+	  T := transpose matrix apply (M, i -> apply(E, j-> coefficient(j,i))); --matrix converting from schu-basis 
+                                                                 --to h-basis
+	  T' = T^-1; --matrix converting from h-basis to s-basis
+	  R.cache.schuberttoh = T;
+	  R.cache.htoschubert = T');
+     c2 := T'*(transpose matrix {apply (E, i-> coefficient(i,c))}); --c in the s-basis
+     local S;
+     if R.cache.?schubertring then S = R.cache.schubertring else (
+	  s := local s;
+	  S = B[apply(P, i-> s_i)]; --poly ring with generators <=> schubert basis elts
+	  S.cache = new MutableHashTable;
+	  S#{Standard,AfterPrint} = X -> (
+	       << endl;
+	       << concatenate(interpreterDepth:"o") << lineNumber << " : "
+	       << "Schubert Basis of G(" << k << "," << k+q << ") over " << G.Base << endl;);
+	  R.cache.schubertring = S;
+	  S.cache.intersectionmap = map(R,S,M);
+     	  S * S := (f,g) -> (
+	       f1 := S.cache.intersectionmap(f);
+	       g1 := S.cache.intersectionmap(g);
+	       toSchubertBasis(f1*g1)
+	       )
+	  );
+     rez := (vars S)*(lift(c2,B));
+     rez_(0,0)
+     )
+
 
 sectionZeroLocus = method(TypicalValue => AbstractVariety)
 sectionZeroLocus AbstractSheaf := (F) -> (

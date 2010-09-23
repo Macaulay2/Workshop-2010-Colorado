@@ -13,7 +13,7 @@ newPackage(
      DebuggingMode => true
      )
 
-export {grassmannian, diagrams, toSchubertBasis,
+export {grassmannian, diagrams,
      Correspondence, IncidenceCorrespondence, SimpleCorrespondence,
      incidenceCorrespondence, intermediates}
 
@@ -24,10 +24,6 @@ protect TargetToSource
 protect Intermediate
 protect IntermediateToSource
 protect IntermediateToTarget
-protect htoschubert
-protect schuberttoh
-protect schubertring
-protect intersectionmap
 
 hasAttribute = value Core#"private dictionary"#"hasAttribute"
 getAttribute = value Core#"private dictionary"#"getAttribute"
@@ -197,119 +193,7 @@ grassmannian = method(TypicalValue => FlagBundle)
 grassmannian(ZZ,ZZ) := (k,n) -> flagBundle({k,n-k}) --The grassmannian of k-dimensional subspaces of
                                                   --an n-dimensional space
 
-diagrams = method()
-diagrams(ZZ,ZZ) := (k,n) -> ( --diagrams {k>=a_1>=...>=a_n>=0}
-     if n==1 then apply(k+1, i->{i})
-     else flatten apply(k+1, i -> apply(diagrams(i,n-1), l -> flatten {i,l})))     
-diagrams(ZZ,ZZ,ZZ) := (k,n,d) -> (--partitions of d of above form
-     select(diagrams(k,n), i -> (sum(i) == d)))
-
-toSchubertBasis = method()
-toSchubertBasis(RingElement) := c -> (
-     try G := variety c else error "expected an element of an intersection ring"; 
-     if not (instance(G,FlagBundle) and #G.BundleRanks == 2) then error "expected a Grassmannian";
-     R := intersectionRing G;
-     B := intersectionRing (G.Base);
-     (k,q) := toSequence(G.BundleRanks);
-     P := diagrams(q,k);
-     M := apply(P, i-> schubertCycle'(i,G));
-     E := flatten entries basis(R);
-     local T';
-     if R.cache.?htoschubert then T' = R.cache.htoschubert else (
-	  T := transpose matrix apply (M, i -> apply(E, j-> coefficient(j,i))); --matrix converting from schu-basis 
-                                                                 --to h-basis
-	  T' = T^-1; --matrix converting from h-basis to s-basis
-	  R.cache.schuberttoh = T;
-	  R.cache.htoschubert = T');
-     c2 := T'*(transpose matrix {apply (E, i-> coefficient(i,c))}); --c in the s-basis
-     local S;
-     if R.cache.?schubertring then S = R.cache.schubertring else (
-	  s := local s;
-	  S = B[apply(P, i-> s_i)]; --poly ring with generators <=> schubert basis elts
-	  S.cache = new MutableHashTable;
-	  S#{Standard,AfterPrint} = X -> (
-	       << endl;
-	       << concatenate(interpreterDepth:"o") << lineNumber << " : "
-	       << "Schubert Basis of G(" << k << "," << k+q << ") over " << G.Base << endl;);
-	  R.cache.schubertring = S;
-	  S.cache.intersectionmap = map(R,S,M);
-     	  S * S := (f,g) -> (
-	       f1 := S.cache.intersectionmap(f);
-	       g1 := S.cache.intersectionmap(g);
-	       toSchubertBasis(f1*g1)
-	       )
-	  );
-     rez := (vars S)*(lift(c2,B));
-     rez_(0,0)
-     )
-
 beginDocumentation()
-
-doc ///
-  Key
-    toSchubertBasis
-    (toSchubertBasis,RingElement)
-  Headline
-    Express cycles on G(k,n) in terms of the Schubert basis
-  Usage
-    toSchubertBasis c
-  Inputs
-    c:RingElement
-      An element of the intersection ring of a Grassmannian of $k$-dimensional subspaces of a
-      rank-$n$ vector bundle
-  Outputs
-    :
-      An element $c'$ of a polynomial ring $B[s_\lambda]$ where $B$ is the base ring of G and
-      $\lambda$ runs over all diagrams in a $k\times n$ rectangle.  The element $c'$ is the
-      representation of $c$ in terms of the Schubert basis of the intersection ring of G over B.
-  Description
-    Example
-      A = flagBundle({3,3},VariableNames => H)
-      S = first A.Bundles
-      G = flagBundle({1,2},S,VariableNames => K)
-      c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
-      toSchubertBasis c
-///
-
-doc ///
-  Key
-    diagrams
-    (diagrams,ZZ,ZZ)
-  Headline
-    Ferrers diagrams contained in a rectangle
-  Usage
-    diagrams(k,n)
-  Inputs
-    k:ZZ
-      maximum size of each entry in diagram
-    n:ZZ
-      number of entries in diagram
-  Outputs
-    :
-      a list of lists of integers $\{a_1, \dots, a_n\}$ such that 
-      $k \geq a_1 \geq ... \geq a_n \geq 0$
-///
-
-doc ///
-  Key
-    (diagrams,ZZ,ZZ,ZZ)
-  Headline
-    Partitions contained in a rectangle
-  Usage
-    diagrams(k,n,d)
-  Inputs
-    k:ZZ
-      maximum size of each entry in partitions
-    n:ZZ
-      number of entries in paritition
-    d:ZZ
-      number being partitioned
-  Outputs
-    :
-      a list of lists of integers $\{a_1, \dots, a_n\}$ such that 
-      $k \geq a_1 \geq ... \geq a_n \geq 0$ and
-      $\sum_{i=1}^n a_i = d$
-///
 
 doc ///
   Key
