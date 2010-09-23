@@ -1,5 +1,6 @@
---Goal: given base variety X, bundles E_1,..,E_n, and sequences {a_(1,1),..,a_(1,k_1)} etc
---Produce the variety given by taking flags in each, without using intermediate varieties
+--given base variety X, bundles E_1,..,E_n, and sequences 
+--{a_(1,1),..,a_(1,k_1)}, ... , {a_(n,1),..,a_(n,k_n)},
+--produce the flag variety given by
 
 multiFlag = method()
 multiFlag(List,List) := (bundleRanks, bundles) -> (

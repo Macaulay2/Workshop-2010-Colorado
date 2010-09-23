@@ -13,14 +13,12 @@ newPackage(
      DebuggingMode => true
      )
 
-export {grassmannian, placeholderSchubertCycle, diagrams, placeholderToSchubertBasis,
+export {grassmannian, placeholderSchubertCycle, diagrams, toSchubertBasis,
      Correspondence, IncidenceCorrespondence, SimpleCorrespondence,
      incidenceCorrespondence, intermediates}
 
 needsPackage "Schubert2"
 
-protect Source
-protect Target
 protect SourceToTarget
 protect TargetToSource
 protect Intermediate
@@ -38,8 +36,8 @@ ReverseDictionary = value Core#"private dictionary"#"ReverseDictionary"
 Correspondence = new Type of MutableHashTable
 IncidenceCorrespondence = new Type of Correspondence
 IncidenceCorrespondence.synonym = "incidence correspondence"
-SimpleCorrespondence = new Type of Correspondence
-SimpleCorrespondence.synonym = "simple correspondence"
+--SimpleCorrespondence = new Type of Correspondence
+--SimpleCorrespondence.synonym = "simple correspondence"
 globalAssignment Correspondence
 toString Correspondence := net Correspondence := X -> (
      if hasAttribute(X,ReverseDictionary) then toString getAttribute(X,ReverseDictionary)
@@ -47,7 +45,7 @@ toString Correspondence := net Correspondence := X -> (
 Correspondence#{Standard,AfterPrint} = X -> (
      << endl;				  -- double space
      << concatenate(interpreterDepth:"o") << lineNumber << " : "
-     << "a correspondence from " << X.Source << " to " << X.Target << endl;
+     << "a correspondence from " << X.source << " to " << X.target << endl;
      )
 toString IncidenceCorrespondence := net IncidenceCorrespondence := X -> (
      if hasAttribute(X,ReverseDictionary) then toString getAttribute(X,ReverseDictionary)
@@ -55,23 +53,23 @@ toString IncidenceCorrespondence := net IncidenceCorrespondence := X -> (
 IncidenceCorrespondence#{Standard,AfterPrint} = X -> (
      << endl;				  -- double space
      << concatenate(interpreterDepth:"o") << lineNumber << " : "
-     << "an incidence correspondence from " << X.Source << " to " << X.Target << endl;
+     << "an incidence correspondence from " << X.source << " to " << X.target << endl;
      )
 
 Correspondence _* := Function => c -> c.SourceToTarget
 Correspondence ^* := Function => c -> c.TargetToSource
-source Correspondence := AbstractVariety => c -> c.Source
-target Correspondence := AbstractVariety => c -> c.Target
+source Correspondence := AbstractVariety => c -> c.source
+target Correspondence := AbstractVariety => c -> c.target
 transpose Correspondence := Correspondence => c -> (
      new Correspondence from {
-	  Source => target c,
-	  Target => source c,
+	  global source => target c,
+	  global target => source c,
 	  SourceToTarget => c.TargetToSource,
 	  TargetToSource => c.SourceToTarget})
 transpose IncidenceCorrespondence := IncidenceCorrespondence => c -> (
      new IncidenceCorrespondence from {
-	  Source => target c,
-	  Target => source c,
+	  global source => target c,
+	  global target => source c,
 	  SourceToTarget => c.TargetToSource,
 	  TargetToSource => c.SourceToTarget,
 	  Intermediate => c.Intermediate,
@@ -80,12 +78,12 @@ transpose IncidenceCorrespondence := IncidenceCorrespondence => c -> (
 intermediates = method()
 intermediates IncidenceCorrespondence := AbstractVariety => c -> (
      c.Intermediate, c.IntermediateToSource, c.IntermediateToTarget)
-intermediates SimpleCorrespondence := AbstractVariety => c -> c.Intermediate
+--intermediates SimpleCorrespondence := AbstractVariety => c -> c.Intermediate
 
 Correspondence * Correspondence := Correspondence => (X,Y) -> (
      new Correspondence from {
-	  Source => source Y,
-	  Target => target X,
+	  global source => source Y,
+	  global target => target X,
 	  SourceToTarget => X.SourceToTarget @@ Y.SourceToTarget,
 	  TargetToSource => Y.TargetToSource @@ X.TargetToSource})
 
@@ -186,8 +184,8 @@ incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
 	 targettosource A2 := targettosource AbstractSheaf := c -> (
 	      f_* (iso^* (g^* c)));
 	 rez := new IncidenceCorrespondence from {
-	      Source => G1,
-	      Target => G2,
+	      global source => G1,
+	      global target => G2,
 	      Intermediate => I1,
 	      IntermediateToSource => f,
 	      IntermediateToTarget => g * iso,
@@ -228,11 +226,10 @@ diagrams(ZZ,ZZ) := (k,n) -> ( --diagrams {k>=a_1>=...>=a_n>=0}
 diagrams(ZZ,ZZ,ZZ) := (k,n,d) -> (--partitions of d of above form
      select(diagrams(k,n), i -> (sum(i) == d)))
 
-placeholderToSchubertBasis = method()
-placeholderToSchubertBasis(RingElement,FlagBundle) := (c,G) -> (
-     if #G.BundleRanks != 2 then error "expected a Grassmannian";
-     if not ring c === intersectionRing G then error "expected first input to be a ring element
-     in the intersection ring of the second input";
+toSchubertBasis = method()
+toSchubertBasis(RingElement) := c -> (
+     try G := variety c else error "expected an element of an intersection ring"; 
+     if not (instance(G,FlagBundle) and #G.BundleRanks == 2) then error "expected a Grassmannian";
      R := intersectionRing G;
      B := intersectionRing (G.Base);
      (k,q) := toSequence(G.BundleRanks);
@@ -261,7 +258,7 @@ placeholderToSchubertBasis(RingElement,FlagBundle) := (c,G) -> (
      	  S * S := (f,g) -> (
 	       f1 := S.cache.intersectionmap(f);
 	       g1 := S.cache.intersectionmap(g);
-	       placeholderToSchubertBasis(f1*g1,G)
+	       toSchubertBasis(f1*g1)
 	       )
 	  );
      rez := (vars S)*(lift(c2,B));
@@ -272,18 +269,16 @@ beginDocumentation()
 
 doc ///
   Key
-    placeholderToSchubertBasis
-    (placeholderToSchubertBasis,RingElement,FlagBundle)
+    toSchubertBasis
+    (toSchubertBasis,RingElement)
   Headline
     Express cycles on G(k,n) in terms of the Schubert basis
   Usage
-    placeholderToSchubertBasis(c,G)
+    toSchubertBasis c
   Inputs
-    G:FlagBundle
-      Any grassmannian (i.e. one-step flag variety) of $k$-dimensional subspaces of a rank-$n$
-      bundle
     c:RingElement
-      An element of the intersection ring of G
+      An element of the intersection ring of a Grassmannian of $k$-dimensional subspaces of a
+      rank-$n$ vector bundle
   Outputs
     :
       An element $c'$ of a polynomial ring $B[s_\lambda]$ where $B$ is the base ring of G and
@@ -295,7 +290,7 @@ doc ///
       S = A.Bundles#0
       G = flagBundle({1,2},S,VariableNames => K)
       c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
-      placeholderToSchubertBasis(c,G)
+      toSchubertBasis c
 ///
 
 doc ///
@@ -516,9 +511,9 @@ doc ///
       Oops!  This just gave us $H_{2,1}^2$ back!  Schubert2 actually uses $\sigma_1^2$ and
       $\sigma_{1,1}$ as its "preferred basis" for the codimension-2 part of the Chow ring of
       ${\mathbb G}(1,3)$.  To convert to the Schubert basis, we use the function 
-      @TO placeholderToSchubertBasis@:
+      @TO toSchubertBasis@:
     Example
-      placeholderToSchubertBasis(c,G)
+      toSchubertBasis c
     Text
       We recover the formula of Theorem 4.13: $\sigma_1^2 = \sigma_2 + \sigma_{1,1}$.
       
@@ -701,12 +696,12 @@ doc ///
       
       Compute $\sigma_{2,1}^2$ in the Chow ring of $G(3,6)$. 
       
-      This is easy with the function @TO placeholderToSchubertBasis@, which we already saw in
+      This is easy with the function @TO toSchubertBasis@, which we already saw in
       @TO "Intersection Theory Section 4.2"@:
     Example
       G36 = flagBundle({3,3})
       c = placeholderSchubertCycle({2,1,0},G36)
-      placeholderToSchubertBasis(c^2,G36)
+      toSchubertBasis(c^2)
     Text
       We see that $\sigma_{3,2,1}$ occurs with coefficient $2$ in $\sigma_{2,1}^2$.
 ///
@@ -1048,7 +1043,7 @@ doc ///
     Example
       G13 = flagBundle({2,2})
       (S,Q) = G13.Bundles
-      integral chern symmetricPower(3,S)
+      integral chern symmetricPower(3,dual S)
     Text
       
       Section 7.3: Lines on Quintic Threefolds and Beyond
@@ -1105,7 +1100,7 @@ doc ///
       G25 = flagBundle({3,3})
       (S,Q) = G25.Bundles
       F2 = ctop symmetricPower(2, dual S)
-      placeholderToSchubertBasis(F2,G25)
+      toSchubertBasis F2
     Text
       
       (b): Find the expected number of 2-planes on a quartic hypersurface $X \subset {\mathbb P}^7$
@@ -1137,6 +1132,10 @@ end
 restart
 loadPackage "IntersectionTheory"
 installPackage("IntersectionTheory", RerunExamples=>true)
+viewHelp IntersectionTheory
+X = flagBundle({2,2})
+s = schubertCycle'({1,0},X)
+toSchubertBasis s
 
 restart
 loadPackage "Schubert2"
@@ -1144,7 +1143,9 @@ loadPackage "Schubert2"
 X = flagBundle({1,3},VariableNames => K)
 Y = flagBundle({2,2},VariableNames => L)
 Q = X.Bundles#1
-incidenceCorrespondence(X,Y)
+IC = incidenceCorrespondence(X,Y)
+source IC
+target IC
 
 IX = flagBundle({1,2},Q, VariableNames => M)
 gens intersectionRing IX
