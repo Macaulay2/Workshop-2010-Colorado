@@ -22,7 +22,8 @@ export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety",
      "schur", "SectionClass", "sectionClass", "segre", "StructureMap", "TangentBundle", "tangentBundle", "cotangentBundle", "todd",
      "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle","Pullback",
      "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base", 
-     "toSchubertBasis"}
+     "toSchubertBasis", "Correspondence", "IncidenceCorrespondence", "intermediates",
+     "incidenceCorrespondence"}
 
 -- not exported, for now: "logg", "expp", "reciprocal", "ToddClass"
 
@@ -31,6 +32,11 @@ protect ChernClass
 protect IntersectionRing
 protect TangentBundle
 protect ToddClass
+protect SourceToTarget
+protect TargetToSource
+protect Intermediate
+protect IntermediateToSource
+protect IntermediateToTarget
 protect htoschubert
 protect schuberttoh
 protect schubertring
@@ -109,6 +115,58 @@ AbstractVariety / AbstractVariety := AbstractVarietyMap => (X,S) -> (
 
 sectionClass = method(TypicalValue => RingElement)
 sectionClass AbstractVarietyMap := f -> f.SectionClass
+
+Correspondence = new Type of MutableHashTable
+IncidenceCorrespondence = new Type of Correspondence
+IncidenceCorrespondence.synonym = "incidence correspondence"
+--SimpleCorrespondence = new Type of Correspondence
+--SimpleCorrespondence.synonym = "simple correspondence"
+globalAssignment Correspondence
+toString Correspondence := net Correspondence := X -> (
+     if hasAttribute(X,ReverseDictionary) then toString getAttribute(X,ReverseDictionary)
+     else "a correspondence")
+Correspondence#{Standard,AfterPrint} = X -> (
+     << endl;				  -- double space
+     << concatenate(interpreterDepth:"o") << lineNumber << " : "
+     << "a correspondence from " << X.source << " to " << X.target << endl;
+     )
+toString IncidenceCorrespondence := net IncidenceCorrespondence := X -> (
+     if hasAttribute(X,ReverseDictionary) then toString getAttribute(X,ReverseDictionary)
+     else "an incidence correspondence")
+IncidenceCorrespondence#{Standard,AfterPrint} = X -> (
+     << endl;				  -- double space
+     << concatenate(interpreterDepth:"o") << lineNumber << " : "
+     << "an incidence correspondence from " << X.source << " to " << X.target << endl;
+     )
+
+Correspondence _* := Function => c -> c.SourceToTarget
+Correspondence ^* := Function => c -> c.TargetToSource
+source Correspondence := AbstractVariety => c -> c.source
+target Correspondence := AbstractVariety => c -> c.target
+transpose Correspondence := Correspondence => c -> (
+     new Correspondence from {
+	  global source => target c,
+	  global target => source c,
+	  SourceToTarget => c.TargetToSource,
+	  TargetToSource => c.SourceToTarget})
+transpose IncidenceCorrespondence := IncidenceCorrespondence => c -> (
+     new IncidenceCorrespondence from {
+	  global source => target c,
+	  global target => source c,
+	  SourceToTarget => c.TargetToSource,
+	  TargetToSource => c.SourceToTarget,
+	  Intermediate => c.Intermediate,
+	  IntermediateToSource => c.IntermediateToTarget,
+	  IntermediateToTarget => c.IntermediateToSource})
+intermediates = method()
+intermediates IncidenceCorrespondence := AbstractVariety => c -> (
+     c.Intermediate, c.IntermediateToSource, c.IntermediateToTarget)
+Correspondence * Correspondence := Correspondence => (X,Y) -> (
+     new Correspondence from {
+	  global source => source Y,
+	  global target => target X,
+	  SourceToTarget => X.SourceToTarget @@ Y.SourceToTarget,
+	  TargetToSource => Y.TargetToSource @@ X.TargetToSource})
 
 AbstractSheaf = new Type of HashTable
 AbstractSheaf.synonym = "abstract sheaf"
@@ -531,6 +589,112 @@ projectiveSpace'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,Vari
 PP  = new ScriptedFunctor from { superscript => i -> projectiveSpace i }
 PP' = new ScriptedFunctor from { superscript => i -> projectiveSpace' i }
 
+incidenceCorrespondence = method(TypicalValue => IncidenceCorrespondence)
+incidenceCorrespondence(List) := L -> (
+     if not #L == 3 then error "expected a list of length 3";
+     if not all(L, i-> instance(i,ZZ) and i > 0) then "expected a list of positive integers";
+     if not L#0 < L#2 and L#1 < L#2 then "expected last list element to be largest";
+     G1 := flagBundle({L#0,L#2 - L#0});
+     G2 := flagBundle({L#1,L#2 - L#1});
+     incidenceCorrespondence(G1,G2))
+incidenceCorrespondence(List,AbstractSheaf) := (L,B) -> (
+     if not #L == 2 then error "expected a list of length 2";
+     if not all(L, i-> instance(i,ZZ) and i > 0) then "expected a list of positive integers";
+     n := rank B;
+     if not all(L, i-> n > i) then "expected a list of integers smaller than rank of bundle";
+     G1 := flagBundle({L#0,n - L#0},B);
+     G2 := flagBundle({L#1,n - L#1},B);
+     incidenceCorrespondence(G1,G2))
+--is more efficient than using two forgetful maps because it creates one less intermediate object
+incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
+     if G1.Base =!= G2.Base then error "expected FlagBundles over same base";
+     B := intersectionRing G1.Base;
+     if not (#G1.Bundles == 2 and #G2.Bundles == 2) then error "expected two Grassmannians";
+     n := sum G1.BundleRanks;
+     if not n == (sum G2.BundleRanks) then error "expected Grassmannians of same bundle";
+     (s1,q1) := G1.Bundles;
+     (s2,q2) := G2.Bundles;
+     a := rank s1;
+     b := rank s2;
+     if a > b then transpose incidenceCorrespondence(G2,G1) else (
+	 if not lift(chern(s1+q1),B) == lift(chern(s2+q2),B) then error "expected Grassmannians of same bundle";
+	 I1 := flagBundle({b-a, n-b},q1);
+	 I2 := flagBundle({a, b-a},s2);
+	 f := I1/G1;
+	 g := I2/G2;
+	 Q1 := f^* q1; --rank n-a
+	 S1 := f^* s1; --rank a
+	 Q2 := g^* q2; --rank n-b
+	 SQ1 := I1.Bundles#0; --rank b-a
+	 QQ1 := I1.Bundles#1; --rank n-b
+	 QS2 := I2.Bundles#1; --rank b-a
+	 SS2 := I2.Bundles#0; --rank a
+	 Qa2 := Q2 + QS2; -- corresponds to quotients of rank n-a in I2
+	 Sb1 := SQ1 + S1; -- corresponds to subbundles of rank b in I1
+	 R1 := intersectionRing I1;
+	 R2 := intersectionRing I2;
+	 (R1', k1) := flattenRing(R1,CoefficientRing => B);
+	 (R2', k2) := flattenRing(R2,CoefficientRing => B);
+	 --next line depends heavily on knowing the monomial basis of the
+	 --intersectionRing of G(k,n)
+	 --gens of R1' should be, in order:
+	 --chern classes of subbundle on I1 (rank b-a, -> QS2)
+	 m11 := for i from 1 to b-a list chern(i,QS2);
+	 --chern classes of quotient bundle on I1 (rank n-b -> Q2)
+	 m12 := for i from 1 to n-b list chern(i,Q2);
+	 --chern classes of subbundle on G1 (rank a -> SS2)
+	 m13 := for i from 1 to a list chern(i,SS2);
+	 --chern classes of quotient bundle on G1 (rank n-a -> Qa2)
+	 m14 := for i from 1 to n-a list chern(i,Qa2);
+	 M1 := matrix {m11|m12|m13|m14};
+	 pfmap := (map(R2,R1',M1)) * k1;
+	 pushforward := method();
+	 pushforward ZZ := pushforward QQ := r -> promote(r,R2);
+	 pushforward R1 := c -> pfmap c;
+	 pushforward AbstractSheaf := E -> (
+	      abstractSheaf(I2,Rank => rank E, ChernClass => pushforward chern E));
+         --gens of R2' should be, in order:
+	 --chern classes of subbundle on I2 (rank a -> S1)
+	 m21 := for i from 1 to a list chern(i,S1);
+	 --chern classes of quotient bundle on I2 (rank b-a -> SQ1)
+	 m22 := for i from 1 to b-a list chern(i,SQ1);
+	 --chern classes of subbundle on G2 (rank b -> Sb1)
+	 m23 := for i from 1 to b list chern(i,Sb1);
+	 --chern classes of quotient bundle on G2 (rank n-b -> QQ1)
+	 m24 := for i from 1 to n-b list chern(i,QQ1);
+	 M2 := matrix {m21|m22|m23|m24};	 
+	 pbmap := (map(R1,R2',M2)) * k2;
+	 pullback := method();
+	 pullback ZZ := pullback QQ := r -> promote(r,R1);
+	 pullback R2 := c -> pbmap c;
+	 pullback AbstractSheaf := E -> (
+	      abstractSheaf(I1,Rank => rank E, ChernClass => pullback chern E));
+	 iso := new AbstractVarietyMap from {
+	      global source => I1,
+	      global target => I2,
+	      SectionClass => 1_R1,
+	      PushForward => pushforward,
+	      PullBack => pullback};
+	 A1 := intersectionRing G1;
+	 A2 := intersectionRing G2;
+	 sourcetotarget := method();
+	 sourcetotarget ZZ := sourcetotarget QQ :=
+	 sourcetotarget A1 := sourcetotarget AbstractSheaf := c -> (
+	      g_* (iso_* (f^* c)));
+	 targettosource := method();
+	 targettosource ZZ := targettosource QQ :=
+	 targettosource A2 := targettosource AbstractSheaf := c -> (
+	      f_* (iso^* (g^* c)));
+	 rez := new IncidenceCorrespondence from {
+	      global source => G1,
+	      global target => G2,
+	      Intermediate => I1,
+	      IntermediateToSource => f,
+	      IntermediateToTarget => g * iso,
+	      SourceToTarget => sourcetotarget,
+	      TargetToSource => targettosource};
+	 rez))
+
 reciprocal = method(TypicalValue => RingElement)
 reciprocal RingElement := (A) -> (
      -- computes 1/A (mod degree >=(d+1))
@@ -938,6 +1102,8 @@ undocumented {
      (net,AbstractVarietyMap),
      (net,ChernClassVariable),
      (net,FlagBundle),
+     (net,Correspondence),
+     (net,IncidenceCorrespondence),
      (baseName,ChernClassVariable),
      (expression,ChernClassVariable),
      (baseName,AbstractSheaf),
@@ -946,7 +1112,9 @@ undocumented {
      (toString,AbstractVariety),
      (toString,AbstractVarietyMap),
      (toString,ChernClassVariable),
-     (toString,FlagBundle)
+     (toString,FlagBundle),
+     (toString,Correspondence),
+     (toString,IncidenceCorrespondence)
      }
 TEST /// input (Schubert2#"source directory"|"Schubert2/demo.m2") ///
 TEST /// input (Schubert2#"source directory"|"Schubert2/demo2.m2") ///

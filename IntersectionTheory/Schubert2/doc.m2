@@ -2869,7 +2869,208 @@ Node
       RG = intersectionRing G
       c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
       toSchubertBasis c
-
+Node
+  Key
+    incidenceCorrespondence
+    (incidenceCorrespondence, FlagBundle, FlagBundle)
+  Headline
+    build containment correspondence between two Grassmannians
+  Usage
+    incidenceCorrespondence(G1,G2)
+  Inputs
+    G1:FlagBundle
+      a Grassmannian of $a$-dimensional subbundles of a vector bundle $E$
+    G2:FlagBundle
+      another Grassmannian of $b$-dimensional subbundles of the same bundle $E$
+  Outputs
+    :IncidenceCorrespondence
+      from $G1$ to $G2$, namely the correspondence whose
+      intermediate term is flagBundle({a,b-a,n-b},E) (in the case that $a<=b$).  This
+      intermediate term can be viewed as those pairs of subbundles $(V_1,V_2)$ of $E$ of
+      ranks $a$ and $b$, respectively, such that $V_1 \subseteq V_2$.
+  Description
+    Example
+      P3 = flagBundle({1,3},VariableNames => H)
+      GG13 = flagBundle({2,2},VariableNames => K)
+      I = incidenceCorrespondence(P3,GG13)
+      c = chern(1, last P3.Bundles) --the hyperplane class
+      I_* (c^2) --the class in GG13 corresponding to lines meeting a given line, i.e. sigma_1
+      d = (chern(2, last GG13.Bundles))^2 --the class of a point in GG13
+      I^* d --the class in $P3$ of points lying in the line corresponding to d, i.e. c^2
+Node
+  Key
+    (incidenceCorrespondence,List,AbstractSheaf)
+  Headline
+    build containment correspondence between two Grassmannians
+  Usage
+    incidenceCorrespondence(L,E)
+  Inputs
+    L:List
+      of two integers, $L={a,b}$, such that $0 \leq a$ and $0\leq b$.
+    E:AbstractSheaf
+      a vector bundle of rank $n$, such that $a\leq n$ and $b\leq n$.
+  Outputs
+    :IncidenceCorrespondence
+      from $G1 = G(a,E)$ to $G2 = G(b,E)$, same as {\tt incidenceCorrespondence(G1,G2)}
+  Description
+    Example
+      B = flagBundle({3,1})
+      E = first B.Bundles
+      incidenceCorrespondence({1,2},E)
+  SeeAlso
+    (incidenceCorrespondence,FlagBundle,FlagBundle)
+    (incidenceCorrespondence,List)
+Node
+  Key
+    (incidenceCorrespondence,List)
+  Headline
+    build containment correspondence between two Grassmannians
+  Usage
+    incidenceCorrespondence L
+  Inputs
+    L:List
+      of three integers, $L={a,b,n}$, such that $0 \leq a \leq n$ and $0\leq b \leq n$.
+  Outputs
+    :IncidenceCorrespondence
+      from $G1 = G(a,n)$ to $G2 = G(b,n)$, same as {\tt incidenceCorrespondence(G1,G2)}
+  Description
+    Example
+      I = incidenceCorrespondence({1,2,3})
+      source I
+      target I
+  SeeAlso
+    (incidenceCorrespondence,FlagBundle,FlagBundle)
+    (incidenceCorrespondence,List,AbstractSheaf)
+Node
+  Key
+    IncidenceCorrespondence
+  Headline
+    the class of all incidence correspondences
+  Description
+    Text
+      An incidence correspondence $I$ is a correspondence from an @TO AbstractVariety@ $X$ 
+      (the @TO source@ of $I$) to another AbstractVariety $Y$ (the @TO target@ of $I$)
+      which is mediated by a third AbstractVariety $Z$, together with 
+      @TO AbstractVarietyMap@s $f:Z\rightarrow X$ and $g:Z\rightarrow Y$.
+      
+      Given a cycle $x$ on $X$, the pushforward of $x$ along $I$ is
+      $$I_* x = g_* f^* x,$$ 
+      and similarly for bundles on $X$.  Likewise, if $y$ is a cycle on $Y$, the pullback
+      of $y$ along $I$ is
+      $$I^* y = f_* g^* y,$$
+      and similarly for bundles on $Y$.  See @TO (symbol ^*,Correspondence)@ and
+      @TO (symbol _*,Correspondence)@ for more info.
+      
+      The tuple $(Z,f,g)$ can be accessed via the @TO intermediates@ command.
+Node
+  Key
+    Correspondence
+  Headline
+    the class of all correspondences
+  Description
+    Text
+      A correspondence $I$ from from an @TO AbstractVariety@ $X$ 
+      (the @TO source@ of $I$) to another AbstractVariety $Y$ (the @TO target@ of $I$)
+      consists of two functions $I_*$ and $I^*$, which take cycles on $X$ to cycles on $Y$
+      and vice-versa, respectively.  In general these functions are not ring maps or even
+      module maps.  See @TO (symbol ^*,Correspondence)@ and
+      @TO (symbol _*,Correspondence)@ for more info.
+      
+      Unlike an @TO IncidenceCorrespondence@, a general Correspondence need not have an
+      intermediate variety.
+Node
+  Key
+    (transpose,Correspondence)
+    (transpose,IncidenceCorrespondence)
+  Headline
+    reverse the direction of a correspondence
+  Usage
+    transpose I
+  Inputs
+    I:Correspondence
+      from $X$ to $Y$
+  Outputs
+    J:Correspondence
+      from $Y$ to $X$, such that $J_* = I^*$ and $J^* = I_*$.  In the case of an 
+      @TO IncidenceCorrespondence@, the @TO intermediates@ are also carried along appropriately,
+      that is, if {\tt intermediates I} is the tuple $(Z,f,g)$, then {\tt intermediates J}
+      is the tuple $(Z,g,f)$.
+Node
+  Key
+    (symbol *, Correspondence, Correspondence)
+  Headline
+    composition of correspondences
+  Usage
+    J * I
+  Inputs
+    I:Correspondence
+      from $X$ to $Y$
+    J:Correspondence
+      from $Y$ to $Z$
+  Outputs
+    K:Correspondence
+      from $X$ to $Z$, such that $K_* = J_* I_*$ and $K^* = I^* J^*$
+Node
+  Key
+    (symbol ^*, Correspondence)
+  Headline
+    pullback along a correspondence
+  Usage
+    I^*
+  Inputs
+    I:
+      from $X$ to $Y$
+  Outputs
+    :
+      the pullback operator associated to $I$, which can be applied to abstract sheaves or cycles
+      on $Y$
+  Description
+    Text
+      See @TO incidenceCorrespondence@ for an example of the usage.
+Node
+  Key
+    (symbol _*, Correspondence)
+  Headline
+    pushforward along a correspondence
+  Usage
+    I_*
+  Inputs
+    I:
+      from $X$ to $Y$
+  Outputs
+    :
+      the pushforward operator associated to $I$, which can be applied to abstract sheaves or cycles
+      on $X$
+  Description
+    Text
+      See @TO incidenceCorrespondence@ for an example of the usage.
+Node
+  Key
+    (source,Correspondence)
+  Headline
+    the source of a correspondence
+  SeeAlso
+    Correspondence
+Node
+  Key
+    (target,Correspondence)
+  Headline
+    the target of a correspondence
+  SeeAlso
+    Correspondence
+Node
+  Key
+    intermediates
+    (intermediates, IncidenceCorrespondence)
+  Usage
+    intermediates I
+  Inputs
+    I:IncidenceCorrespondence
+  Outputs
+    :
+      a triple $(Z,f,g)$ where $Z$ is the AbstractVariety mediating the Correspondence, $f$ is
+      the AbstractVarietyMap from $Z$ to the source of $I$, and $g$ is the AbstractVarietyMap
+      from $Z$ to the target of $I$.
 -- Local Variables:
 -- mode: M2
 -- coding: utf-8
