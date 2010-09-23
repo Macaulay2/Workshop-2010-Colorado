@@ -1,7 +1,16 @@
---given base variety X, bundles E_1,..,E_n, and sequences 
---{a_(1,1),..,a_(1,k_1)}, ... , {a_(n,1),..,a_(n,k_n)},
---produce the flag variety given by
-
+--Given a base variety X, bundles E_1,..,E_n on X, and a list of lists of integers
+--L = {{a_(1,1),..,a_(1,k_1)}, ... , {a_(n,1),..,a_(n,k_n)}},
+--let F_1 = flagBundle({a_(1,1),..,a_(1,k_1)},E_1), let p_1 be the structure map from F1 to X,
+--and recursively let F_i = flagBundle({a_(i,1),..,a_(i,k_i)},p_(i-1)^* E_i)
+--and p_i be the composition of p_(i-1) and the structure map of F_(i-1).
+--then multiFlag(L,{E_1,..,E_n}) is F_n, but is constructed in a single step
+--rather than iteratively.
+--
+--Equivalently, this is the fiber product over X of the varieties
+--flagBundle({a_(i,1),..,a_(i,k_i)}) for all i.
+--
+--This method is not exported and not meant to be user accessed; it is used in building forgetful
+--maps of flag varieties.
 multiFlag = method()
 multiFlag(List,List) := (bundleRanks, bundles) -> (
      K := local K;

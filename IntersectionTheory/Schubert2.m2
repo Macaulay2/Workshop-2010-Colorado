@@ -589,6 +589,136 @@ projectiveSpace'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,Vari
 PP  = new ScriptedFunctor from { superscript => i -> projectiveSpace i }
 PP' = new ScriptedFunctor from { superscript => i -> projectiveSpace' i }
 
+--Given a base variety X, bundles E_1,..,E_n on X, and a list of lists of integers
+--L = {{a_(1,1),..,a_(1,k_1)}, ... , {a_(n,1),..,a_(n,k_n)}},
+--let F_1 = flagBundle({a_(1,1),..,a_(1,k_1)},E_1), let p_1 be the structure map from F1 to X,
+--and recursively let F_i = flagBundle({a_(i,1),..,a_(i,k_i)},p_(i-1)^* E_i)
+--and p_i be the composition of p_(i-1) and the structure map of F_(i-1).
+--then multiFlag(L,{E_1,..,E_n}) is F_n, but is constructed in a single step
+--rather than iteratively.
+--
+--Equivalently, this is the fiber product over X of the varieties
+--flagBundle({a_(i,1),..,a_(i,k_i)}) for all i.
+--
+--This method is not exported and not meant to be user accessed; it is used in building forgetful
+--maps of flag varieties.
+multiFlag = method()
+multiFlag(List,List) := (bundleRanks, bundles) -> (
+     K := local K;
+     if not #bundleRanks == #bundles then error "expected same number of bundles as lists of ranks";
+     if not all(bundleRanks, l -> all(l, r -> instance(r,ZZ) and r>=0)) then error "expected bundles ranks to be positive integers";
+     X := variety bundles#0;
+     if not all(bundles, b -> (variety b) === X) then error "expected all bundles over same base";
+     n := #bundleRanks;
+     for i from 0 to n-1 do (
+	  if not sum(bundleRanks#i) == rank bundles#i then error "expected rank of bundle to equal sum of bundle ranks");
+     varNames := apply(0 .. n-1, i -> apply(1 .. #(bundleRanks#i), bundleRanks#i, (j,r) ->(
+		    apply(toList(1..r), k -> new IndexedVariable from {K,(i+1,j,k)}))));
+     --i -> base bundle, j -> bundle in flag from base bundle, k -> chern class
+     Ord := GRevLex;
+     dgs := splice flatten apply(bundleRanks, l -> apply(l, r-> 1 .. r));
+     S := intersectionRing X;
+     mo := flatten apply(bundleRanks, l -> apply(l, r -> Ord => r));
+     hft := {1};
+     U := S(monoid [flatten flatten varNames, Degrees => dgs, MonomialOrder => mo, Join => false, Heft => hft, DegreeRank => 1]);
+     A := U; F := identity;
+     chclasses := apply(varNames, l->apply(l, x -> F (1_U + sum(x, v-> U_v))));
+     rlns := apply(chclasses, bundles, (c,b) -> product c - F promote(chern b, U));
+     rlns = flatten apply(rlns, r -> sum @@ last \ sort pairs partition(degree,terms(QQ,r)));
+     rlns = ideal matrix(U,{rlns});
+     HR := degreesRing hft;
+     T := HR_0;
+     hilbertSeriesHint := product for i from 0 to n-1 list (
+	  k := sum (bundleRanks#i);
+	  product for j from 1 to k list 1 - T^j);
+     if heft S =!= null and degreesRing S === HR then (
+         gb(rlns, Hilbert => hilbertSeriesHint * numerator hilbertSeries S));
+     B := A/rlns;
+     C := B; H := identity;
+     d := dim X + sum(bundleRanks, l-> (
+	       sum(0 .. #l-1, i-> sum(0 .. i-1, j-> l#i * l#j))));
+     MF := C.Variety = abstractVariety(d,C);
+     MF.Base = X;
+     MF.Bundles = apply(0 .. n-1, l -> (
+	         	       apply(0 .. #(bundleRanks#l)-1, i -> (
+			 bdl := abstractSheaf(MF, Rank => bundleRanks#l#i, ChernClass => H promote(chclasses#l#i,B));
+			 bdl))));
+     pullback := method();
+     pushforward := method();
+     pullback ZZ := pullback QQ := r -> promote(r,C);
+     pullback S := r -> H promote(F promote(r,U), B);
+     sec := if n === 0 then 1_C else (
+	  product(0 .. n-1, l-> (
+		    if #(bundleRanks#l) === 0 then 1_C else (
+		         product(1 .. #(bundleRanks#l)-1, i -> promote((ctop MF.Bundles#l#i)^(sum(i, j -> bundleRanks#l#j)),B))))));
+     pushforward C := r -> coefficient(sec,r);
+     pullback AbstractSheaf := E -> (
+	  if variety E =!= X then error "pullback-variety mismatch";
+	  abstractSheaf(MF,Rank => rank E, ChernClass => pullback chern E));
+     p := new AbstractVarietyMap from {
+	  global target => X,
+	  global source => MF,
+	  SectionClass => sec,
+	  PushForward => pushforward,
+	  PullBack => pullback
+	  };
+     MF.StructureMap = p;
+     MF
+     )
+
+--map(X,Y) is the "forgetful map" from Y to X
+--this method depends heavily on knowing the generators and monomial order of the
+--intersection ring of a flag variety and will break if those are ever changed
+map(FlagBundle,FlagBundle) := opts -> (B,A) -> (
+     if not A.Base === B.Base then error "expected flag bundles over same base";
+     S := intersectionRing B.Base;
+     Arks := A.BundleRanks;
+     Brks := B.BundleRanks;
+     if not sum(Arks) == sum(Brks) then error "expected flag bundles of same rank";
+     if not lift(chern(sum(toList A.Bundles)),S) == lift(chern(sum(toList B.Bundles)),S) then error "expected flag bundles of same bundle";
+     reached := 0;
+     Apart := for i from 0 to #Brks - 1 list (
+	  startpoint := reached;
+	  currentsum := 0;
+	  while currentsum < Brks#i and reached < #Arks do (
+	       (currentsum, reached) = (currentsum + Arks#reached, reached+1));
+	  if not currentsum == Brks #i then error "rank sequences incommensurable" else (take(Arks,{startpoint,reached-1}),reached-1));
+     --first elt of Apart#i is the list of A-ranks used to make Brks#i,
+     --second element is the index of the last A-rank used to make Brks#i
+     --so, for example, if Arks = {1,2,2,1,3}, Brks = {3,3,3}, then
+     --Apart = {({1,2},1),({2,1},3),({3},4)} 
+     MF := multiFlag(first \ Apart,toList B.Bundles);
+     RA := intersectionRing A;
+     RB := intersectionRing B;
+     RMF := intersectionRing MF;
+     (RMF',k1) := flattenRing(RMF,CoefficientRing=>RB);
+     Bimages := flatten for l in Apart list (
+	  rks := l#0;
+	  lastbund := l#1;
+	  total := sum for i from 0 to #rks - 1 list A.Bundles#(lastbund-i);
+	  for r from 1 to rank total list chern(r,total));
+     M1 := matrix {gens RA | Bimages};
+     f1 := map(RA,RMF',M1);
+     mftoA := method();
+     mftoA ZZ := mftoA QQ := r -> promote(r,RA);
+     mftoA RMF := c -> f1(k1 c);
+     mftoA AbstractSheaf := E -> (
+	  abstractSheaf(A, Rank => rank E, ChernClass => mftoA chern E));
+     Atomf := method();
+     Atomf ZZ := Atomf QQ := r -> promote(r,RMF);
+     Atomf RA := c -> ((map(RMF,RA,gens RMF)) c);
+     Atomf AbstractSheaf := E -> (
+	  abstractSheaf(MF, Rank => rank E, ChernClass => Atomf chern E));
+     iso := new AbstractVarietyMap from {
+	  global source => A,
+	  global target => MF,
+	  SectionClass => 1_RA,
+	  PushForward => Atomf,
+	  PullBack => mftoA};
+     mftoB := MF / B;
+     mftoB * iso
+     )
+
 incidenceCorrespondence = method(TypicalValue => IncidenceCorrespondence)
 incidenceCorrespondence(List) := L -> (
      if not #L == 3 then error "expected a list of length 3";

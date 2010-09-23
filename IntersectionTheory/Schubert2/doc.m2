@@ -2846,10 +2846,32 @@ Node
    chern_3 E
 Node
   Key
+    (map,FlagBundle,FlagBundle)
+  Headline
+    forgetful maps of flag varieties
+  Usage
+    map(X,Y)
+  Inputs
+    X:FlagBundle
+      with ranks ${a_1,..,a_n}$ of some bundle $E$
+    Y:FlagBundle
+      with ranks ${b_1,..,b_k}$ of the same bundle $E$, and such that there are indices
+      $0 = i_0 < i_1 < \ldots < i_n = k$ such that for all $l$ from $1$ to $n$ we have
+      $b_(i_(l-1)+1) + \ldots + b_(i_l) = a_l$.
+  Outputs
+    :AbstractVarietyMap
+      the forgetful map from $Y$ to $X$
+  Description
+    Example
+      F1 = flagBundle({1,2,2,1,3})
+      F2 = flagBundle({3,3,3})
+      f = map(F2,F1)
+Node
+  Key
     toSchubertBasis
     (toSchubertBasis,RingElement)
   Headline
-    Express cycles on G(k,n) in terms of the Schubert basis
+    express cycles on a Grassmannian in terms of the Schubert basis
   Usage
     toSchubertBasis c
   Inputs
@@ -2862,6 +2884,9 @@ Node
       $\lambda$ runs over all diagrams in a $k\times n$ rectangle.  The element $c'$ is the
       representation of $c$ in terms of the Schubert basis of the intersection ring of G over B.
   Description
+    Text
+      Note that the Schubert basis used here is in "Fulton-style" notation; see
+      @TO schubertCycle'@.
     Example
       A = flagBundle({3,3},VariableNames => H)
       S = first A.Bundles
