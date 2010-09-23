@@ -13,7 +13,7 @@ newPackage(
      DebuggingMode => true
      )
 
-export {grassmannian, placeholderSchubertCycle, diagrams, toSchubertBasis,
+export {grassmannian, diagrams, toSchubertBasis,
      Correspondence, IncidenceCorrespondence, SimpleCorrespondence,
      incidenceCorrespondence, intermediates}
 
@@ -196,28 +196,6 @@ incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
 grassmannian = method(TypicalValue => FlagBundle)
 grassmannian(ZZ,ZZ) := (k,n) -> flagBundle({k,n-k}) --The grassmannian of k-dimensional subspaces of
                                                   --an n-dimensional space
-
-
-placeholderSchubertCycle = method()
-giambelli = (r,E,b) -> (
-     p := matrix for i from 0 to r-1 list for j from 0 to r-1 list chern(b#i-i+j,E);
-     if debugLevel > 15 then stderr << "giambelli : " << p << endl;
-     det p
-     )
-placeholderSchubertCycle(List,FlagBundle) := (b,X) -> (
-     if #X.BundleRanks != 2 then error "expected a Grassmannian";
-     E := last X.Bundles;
-     r := rank E;
-     n := X.Rank;
-     r' := n-r;
-     if r' != #b then error("expected a list of length ", toString r');
-     for i from 0 to r'-1 do (
-	  bi := b#i;
-	  if not instance(bi,ZZ) or bi < 0 then error "expected a list of non-negative integers";
-	  if i>0 and not (b#(i-1) >= bi) then error "expected a decreasing list of integers";
-	  if not (bi <= r) then error("expected a list of integers bounded by ",toString(r));
-	  );
-     giambelli(r',E,b))
 
 diagrams = method()
 diagrams(ZZ,ZZ) := (k,n) -> ( --diagrams {k>=a_1>=...>=a_n>=0}
@@ -619,11 +597,13 @@ doc ///
     Text
       Subsection 4.3.1
       
-      We build arbitrary Schubert cycles using the command {\tt placeholderSchubertCycle}.
+      We build arbitrary Schubert cycles using the command @TO schubertCycle'@  (The ' is
+      there to indicate that we're using "Fulton-style" notation, not
+      "Grothendieck-style" notation).
       For example, on ${\mathbb G}(2,4)$, we can build the cycle $\sigma_{2,1,1}$ as follows:
     Example
       G24 = flagBundle({3,2})
-      sigma_(2,1,1) = placeholderSchubertCycle({2,1,1},G24)
+      sigma_(2,1,1) = schubertCycle'({2,1,1},G24)
     Text
       
       Subsection 4.3.2
@@ -637,7 +617,7 @@ doc ///
       $(\sigma_1)^6$:
     Example
       G14 = flagBundle({2,3})
-      sigma_1 = placeholderSchubertCycle({1,0},G14)
+      sigma_1 = schubertCycle'({1,0},G14)
       integral (sigma_1)^6
     Text
       Note that this is the degree of ${\mathbb G}(1,4)$ in the Plucker embedding, since $\sigma_1$
@@ -654,7 +634,7 @@ doc ///
     Example
       numOfLines = k -> (
 	   G := flagBundle({2,2*k});
-	   sigma := placeholderSchubertCycle({k,0}, G);
+	   sigma := schubertCycle'({k,0}, G);
 	   integral sigma^4)
     Text
       Now we can calculate to our hearts' content:
@@ -677,7 +657,7 @@ doc ///
     Example
       G37 = flagBundle({3,4})
       A37 = intersectionRing G37
-      sigma = 8*placeholderSchubertCycle({3,2,1},G37)
+      sigma = 8*schubertCycle'({3,2,1},G37)
       integral sigma^2
     Text
       More generally, we can ask: given 2 general quadrics in ${\mathbb P}^{2k+2}$, how many
@@ -686,7 +666,7 @@ doc ///
       numOfPlanes = k -> (
 	   G:= flagBundle({k+1,k+2});
 	   schubertlist := apply(k+1,i-> k+1-i); --the list {k+1,k,...,1}
-	   sigma := (2^(k+1))*placeholderSchubertCycle(schubertlist, G);
+	   sigma := (2^(k+1))*schubertCycle'(schubertlist, G);
 	   integral sigma^2)
       numOfPlanes(2) --This was Exercise 4.43
       for k from 2 to 4 do (
@@ -700,7 +680,7 @@ doc ///
       @TO "Intersection Theory Section 4.2"@:
     Example
       G36 = flagBundle({3,3})
-      c = placeholderSchubertCycle({2,1,0},G36)
+      c = schubertCycle'({2,1,0},G36)
       toSchubertBasis(c^2)
     Text
       We see that $\sigma_{3,2,1}$ occurs with coefficient $2$ in $\sigma_{2,1}^2$.
