@@ -234,7 +234,7 @@ toSchubertBasis(RingElement) := c -> (
      B := intersectionRing (G.Base);
      (k,q) := toSequence(G.BundleRanks);
      P := diagrams(q,k);
-     M := apply(P, i-> placeholderSchubertCycle(i,G));
+     M := apply(P, i-> schubertCycle'(i,G));
      E := flatten entries basis(R);
      local T';
      if R.cache.?htoschubert then T' = R.cache.htoschubert else (
@@ -287,7 +287,7 @@ doc ///
   Description
     Example
       A = flagBundle({3,3},VariableNames => H)
-      S = A.Bundles#0
+      S = first A.Bundles
       G = flagBundle({1,2},S,VariableNames => K)
       c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
       toSchubertBasis c
@@ -500,7 +500,7 @@ doc ///
       $H_{2,1} = \sigma_1$ @BR{}@ $H_{2,2} = \sigma_2$ @BR{}@ $H_{1,1} = -\sigma_1$ @BR{}@
       $H_{1,2} = \sigma_{1,1}$
       
-      The Schubert classes can also be accessed directly using the {\tt placeholderSchubertCycle}
+      The Schubert classes can also be accessed directly using the @TO schubertCycle'@
       command -- see Section 4.3 for details.
       
       As an example, we can compute $(\sigma_1)^2$:
@@ -1137,8 +1137,15 @@ X = flagBundle({2,2})
 s = schubertCycle'({1,0},X)
 toSchubertBasis s
 
+A = flagBundle({3,3},VariableNames => H)
+(S,Q) = A.Bundles
+G = flagBundle({1,2},S,VariableNames => K)
+c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
+toSchubertBasis c
+
 restart
 loadPackage "Schubert2"
+installPackage "Schubert2"
 
 X = flagBundle({1,3},VariableNames => K)
 Y = flagBundle({2,2},VariableNames => L)
@@ -1147,35 +1154,9 @@ IC = incidenceCorrespondence(X,Y)
 source IC
 target IC
 
-IX = flagBundle({1,2},Q, VariableNames => M)
-gens intersectionRing IX
-gens first flattenRing(intersectionRing IX,CoefficientRing =>QQ)
-
-f = IX/X
-(SIX,QIX) = IX.Bundles
-IY = flagBundle({1,1},SY, VariableNames => N)
-g = IY/Y
-QIY = g^* QY 
-QQY = IY.Bundles#1 + QIY
-(R,k) = flattenRing(intersectionRing IX,CoefficientRing => QQ)
-gens R
-gensix = (for i from 1 to rank SIX list k(chern(i,SIX)))| (
-     for j from 1 to rank QIX list k(chern(j,QIX)))
-gensx = (for i from 1 to rank SX list k(chern(i,f^*SX))) | (
-     (for j from 1 to rank QX list k(chern(j,f^*QX))))
-nicegens = gensix|gensx
-targetsix = (for i from 1 to rank SIX list k(chern(i,SIX)))| (
-     for j from 1 to rank QIX list k(chern(j,QIX)))
-gensx = (for i from 1 to rank S list k(chern(i,f^*S))) | (
-     (for j from 1 to rank Q list k(chern(j,f^*Q))))
-nicegens = gensix|gensx
-
-targets = (for i from 1 to rank QIY list chern(i,QIY)) | for j from 1 to rank QQY list chern(j,QQY)
-subs = for i from 0 to #nicegens-1 list nicegens#i => targets#i
-
-M = sub(vars R, subs) 
-R
-describe R
-prune R
-
-
+restart
+loadPackage "Schubert2"
+X = flagBundle({2,2})
+schubertCycle'((2,3),X)
+Y = flagBundle({2,3})
+schubertCycle'((0,2),Y)
