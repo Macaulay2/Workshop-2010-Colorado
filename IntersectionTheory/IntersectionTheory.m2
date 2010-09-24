@@ -809,9 +809,15 @@ X = flagBundle({1,3},VariableNames => K)
 Y = flagBundle({2,2},VariableNames => L)
 Q = X.Bundles#1
 IC = incidenceCorrespondence(Y,X)
+chern tautologicalLineBundle Y
+S = first bundles Y
+chern S
+chern S(2)
 source IC
 target IC
 peek loadedFiles
+
+time flagBundle({1,2,2,2,3})
 
 restart
 loadPackage "Schubert2"

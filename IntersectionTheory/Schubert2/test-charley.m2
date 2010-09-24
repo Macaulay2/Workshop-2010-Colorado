@@ -1,5 +1,7 @@
+----------
+--Tests for toSchubertBasis
+----------
 TEST ///
---BEGIN tests for toSchubertBasis
 --Test 1 for toSchubertBasis: GG(1,3) = G(2,4)
 G = flagBundle({2,2})
 (S,Q) = G.Bundles
@@ -26,8 +28,16 @@ a = coefficient(toSchubertBasis(c2),toSchubertBasis((c1)^2))
 assert (a == 2)
 ///
 
+TEST ///
+--Should have tests for G(k,E) with E nontrivial, need to compute by hand first
+///
+
+----------
 --Tests for incidenceCorrespondence(flagBundle,flagBundle)
+----------
 
 --Tests for map(flagBundle,flagBundle)
 
 --Tests for map(flagBundle,AbstractVariety,AbstractSheaf)
+
+--Tests for tautologicalLineBundle

@@ -8,7 +8,8 @@ newPackage(
 	     {Name => "Daniel R. Grayson", Email => "dan@math.uiuc.edu", HomePage => "http://www.math.uiuc.edu/~dan/"},
 	     {Name => "Michael E. Stillman", Email => "mike@math.cornell.edu", HomePage => "http://www.math.cornell.edu/People/Faculty/stillman.html"},
 	     {Name => "Stein A. Strømme", Email => "stromme@math.uib.no", HomePage => "http://stromme.uib.no/home/" },
-	     {Name => "David Eisenbud", Email => "de@msri.org", HomePage => "http://www.msri.org/~de/"}
+	     {Name => "David Eisenbud", Email => "de@msri.org", HomePage => "http://www.msri.org/~de/"},
+	     {Name => "Charley Crissman", Email => "charleyc@gmail.com", HomePage => "http://www.berkeley.edu/~charleyc/"}
 	     },
 	HomePage => "http://www.math.uiuc.edu/Macaulay2/",
     	Headline => "computations of characteristic classes for varieties without equations"
@@ -23,7 +24,8 @@ export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety",
      "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle","Pullback",
      "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base", 
      "toSchubertBasis", "Correspondence", "IncidenceCorrespondence", "intermediates",
-     "incidenceCorrespondence","schubertring","intersectionmap","multiFlag"}
+     "incidenceCorrespondence","schubertring","intersectionmap","multiFlag",
+     "tautologicalLineBundle", "bundles"}
 
 -- not exported, for now: "logg", "expp", "reciprocal", "ToddClass"
 
@@ -261,13 +263,9 @@ euler AbstractVariety := X -> integral ctop tangentBundle X
 AbstractSheaf QQ := AbstractSheaf ZZ := AbstractSheaf => (F,n) -> (
      if n == 0 then return F;
      X := variety F;
-     if not X.?TautologicalLineBundle then error "expected a variety with a tautological line bundle";
-     L := (
-	  if n == 1
-	  then X.TautologicalLineBundle
-	  else abstractSheaf(X, Rank => 1, ChernClass => 1 + n * chern_1 X.TautologicalLineBundle)
-	  );
-     F ** L)
+     O1 := tautologicalLineBundle X;
+     F **((O1)^**n)
+     )
 AbstractSheaf RingElement := AbstractSheaf => (F,n) -> (
      if n == 0 then return F;
      X := variety F;
@@ -277,9 +275,8 @@ AbstractSheaf RingElement := AbstractSheaf => (F,n) -> (
      if not isHomogeneous n then error "expected homogeneous element of degree 0 or 1";
      d := first degree n;
      if d == 0 then (
-     	  if X.?TautologicalLineBundle 
-	  then F ** abstractSheaf(X, Rank => 1, ChernClass => n * chern_1 X.TautologicalLineBundle)
-     	  else error "expected a variety with an ample line bundle"
+     	  O1 := tautologicalLineBundle X; 
+	  F ** ((O1)^**n)
 	  )
      else if d == 1 then (
 	  F ** abstractSheaf(X, Rank => 1, ChernClass => 1 + n)
@@ -439,6 +436,7 @@ geometricSeries = (t,n,dim) -> (			    -- computes (1+t)^n assuming t^(dim+1) ==
      r)
 
 AbstractSheaf ^** ZZ := AbstractSheaf => (E,n) -> (
+     if n == 1 then return E;
      if n < 0 then (
 	  if rank E =!= 1 then error "negative tensor power of sheaf of rank not equal to 1 requested";
 	  E = dual E;
@@ -533,7 +531,7 @@ flagBundle(List,AbstractSheaf) := opts -> (bundleRanks,E) -> (
      FV.SubBundles = (() -> ( t := OO_FV^0; for i from 0 to n list if i == 0 then t else t = t + bundles#(i-1)))();
      FV.QuotientBundles = (() -> ( t := OO_FV^0; for i from 0 to n list if i == 0 then t else t = t + bundles#(n-i)))();
      --next line is taking a long time to run because computation of Chern character is slow
-     FV.TautologicalLineBundle = OO_FV(sum(1 .. #bundles - 1, i -> i * chern(1,bundles#i)));
+     --FV.TautologicalLineBundle = OO_FV(sum(1 .. #bundles - 1, i -> i * chern(1,bundles#i)));
      pullback := method();
      pushforward := method();
      pullback ZZ := pullback QQ := r -> promote(r,C);
@@ -590,6 +588,18 @@ projectiveSpace'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,Vari
 
 PP  = new ScriptedFunctor from { superscript => i -> projectiveSpace i }
 PP' = new ScriptedFunctor from { superscript => i -> projectiveSpace' i }
+
+bundles = method()
+bundles FlagBundle := X -> X.Bundles
+tautologicalLineBundle = method()
+tautologicalLineBundle AbstractVariety := X -> (
+     if X.?TautologicalLineBundle then X.TautologicalLineBundle else
+     error "variety does not have a tautological line bundle")
+tautologicalLineBundle FlagBundle := X -> (
+     if X.?TautologicalLineBundle then X.TautologicalLineBundle else (
+	  B := bundles X;
+	  X.TautologicalLineBundle = OO_X(sum(1 .. #B - 1, i -> i * chern(1,B#i)));
+	  X.TautologicalLineBundle))
 
 --given L a basepoint-free line bundle on an AbstractVariety X over some other variety B,
 --and P the projectivization of a bundle E on B, mapstope(X,P,L) builds the map
@@ -733,7 +743,6 @@ multiFlag(List,List) := (bundleRanks, bundles) -> (
 	  PullBack => pullback
 	  };
      MF.StructureMap = p;
-     --currently missing pushforward of sheaves; need to compute tangent bundle
      tangentBundles := toList apply(MF.Bundles, L -> (
 	  if #L > 1
 	  then sum(1..#L-1, i -> sum(i,j -> Hom(L#j,L#i)))
@@ -742,7 +751,7 @@ multiFlag(List,List) := (bundleRanks, bundles) -> (
      pushforward AbstractSheaf := E -> (
 	  if variety E =!= MF then error "pushforward: variety mismatch";
 	  abstractSheaf(X,ChernCharacter => pushforward(ch E * todd p)));
-          integral C := r -> integral p_* r;
+     integral C := r -> integral p_* r;
      --computing the tangent bundle of MF is very slow and likely unnecessary
      --if X.?TangentBundle then MF.TangentBundle = MF.StructureMap.TangentBundle + p^* X.TangentBundle;
      MF
@@ -819,6 +828,7 @@ incidenceCorrespondence(List,AbstractSheaf) := (L,B) -> (
      G2 := flagBundle({L#1,n - L#1},B);
      incidenceCorrespondence(G2,G1))
 --is more efficient than using two forgetful maps because it creates one less intermediate object
+--currently only accepts Grassmannians but could be easily extended now that we have forgetful maps of flag varieties
 incidenceCorrespondence(FlagBundle,FlagBundle) := (G2,G1) -> (
      --by Charley Crissman
      if G1.Base =!= G2.Base then error "expected FlagBundles over same base";
