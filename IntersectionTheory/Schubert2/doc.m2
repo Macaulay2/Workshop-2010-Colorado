@@ -1831,6 +1831,8 @@ Node
     chern oo
   Caveat
    Beware the low parsing precedence of the adjacency operator @ TO symbol SPACE @.
+  SeeAlso
+   tautologicalLineBundle
 --------
 Node
   Key
@@ -3130,6 +3132,41 @@ Node
       a triple $(Z,f,g)$ where $Z$ is the AbstractVariety mediating the Correspondence, $f$ is
       the AbstractVarietyMap from $Z$ to the source of $I$, and $g$ is the AbstractVarietyMap
       from $Z$ to the target of $I$.
+Node
+  Key
+    bundles
+    (bundles,FlagBundle)
+  Headline
+    get the list of tautological line bundles on a flag bundle
+  Usage
+    bundles X
+  Inputs
+    X:FlagBundle
+  Outputs
+    :List
+      of bundles, the tautological bundles on the flagBundle X
+  Description
+    Example
+      X = flagBundle({2,3,4})
+      L = bundles X
+      rank \ L
+Node
+  Key
+    tautologicalLineBundle
+    (tautologicalLineBundle,AbstractVariety)
+    (tautologicalLineBundle,FlagBundle)
+  Headline
+    get the tautological line bundle of a flag bundle or abstract variety
+  Usage
+    tautologicalLineBundle X
+  Description
+    Text
+      Returns the tautological line bundle of the variety $X$.  In the case of a
+      @TO FlagBundle@, this is the line bundle defining the Pl\"ucker embedding.
+      
+      Used in @TO (symbol SPACE,AbstractSheaf,ZZ)@.
+  SeeAlso
+    (symbol SPACE,AbstractSheaf,ZZ)
 -- Local Variables:
 -- mode: M2
 -- coding: utf-8
