@@ -406,22 +406,15 @@ writeDotFile(String, Graph) := (filename, G) -> (
      -- Input: The desired file name for the DOT file created and a graph.
      -- Output: The code for the inputted graph to be constructed in Graphviz 
      --         with the specified file name.
-     H := graph simpleGraph G;
      fil := openOut filename;
      fil << "graph G {" << endl;
-     q := pairs H;
-     for i from 0 to #q-1 do (
-	  e := q#i;
-	  fil << "  \"" << toString e#0 << "\""; -- number of spaces added before the node is arbitrary
-	  if #e#1 === 0 or all(q, j->member(e#0,j#1)) then
-	    fil << ";" << endl
-	  else (
-	    fil << " -- {";
-	    links := toList e#1;
-	    for j from 0 to #links-1 do
-		 fil << "\"" << toString links#j << "\";";
-     	    fil << "};" << endl;
-	    )
+     V := vertices G;
+     H := hashTable apply(#V,i->V_i=>i);
+     scan(V,v-> fil << "\t"|toString H#v|" [label=\""|toString v|"\"];" << endl);
+     E := edges G;
+     scan(E,e->(e = toList e;
+	       fil << "\t"|toString H#(e_0)|" -- "|toString H#(e_1)|";" << endl;
+	       )
 	  );
      fil << "}" << endl << close;
      )
@@ -430,25 +423,18 @@ writeDotFile(String, Digraph) := (filename, G) -> (
      -- Input:  The desired file name for the Dot file created and a digraph
      -- Output:  The code for the inputted digraph to be constructed in Graphviz 
      --          with the specified file name.
-     G = graph G;
      fil := openOut filename;
      fil << "digraph G {" << endl;
-     q := pairs G;
-     for i from 0 to #q-1 do (
-	  e := q#i;
-	  fil << "  \"" << toString e#0 << "\"";
-	  if #e#1 === 0 then
-	    fil << ";" << endl
-	  else (
-	    fil << " -> {";
-	    links := toList e#1;
-	    for j from 0 to #links-1 do
-		 fil << "\"" << toString links#j << "\";";
-     	    fil << "};" << endl;
-	    )
+     V := vertices G;
+     H := hashTable apply(#V,i->V_i=>i);
+     scan(V,v-> fil << "\t"|toString H#v|" [label=\""|toString v|"\"];" << endl);
+     E := edges G;
+     scan(E,e->(e = toList e;
+	       fil << "\t"|toString H#(e_0)|" -> "|toString H#(e_1)|";" << endl;
+	       )
 	  );
      fil << "}" << endl << close;
-     )
+     )     
 
 runcmd := cmd -> (
      stderr << "--running: " << cmd << endl;
@@ -1027,7 +1013,7 @@ doc ///
       package assumes that all digraphs are acyclic.  Also, graphs are 
       assumed to have no loops or multiple edges. This package has
       functions to view graphs and digraphs.  These functions call the programs
-      Graphviz and dot2tex and is only set up to function on Unix-like computers (e.g., Macintosh, Linux) at
+      Graphviz and dot2tex and are only set up to function on Unix-like computers (e.g., Macintosh, Linux) at
       this time. 
 ///
 
@@ -1342,13 +1328,10 @@ doc ///
 ///
 
 
-
-end
-
 doc ///
          Key
-	      (adjacencyMatrix,Digraph)
 	      adjacencyMatrix
+	      (adjacencyMatrix,Digraph)
          Headline
 	      Computes the adjacency matrix of a graph or digraph
          Usage
@@ -1357,14 +1340,13 @@ doc ///
 	      G:Digraph
          Outputs
 	      M:Matrix
-	      	    whose (i,j)-entry is 1 if ij is an edge or arc of G and 0 otherwise
          Description
             Text
-	    	 Compute the adjacency matrix of the complete graph K_5.
+ 	      The (i,j)-entry of the adjacency matrix is 1 if there exists an arc or edge connected the ith vertex to the jth vertex and 0 otherwise.
             Example
 	    	 adjacencyMatrix completeGraph 5
       ///
-
+      
 doc ///
          Key
 	      (showTikZ,Digraph)
@@ -1398,17 +1380,23 @@ doc ///
 	     S:String     
      ///
 
+end
 
 
 
 doc ///
   Key
     neighbors
+    (neighbors,Graph)
   Headline
-    Returns the neighbors of a given node in a graph or digraph. 
+    Returns the neighbors of a given node in a graph 
   Usage
+       neighbors(G,v)
   Inputs
+       G:Digraph
+       v:Thing, a vertex of G
   Outputs
+       List
   Description
     Text
 ///
