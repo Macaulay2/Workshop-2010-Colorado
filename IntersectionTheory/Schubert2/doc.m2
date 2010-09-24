@@ -2868,6 +2868,40 @@ Node
       f = map(F2,F1)
 Node
   Key
+    (map,FlagBundle,AbstractVariety,AbstractSheaf)
+  Headline
+    maps to projective bundles
+  Usage
+    map(P,X,L)
+  Inputs
+    P:FlagBundle
+      the projectivization of some vector bundle E
+    X:AbstractVariety
+    L:AbstractSheaf
+      a line bundle on X, the desired pullback of $O_P(1)$.
+  Outputs
+    :AbstractVarietyMap
+      the map from X to P such that the pullback of $O_P(1)$ is $L$
+  Description
+    Text
+      Accepts both Grothendieck-style and Fulton-style ${\mathbb P}(E)$, but in the case a 
+      decision cannot be made based on ranks (i.e. when $E$ has rank $2$), defaults to
+      Fulton-style notation (so ${\mathbb P}(E)$ is the space of sub-line-bundles of $E$).
+      
+      Does not check whether $L$ is basepoint-free.  Weird results are probably possible if $L$
+      is not.
+    Example
+      X = flagBundle({2,2}) --the Grassmannian GG(1,3)
+      (S,Q) = X.Bundles
+      L = exteriorPower(2,dual S)
+      P = flagBundle({5,1}) --Grothendieck-style PP^5
+      f = map(P,X,L) -- Plucker embedding of GG(1,3) in PP^5
+      H = P.Bundles#1
+      f^* (chern(1,H)) -- hyperplane section, should be sigma_1
+      f_* chern(0,S) --expect 2 times hyperplane class since GG(1,3) has degree 2
+ 
+Node
+  Key
     toSchubertBasis
     (toSchubertBasis,RingElement)
   Headline
