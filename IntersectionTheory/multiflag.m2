@@ -189,7 +189,6 @@ flatten for bund in Y.Bundles list for i from 1 to rank bund list chern (i,bund)
 ----Begin test code for forgetfulMap
 restart
 loadPackage "Schubert2"
-load "multiflag.m2"
 X = flagBundle({3,3,3})
 Y = flagBundle({1,2,2,1,3})
 f = map(X,Y)
@@ -231,3 +230,14 @@ g_* (z^3) --n^3
 g_* (z^4) --n^4*H_(2,1)
 g_* (z^5) --n^5*H_(2,2)
 g_* (z^3 * (g^* (n*chern(1,G.Bundles#0)))) -- -n^4*H_(2,1)
+
+--
+restart
+loadPackage "Schubert2"
+X = flagBundle({3,3,3})
+bundles = toList X.Bundles
+bundleRanks = {{1,2},{2,1},{3}}
+time MF = multiFlag(bundleRanks,bundles)
+MF.StructureMap.TangentBundle
+p = MF.StructureMap
+MF.TangentBundle

@@ -2935,12 +2935,12 @@ Node
   Headline
     build containment correspondence between two Grassmannians
   Usage
-    incidenceCorrespondence(G1,G2)
+    incidenceCorrespondence(G2,G1)
   Inputs
-    G1:FlagBundle
-      a Grassmannian of $a$-dimensional subbundles of a vector bundle $E$
     G2:FlagBundle
-      another Grassmannian of $b$-dimensional subbundles of the same bundle $E$
+      a Grassmannian of $b$-dimensional subbundles of a vector bundle $E$
+    G1:FlagBundle
+      another Grassmannian of $a$-dimensional subbundles of the same bundle $E$
   Outputs
     :IncidenceCorrespondence
       from $G1$ to $G2$, namely the correspondence whose
@@ -2951,7 +2951,7 @@ Node
     Example
       P3 = flagBundle({1,3},VariableNames => H)
       GG13 = flagBundle({2,2},VariableNames => K)
-      I = incidenceCorrespondence(P3,GG13)
+      I = incidenceCorrespondence(GG13,P3)
       c = chern(1, last P3.Bundles) --the hyperplane class
       I_* (c^2) --the class in GG13 corresponding to lines meeting a given line, i.e. sigma_1
       d = (chern(2, last GG13.Bundles))^2 --the class of a point in GG13

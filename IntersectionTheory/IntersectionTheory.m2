@@ -742,7 +742,7 @@ doc ///
       incidence correspondence in Schubert2 using @TO incidenceCorrespondence@:
     Example
       P4 = flagBundle({1,4})
-      I = incidenceCorrespondence(G14,P4)
+      I = incidenceCorrespondence(P4,G14)
       I_* F1 -- The surface Y, obtained by pulling back then pushing forward F1 along this correspondence.
     Text
       Here we see that $Y$ is a surface of degree $320$.  These two approaches are related by
@@ -804,13 +804,14 @@ restart
 loadPackage "Schubert2"
 errorDepth = 0
 installPackage "Schubert2"
-
+check "Schubert2"
 X = flagBundle({1,3},VariableNames => K)
 Y = flagBundle({2,2},VariableNames => L)
 Q = X.Bundles#1
-IC = incidenceCorrespondence(X,Y)
+IC = incidenceCorrespondence(Y,X)
 source IC
 target IC
+peek loadedFiles
 
 restart
 loadPackage "Schubert2"

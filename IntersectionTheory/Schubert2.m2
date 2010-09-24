@@ -23,7 +23,7 @@ export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety",
      "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle","Pullback",
      "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base", 
      "toSchubertBasis", "Correspondence", "IncidenceCorrespondence", "intermediates",
-     "incidenceCorrespondence"}
+     "incidenceCorrespondence","schubertring","intersectionmap","multiFlag"}
 
 -- not exported, for now: "logg", "expp", "reciprocal", "ToddClass"
 
@@ -199,6 +199,7 @@ abstractSheaf AbstractVariety := opts -> X -> (
 	  )
      else if opts.Rank =!= null then (
 	  ch = rk = promote(opts.Rank,A);
+	  --precomputing the Chern character is greatly slowing down some computations
 	  if opts.ChernClass =!= null then ch = ch + logg promote(opts.ChernClass,A);
 	  )
      else error "expected Rank or ChernCharacter option";
@@ -531,6 +532,7 @@ flagBundle(List,AbstractSheaf) := opts -> (bundleRanks,E) -> (
 	       bdl));
      FV.SubBundles = (() -> ( t := OO_FV^0; for i from 0 to n list if i == 0 then t else t = t + bundles#(i-1)))();
      FV.QuotientBundles = (() -> ( t := OO_FV^0; for i from 0 to n list if i == 0 then t else t = t + bundles#(n-i)))();
+     --next line is taking a long time to run because computation of Chern character is slow
      FV.TautologicalLineBundle = OO_FV(sum(1 .. #bundles - 1, i -> i * chern(1,bundles#i)));
      pullback := method();
      pushforward := method();
@@ -600,6 +602,7 @@ PP' = new ScriptedFunctor from { superscript => i -> projectiveSpace' i }
 --warning 2: default is Fulton notation, currently no way to access Grothendieck-style if
 --target projective space has dimension 1
 map(FlagBundle,AbstractVariety,AbstractSheaf) := opts -> (P,X,L) -> (
+     --by Charley Crissman
      B := P.Base;
      try f := X / B else error "expected first variety to have same base as projective bundle";
      if not #P.Bundles == 2 then error "expected a projective bundle";
@@ -648,6 +651,7 @@ map(FlagBundle,AbstractVariety,AbstractSheaf) := opts -> (P,X,L) -> (
           pushforward AbstractSheaf := F -> (
    	  if variety F =!= X then error "pushforward: variety mismatch";
 	       abstractSheaf(P,ChernCharacter => pushforward (ch F * todd ourmap))))
+     --can we compute relative tangent bundle to this map without tangent bundle of X?
      else pushforward AbstractSheaf := F -> (
           error "cannot push forward sheaves along map with no relative tangent bundle");
      ourmap)
@@ -667,6 +671,7 @@ map(FlagBundle,AbstractVariety,AbstractSheaf) := opts -> (P,X,L) -> (
 --maps of flag varieties.
 multiFlag = method()
 multiFlag(List,List) := (bundleRanks, bundles) -> (
+     --by Charley Crissman
      K := local K;
      if not #bundleRanks == #bundles then error "expected same number of bundles as lists of ranks";
      if not all(bundleRanks, l -> all(l, r -> instance(r,ZZ) and r>=0)) then error "expected bundles ranks to be positive integers";
@@ -709,7 +714,9 @@ multiFlag(List,List) := (bundleRanks, bundles) -> (
      pullback := method();
      pushforward := method();
      pullback ZZ := pullback QQ := r -> promote(r,C);
-     pullback S := r -> H promote(F promote(r,U), B);
+     pullback S := r -> promote(r, B);
+     --pullback S := r -> promote(promote(r,U), B);
+     --probably take out the if n == 0 part
      sec := if n === 0 then 1_C else (
 	  product(0 .. n-1, l-> (
 		    if #(bundleRanks#l) === 0 then 1_C else (
@@ -726,6 +733,18 @@ multiFlag(List,List) := (bundleRanks, bundles) -> (
 	  PullBack => pullback
 	  };
      MF.StructureMap = p;
+     --currently missing pushforward of sheaves; need to compute tangent bundle
+     tangentBundles := toList apply(MF.Bundles, L -> (
+	  if #L > 1
+	  then sum(1..#L-1, i -> sum(i,j -> Hom(L#j,L#i)))
+	  else OO_MF^0));
+     MF.StructureMap.TangentBundle = sum tangentBundles;
+     pushforward AbstractSheaf := E -> (
+	  if variety E =!= MF then error "pushforward: variety mismatch";
+	  abstractSheaf(X,ChernCharacter => pushforward(ch E * todd p)));
+          integral C := r -> integral p_* r;
+     --computing the tangent bundle of MF is very slow and likely unnecessary
+     --if X.?TangentBundle then MF.TangentBundle = MF.StructureMap.TangentBundle + p^* X.TangentBundle;
      MF
      )
 
@@ -733,6 +752,7 @@ multiFlag(List,List) := (bundleRanks, bundles) -> (
 --this method depends heavily on knowing the generators and monomial order of the
 --intersection ring of a flag variety and will break if those are ever changed
 map(FlagBundle,FlagBundle) := opts -> (B,A) -> (
+     --by Charley Crissman
      if not A.Base === B.Base then error "expected flag bundles over same base";
      S := intersectionRing B.Base;
      Arks := A.BundleRanks;
@@ -789,7 +809,7 @@ incidenceCorrespondence(List) := L -> (
      if not L#0 < L#2 and L#1 < L#2 then "expected last list element to be largest";
      G1 := flagBundle({L#0,L#2 - L#0});
      G2 := flagBundle({L#1,L#2 - L#1});
-     incidenceCorrespondence(G1,G2))
+     incidenceCorrespondence(G2,G1))
 incidenceCorrespondence(List,AbstractSheaf) := (L,B) -> (
      if not #L == 2 then error "expected a list of length 2";
      if not all(L, i-> instance(i,ZZ) and i > 0) then "expected a list of positive integers";
@@ -797,9 +817,10 @@ incidenceCorrespondence(List,AbstractSheaf) := (L,B) -> (
      if not all(L, i-> n > i) then "expected a list of integers smaller than rank of bundle";
      G1 := flagBundle({L#0,n - L#0},B);
      G2 := flagBundle({L#1,n - L#1},B);
-     incidenceCorrespondence(G1,G2))
+     incidenceCorrespondence(G2,G1))
 --is more efficient than using two forgetful maps because it creates one less intermediate object
-incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
+incidenceCorrespondence(FlagBundle,FlagBundle) := (G2,G1) -> (
+     --by Charley Crissman
      if G1.Base =!= G2.Base then error "expected FlagBundles over same base";
      B := intersectionRing G1.Base;
      if not (#G1.Bundles == 2 and #G2.Bundles == 2) then error "expected two Grassmannians";
@@ -809,7 +830,7 @@ incidenceCorrespondence(FlagBundle,FlagBundle) := (G1,G2) -> (
      (s2,q2) := G2.Bundles;
      a := rank s1;
      b := rank s2;
-     if a > b then transpose incidenceCorrespondence(G2,G1) else (
+     if a > b then transpose incidenceCorrespondence(G1,G2) else (
 	 if not lift(chern(s1+q1),B) == lift(chern(s2+q2),B) then error "expected Grassmannians of same bundle";
 	 I1 := flagBundle({b-a, n-b},q1);
 	 I2 := flagBundle({a, b-a},s2);
@@ -1189,6 +1210,7 @@ diagrams(ZZ,ZZ,ZZ) := (k,n,d) -> (--partitions of d of above form
 
 toSchubertBasis = method()
 toSchubertBasis(RingElement) := c -> (
+     --by Charley Crissman
      try G := variety c else error "expected an element of an intersection ring"; 
      if not (instance(G,FlagBundle) and #G.BundleRanks == 2) then error "expected a Grassmannian";
      R := intersectionRing G;
@@ -1223,7 +1245,7 @@ toSchubertBasis(RingElement) := c -> (
 	  S ^ ZZ := (f,n) -> (
 	       f2 := S.cache.intersectionmap(f);
 	       toSchubertBasis((f2)^n));
-	  R.cache.schubertring = S;
+	  R.cache.schubertring = S
 	  );
      rez := (vars S)*(lift(c2,B));
      rez_(0,0)
@@ -1312,6 +1334,7 @@ undocumented {
      (toString,Correspondence),
      (toString,IncidenceCorrespondence)
      }
+load (Schubert2#"source directory"|"Schubert2/test-charley.m2")
 TEST /// input (Schubert2#"source directory"|"Schubert2/demo.m2") ///
 TEST /// input (Schubert2#"source directory"|"Schubert2/demo2.m2") ///
 TEST /// input (Schubert2#"source directory"|"Schubert2/demo3.m2") ///
