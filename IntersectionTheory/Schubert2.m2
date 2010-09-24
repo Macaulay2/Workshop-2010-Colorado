@@ -1214,13 +1214,16 @@ toSchubertBasis(RingElement) := c -> (
 	       << endl;
 	       << concatenate(interpreterDepth:"o") << lineNumber << " : "
 	       << "Schubert Basis of G(" << k << "," << k+q << ") over " << G.Base << endl;);
-	  R.cache.schubertring = S;
 	  S.cache.intersectionmap = map(R,S,M);
      	  S * S := (f,g) -> (
 	       f1 := S.cache.intersectionmap(f);
 	       g1 := S.cache.intersectionmap(g);
 	       toSchubertBasis(f1*g1)
-	       )
+	       );
+	  S ^ ZZ := (f,n) -> (
+	       f2 := S.cache.intersectionmap(f);
+	       toSchubertBasis((f2)^n));
+	  R.cache.schubertring = S;
 	  );
      rez := (vars S)*(lift(c2,B));
      rez_(0,0)
