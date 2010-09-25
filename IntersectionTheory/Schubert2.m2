@@ -9,7 +9,7 @@ newPackage(
 	     {Name => "Michael E. Stillman", Email => "mike@math.cornell.edu", HomePage => "http://www.math.cornell.edu/People/Faculty/stillman.html"},
 	     {Name => "Stein A. Strømme", Email => "stromme@math.uib.no", HomePage => "http://stromme.uib.no/home/" },
 	     {Name => "David Eisenbud", Email => "de@msri.org", HomePage => "http://www.msri.org/~de/"},
-	     {Name => "Charley Crissman", Email => "charleyc@gmail.com", HomePage => "http://www.berkeley.edu/~charleyc/"}
+	     {Name => "Charley Crissman", Email => "charleyc@math.berkeley.edu", HomePage => "http://www.berkeley.edu/~charleyc/"}
 	     },
 	HomePage => "http://www.math.uiuc.edu/Macaulay2/",
     	Headline => "computations of characteristic classes for varieties without equations"
@@ -21,11 +21,11 @@ export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety",
      "flagBundle", "projectiveBundle'", "projectiveBundle", "projectiveSpace'", "projectiveSpace", "PP'", "PP", "integral", "IntersectionRing",
      "intersectionRing", "PullBack", "PushForward", "Rank", "ChernClassVariableTable",
      "schur", "SectionClass", "sectionClass", "segre", "StructureMap", "TangentBundle", "tangentBundle", "cotangentBundle", "todd",
-     "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle","Pullback",
+     "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle",
      "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base", 
      "toSchubertBasis", "Correspondence", "IncidenceCorrespondence", "intermediates",
-     "incidenceCorrespondence","schubertring","intersectionmap","multiFlag",
-     "tautologicalLineBundle", "bundles"}
+     "incidenceCorrespondence","SchubertRing","multiFlag",
+     "tautologicalLineBundle", "bundles", "schubertRing"}
 
 -- not exported, for now: "logg", "expp", "reciprocal", "ToddClass"
 
@@ -41,8 +41,7 @@ protect IntermediateToSource
 protect IntermediateToTarget
 protect htoschubert
 protect schuberttoh
-protect schubertring
-protect intersectionmap
+protect SchubertRing
 
 fixvar = s -> if instance(s,String) then getSymbol s else s
 
@@ -103,13 +102,21 @@ AbstractVarietyMap * AbstractVarietyMap := AbstractVarietyMap => (f,g) -> new Ab
 
 map(FlagBundle,AbstractVarietyMap,List) := AbstractVarietyMap => x -> notImplemented()
 map(FlagBundle,AbstractVariety,List) := AbstractVarietyMap => x -> notImplemented()
-AbstractVariety#id = (X) -> new AbstractVarietyMap from {
+AbstractVariety#id = (X) -> (
+     R := intersectionRing X;
+     idmap := id_R;
+     pullback := method();
+     pullback ZZ := pullback QQ := pullback R := z -> idmap z;
+     pullback AbstractSheaf := E -> (
+	  if variety E =!= X then error "pullback: variety mismatch";
+	  E);
+     new AbstractVarietyMap from {
      symbol source => X,
      symbol target => X,
-     Pullback => id_(intersectionRing X),
+     PullBack => pullback,
      PushForward => identity,
      SectionClass => 1_(intersectionRing X)
-     }
+     })
 AbstractVariety / AbstractVariety := AbstractVarietyMap => (X,S) -> (
      maps := while X =!= S and X.?StructureMap list (f := X.StructureMap; X = target f; f);
      if #maps == 0 then id_X
@@ -1194,7 +1201,7 @@ schubertCycle(Sequence,FlagBundle) := (a,X) -> (
 	  ai := a#i;
 	  if not instance(ai,ZZ) or ai < 0 then error "expected a sequence of non-negative integers";
 	  if i>0 and not (a#(i-1) < a#i) then error "expected a strictly increasing sequence of integers";
-	  if (ai < n) then error("expected a sequence of integers less than", toString n);
+	  if not (ai < n) then error("expected a sequence of integers less than ", toString n);
 	  );
      giambelli(s,E,seqtolist(q,a)))
 schubertCycle(List,FlagBundle) := (b,X) -> (
@@ -1224,45 +1231,56 @@ toSchubertBasis = method()
 toSchubertBasis(RingElement) := c -> (
      --by Charley Crissman
      try G := variety c else error "expected an element of an intersection ring"; 
+     (S,T,U) := schubertRing(G);
+     T c
+     )
+
+--returns a triple (S,T,U) where S is the Schubert basis ring of the given Grassmannian G,
+--T is the map from the intersection ring of G to S
+--U is the map in the reverse direction
+schubertRing = method()
+schubertRing(FlagBundle) := G -> (
+     --by Charley Crissman
      if not (instance(G,FlagBundle) and #G.BundleRanks == 2) then error "expected a Grassmannian";
-     R := intersectionRing G;
-     B := intersectionRing (G.Base);
-     (k,q) := toSequence(G.BundleRanks);
-     P := diagrams(q,k);
-     M := apply(P, i-> schubertCycle(i,G));
-     E := flatten entries basis(R);
-     local T';
-     if R.cache.?htoschubert then T' = R.cache.htoschubert else (
+     if not G.?cache then G.cache = new CacheTable;
+     if G.cache.?SchubertRing then (
+	  (G.cache.SchubertRing,G.cache.htoschubert,G.cache.schuberttoh))
+     else (
+          R := intersectionRing G;
+          B := intersectionRing (G.Base);
+          (k,q) := toSequence(G.BundleRanks);
+          P := diagrams(q,k);
+          M := apply(P, i-> schubertCycle(i,G));
+          E := flatten entries basis(R);
+          local T';
 	  T := transpose matrix apply (M, i -> apply(E, j-> coefficient(j,i))); --matrix converting from schu-basis 
                                                                  --to h-basis
 	  T' = T^-1; --matrix converting from h-basis to s-basis
-	  R.cache.schuberttoh = T;
-	  R.cache.htoschubert = T');
-     c2 := T'*(transpose matrix {apply (E, i-> coefficient(i,c))}); --c in the s-basis
-     local S;
-     if R.cache.?schubertring then S = R.cache.schubertring else (
+          local S;
 	  s := local s;
 	  S = B[apply(P, i-> s_i)]; --poly ring with generators <=> schubert basis elts
-	  S.cache = new MutableHashTable;
+	  S.cache = new CacheTable;
 	  S#{Standard,AfterPrint} = X -> (
 	       << endl;
 	       << concatenate(interpreterDepth:"o") << lineNumber << " : "
 	       << "Schubert Basis of G(" << k << "," << k+q << ") over " << G.Base << endl;);
-	  S.cache.intersectionmap = map(R,S,M);
+	  G.cache.schuberttoh = map(R,S,M);
+	  htoschubert := method();
+	  htoschubert R := c -> ( 
+	       c2 :=T'*(transpose matrix {apply (E, i-> coefficient(i,c))});
+	       rez := (vars S)*(lift(c2,B));
+	       rez_(0,0)); --c in the s-basis
+	  G.cache.htoschubert = htoschubert;
      	  S * S := (f,g) -> (
-	       f1 := S.cache.intersectionmap(f);
-	       g1 := S.cache.intersectionmap(g);
-	       toSchubertBasis(f1*g1)
+	       f1 := G.cache.schuberttoh(f);
+	       g1 := G.cache.schuberttoh(g);
+	       G.cache.htoschubert(f1*g1)
 	       );
 	  S ^ ZZ := (f,n) -> (
-	       f2 := S.cache.intersectionmap(f);
+	       f2 := G.cache.schuberttoh(f);
 	       toSchubertBasis((f2)^n));
-	  R.cache.schubertring = S
-	  );
-     rez := (vars S)*(lift(c2,B));
-     rez_(0,0)
-     )
-
+	  G.cache.SchubertRing = S;
+	  (S,G.cache.htoschubert,G.cache.schuberttoh)))
 
 sectionZeroLocus = method(TypicalValue => AbstractVariety)
 sectionZeroLocus AbstractSheaf := (F) -> (

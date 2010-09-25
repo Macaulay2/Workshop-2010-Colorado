@@ -103,7 +103,7 @@ Node
 	and quotient bundles.
    Example
      G = flagBundle({2,2}, VariableNames => {,c})
-     (S,Q) = G.Bundles
+     (S,Q) = bundles G
    Text
 	Any cubic surface is given by a cubic form on $\PP^3$,
 	that is, an element of the third symmetric power of the
@@ -124,7 +124,7 @@ Node
    Example
 	f = n -> (
 	     G := flagBundle({n-1,2});
-	     integral chern symmetricPower_(2*n-3) last G.Bundles
+	     integral chern symmetricPower_(2*n-3) last bundles G
 	     )
 	for n from 2 to 10 list time f n
    Text
@@ -160,18 +160,18 @@ Node
    Text
      We extract the rank 2 tautological subbundle $S$ and the rank 3 tautological quotient bundle $Q$:
    Example
-     (S,Q) = G.Bundles
+     (S,Q) = bundles G
    Text
      We form the bundle of quadratic forms on the variable planes:
    Example
      B = symmetricPower(2,Q)
    Text
-     As a matter of convention, a {\em projective bundle} constructed by the function @ TO projectiveBundle @
+     As a matter of convention, a {\em projective bundle} constructed by the function @ TO projectiveBundle' @
      in {\em Schubert2} parametrizes 
      rank 1 {\em quotients} of the sheaf provided.  The $\PP^5$-bundle of conics is given by sublinebundles of $B$, or
      equivalently, by rank 1 quotients of the dual, $B^*$, as in the following code:
    Example  
-     X = projectiveBundle(dual B, VariableNames => {,{z}})
+     X = projectiveBundle'(dual B, VariableNames => {,{z}})
    Text
      The equation of the general quintic is a section of the fifth symmetric
      power of the space of linear forms on $\PP^4$.  The induced equation on any given
@@ -280,9 +280,10 @@ Node
    Text
      Then we create the projective space of dimension 4 over the base point.
    Example
-    X = projectiveSpace_4 pt
+    X = projectiveSpace'_4 pt
    Text
-    On projective spaces, the first Chern class of the tautological line bundle is assigned to the variable {\tt h}:
+    Note that we use @TO projectiveSpace'@ to get Grothendieck-style notation.  This has the advantage that
+    the first Chern class of the tautological line bundle is assigned to the variable {\tt h}:
    Example
      chern_1 OO_X(1)
    Text
@@ -305,61 +306,6 @@ Node
      Now we compute the Hilbert polynomial of $F$.  This computation makes use of the Riemann-Roch Theorem.
    Example
     chi F(n*h)
---------
-Node
-  Key
-    projectiveSpace
-    VariableName
-    (projectiveSpace,ZZ,AbstractVariety)
-    (projectiveSpace,ZZ)
-    [projectiveSpace,VariableName]
-  Headline
-    make a projective space
-  Usage
-    projectiveSpace n
-    projectiveSpace(n, S)
-    projectiveSpace_n S
-  Inputs
-    n : ZZ
-    S : AbstractVariety
-      if omitted, then @ TO point @ is used for it
-    VariableName => Symbol
-      the symbol to use for the variable representing the first Chern class of the tautological line bundle on the resulting projective space
-  Outputs
-    :
-       the projective space of rank 1 quotient bundles of the trivial bundle of rank $n+1$ on
-       the base variety {\tt S}.
-  Description
-   Example
-     P = projectiveSpace 3
-     tangentBundle P
-     chern tangentBundle P
-     todd P
-     chi OO_P(3)
-   Text
-     To compute the Hilbert polynomial of a sheaf on projective space, we work
-     over a base variety of dimension zero whose intersection ring contains a
-     {\em free} variable $n$, instead of working over @ TO point @:
-   Example
-     pt = base n
-     Q = projectiveSpace_4 pt
-     chi OO_Q(n)
-   Text
-     The base variety may itself be a projective space:
-   Example
-     S = projectiveSpace(4, VariableName => h)
-     P = projectiveSpace(3, S, VariableName => H)
-     dim P
-     todd P
-  SeeAlso
-     projectiveSpace'
-     projectiveBundle
-     flagBundle
-     tangentBundle
-     todd
-     chi
-     base
-     (symbol _,OO,AbstractVariety)
 --------
 Node
   Key
@@ -401,13 +347,70 @@ Node
    Text
      The base variety may itself be a projective space:
    Example
-     S = projectiveSpace'(4, VariableName => symbol h)
+     S = projectiveSpace'(4, VariableName => h)
      P = projectiveSpace'(3, S, VariableName => H)
      dim P
      todd P
   SeeAlso
      projectiveSpace
-     projectiveBundle'
+     projectiveBundle
+     flagBundle
+     tangentBundle
+     todd
+     chi
+     base
+     (symbol _,OO,AbstractVariety)
+--------
+Node
+  Key
+    projectiveSpace
+    VariableName
+    (projectiveSpace,ZZ,AbstractVariety)
+    (projectiveSpace,ZZ)
+    [projectiveSpace,VariableName]
+  Headline
+    make a projective space
+  Usage
+    projectiveSpace n
+    projectiveSpace(n, S)
+    projectiveSpace_n S
+  Inputs
+    n : ZZ
+    S : AbstractVariety
+      if omitted, then @ TO point @ is used for it
+    VariableName => Symbol
+      the symbol to use for the variable representing the first Chern class of the tautological line bundle on the resulting projective space
+  Outputs
+    :
+       the projective space of rank 1 subbundles of the trivial bundle of rank $n+1$ on
+       the base variety {\tt S}.
+  Description
+   Text
+     Equivalent to flagBundle(\{1,n\},S,VariableNames=>\{h,\}).
+   Example
+     P = projectiveSpace 3
+     tangentBundle P
+     chern tangentBundle P
+     todd P
+     chi OO_P(3)
+   Text
+     To compute the Hilbert polynomial of a sheaf on projective space, we work
+     over a base variety of dimension zero whose intersection ring contains a
+     {\em free} variable $n$, instead of working over @ TO point @:
+   Example
+     pt = base n
+     Q = projectiveSpace_4 pt
+     chi OO_Q(n)
+   Text
+     The base variety may itself be a projective space:
+   Example
+     S = projectiveSpace(4, VariableName => symbol h)
+     P = projectiveSpace(3, S, VariableName => H)
+     dim P
+     todd P
+  SeeAlso
+     projectiveSpace'
+     projectiveBundle
      flagBundle
      tangentBundle
      todd
@@ -469,14 +472,14 @@ Node
     Then we make a projective space over it and use the auxiliary parameters {\tt p} and {\tt q} in a computation
     that checks the projection formula.
    Example
-     X = projectiveSpace(3,S,VariableName => H)
+     X = projectiveSpace'(3,S,VariableName => H)
      intersectionRing X
      f = X.StructureMap
      x = chern f_* (f^* OO_S(p*a_1) * OO_X(q*H))
      y = chern f_* OO_X((f^*(p*a_1))+q*H)
      x == y
   SeeAlso
-    projectiveSpace
+    projectiveSpace'
     base
     StructureMap
     chern
@@ -508,7 +511,7 @@ Node
       a rank 2 vector bundle on the projective plane.
     Example
       pt = base(n,p,q)
-      P2 = projectiveSpace_2 pt
+      P2 = projectiveSpace'_2 pt
       E = abstractSheaf(P2, Rank=>2, ChernClass=>1+p*h+q*h^2)
       chern E(n*h)
   SeeAlso
@@ -828,7 +831,7 @@ Node
   Key
     Bundles
   Headline
-    get the tautological sheaves on a flag bundle
+    a symbol used internally as a key
   Usage
     F.Bundles
   Inputs
@@ -837,6 +840,8 @@ Node
     :Sequence
       the list of the tautological sheaves on $F$
   Description
+    Text
+      The preferred way to get the list of tautological sheaves on $F$ is {\tt bundles F}.
     Example
       G = projectiveSpace 7
       G.Bundles
@@ -844,6 +849,8 @@ Node
       X = flagBundle {1,2,3}
       X.Bundles
       rank \ oo
+  SeeAlso
+    bundles
 --------
 Node
   Key
@@ -865,27 +872,30 @@ Node
   Key
     TautologicalLineBundle
   Headline
-    get the tautological line bundle of an abstract variety
-  Usage
-    X.TautologicalLineBundle
-  Inputs
-    X:AbstractVariety
-  Outputs
-    :AbstractSheaf
-     the tautological line bundle of $X$
+    a symbol used internally as a key
   Description
     Text
-      This is for internal use only.
+      If $X$ is an abstract variety and its tautological line bundle has already been built,
+      it is stored in {\tt X.TautologicalLineBundle}.  However, because building this bundle
+      can be computationally intensive, it is often not built unless it is requested by
+      @TO tautologicalLineBundle@.  The programmer is warned not to make direct reference to this
+      key for this reason.
     Example
       X = projectiveSpace 3
-      L = X.TautologicalLineBundle
+      try X.TautologicalLineBundle else "bundle not found"
+      L = tautologicalLineBundle X
+      L === X.TautologicalLineBundle
       rank L
       chern L
     Text
-      Here is the preferred way to get the tautological line bundle:
+      Here are the preferred ways to get the tautological line bundle:
     Example
       OO_X(1)
       L === oo
+      tautologicalLineBundle X
+      L === oo
+  SeeAlso
+    tautologicalLineBundle
 --------
 Node
   Key
@@ -906,7 +916,7 @@ Node
     the total Chern character of $F$
   Description
     Example
-     X = projectiveSpace 3
+     X = projectiveSpace' 3
      L = OO_X(1)
      chern L
      ch L
@@ -925,7 +935,7 @@ Node
     the $i$-th Chern character of $F$
   Description
     Example
-     X = projectiveSpace 3
+     X = projectiveSpace' 3
      L = OO_X(1)
      chern L
      ch_1 L, ch_2 L, ch_3 L
@@ -944,7 +954,7 @@ Node
    Example
     F = flagBundle({3,2},VariableNames => {{chern_1 S .. chern_3 S},{chern_1 Q,chern_2 Q}})
     A = intersectionRing F
-    (S,Q) = F.Bundles
+    (S,Q) = bundles F
     chern Q
     chern S
   SeeAlso
@@ -983,9 +993,9 @@ Node
     the Euler characteristic of $F$
   Description
    Example
-    X = projectiveSpace 2
+    X = projectiveSpace' 2
     chi OO_X(-1), chi OO_X(0), chi OO_X(1), chi OO_X(2), chi OO_X(3)
-    Y = projectiveSpace(2, base n)
+    Y = projectiveSpace'(2, base n)
     chi OO_Y(n)
    Text
     The algorithm uses the Hirzebruch-Riemann-Roch theorem.
@@ -1009,7 +1019,7 @@ Node
     the number of lines on quintic threefold.
    Example
     G = flagBundle{3,2}
-    B = symmetricPower_5 last G.Bundles
+    B = symmetricPower_5 last bundles G
     ctop B
     degree oo
     integral ooo
@@ -1060,7 +1070,7 @@ Node
     The list {\tt r} of ranks can be obtained later with {\tt F.BundleRanks}, see @ TO BundleRanks @.
     Its sum can be obtained with {\tt F.Rank}.
    Item
-    The list of consecutive quotients in the tautological filtration can be obtained later with {\tt F.Bundles}, see @ TO Bundles @.
+    The list of consecutive quotients in the tautological filtration can be obtained later with {\tt bundles F}, see @ TO bundles @.
     See also @ TO SubBundles @ and @ TO QuotientBundles @.
    Item
     The (relative) tautological line bundle can be obtained later with {\tt OO_F(1)}.
@@ -1073,50 +1083,11 @@ Node
     Example
       base(3,Bundle => (E,4,c))
       F = flagBundle({2,2},E)
-      F.Bundles
+      bundles F
       rank \ oo
       chern \ ooo
       product toList oo
       intersectionRing flagBundle({2,2},E,VariableNames=>{{a,b},t})
---------
-Node
-  Key
-    projectiveBundle
-    (projectiveBundle,AbstractSheaf)
-    (projectiveBundle,ZZ)
-    (projectiveBundle,ZZ,AbstractVariety)
-    [projectiveBundle,VariableNames]
-  Headline
-   make a projective bundle from an abstract sheaf
-  SeeAlso
-   projectiveBundle'
-   projectiveSpace
-   flagBundle
-  Usage
-    projectiveBundle F
-    projectiveBundle(n,X)
-    projectiveBundle n
-  Inputs
-    F : AbstractSheaf
-    n : ZZ
-    X : AbstractVariety
-    VariableNames => Thing
-      see @ TO [flagBundle,VariableNames] @
-  Outputs
-    :
-       the projective bundle of rank 1 quotient bundles of the abstract sheaf $F$.
-       If $F$ is omitted, then a projective space of dimension $n$ over $X$ is produced.
-       If $X$ is omitted, then @ TO point @ is used as the base.
-  Description
-   Example
-    X = projectiveBundle 4
-    F = OO_X(2) ++ OO_X(3) ++ OO_X(4)
-    Y = projectiveBundle F
-    dim Y
-    integral (chern_1 OO_Y(1))^(dim Y)
-    X.Bundles/rank
-  Caveat
-   Perhaps this should be merged with @ TO projectiveSpace @.  (The optional arguments are slightly different.)
 --------
 Node
   Key
@@ -1143,7 +1114,7 @@ Node
       see @ TO [flagBundle,VariableNames] @
   Outputs
     :
-       the projective bundle of rank 1 sub-bundles of the abstract sheaf $F$.
+       the projective bundle of rank 1 quotient bundles of the abstract sheaf $F$.
        If $F$ is omitted, then a projective space of dimension $n$ over $X$ is produced.
        If $X$ is omitted, then @ TO point @ is used as the base.
   Description
@@ -1153,32 +1124,48 @@ Node
     Y = projectiveBundle' F
     dim Y
     integral (chern_1 OO_Y(1))^(dim Y)
-    X.Bundles/rank
+    bundles X/rank
   Caveat
    Perhaps this should be merged with @ TO projectiveSpace @.  (The optional arguments are slightly different.)
 --------
 Node
   Key
-   PP
+    projectiveBundle
+    (projectiveBundle,AbstractSheaf)
+    (projectiveBundle,ZZ)
+    (projectiveBundle,ZZ,AbstractVariety)
+    [projectiveBundle,VariableNames]
   Headline
-   make a projective space
+   make a projective bundle from an abstract sheaf
+  SeeAlso
+   projectiveBundle'
+   projectiveSpace
+   flagBundle
   Usage
-   PP^n
+    projectiveBundle F
+    projectiveBundle(n,X)
+    projectiveBundle n
   Inputs
-   n:ZZ
+    F : AbstractSheaf
+    n : ZZ
+    X : AbstractVariety
+    VariableNames => Thing
+      see @ TO [flagBundle,VariableNames] @
   Outputs
-   :FlagBundle
-    a projective space over @ TO point @ of dimension $n$
+    :
+       the projective bundle of rank 1 sub-bundles of the abstract sheaf $F$.
+       If $F$ is omitted, then a projective space of dimension $n$ over $X$ is produced.
+       If $X$ is omitted, then @ TO point @ is used as the base.
   Description
    Example
-    X = PP^4
-    X.Base
-    dim X
-   Text
-    The projective space produced adheres to modern notation, with a tautological quotient bundle of rank 1.  For the
-    opposite, old-fashoned notation, see @ TO PP' @.
-   Example
-    X.Bundles/rank
+    X = projectiveBundle 4
+    F = OO_X(2) ++ OO_X(3) ++ OO_X(4)
+    Y = projectiveBundle F
+    dim Y
+    integral (chern_1 OO_Y(1))^(dim Y)
+    bundles X/rank
+  Caveat
+   Perhaps this should be merged with @ TO projectiveSpace @.  (The optional arguments are slightly different.)
 --------
 Node
   Key
@@ -1198,10 +1185,33 @@ Node
     X.Base
     dim X
    Text
-    The projective space produced adheres to old-fashioned notation, with a tautological subbundle of rank 1.  For the
-    opposite, modern notation, see @ TO PP @.
+    The projective space produced adheres to modern "Grothendieck-style" notation, with a tautological quotient bundle of rank 1.
+    For the opposite, "Fulton-style" notation see @ TO PP @.
    Example
-    X.Bundles/rank
+    bundles X/rank
+--------
+Node
+  Key
+   PP
+  Headline
+   make a projective space
+  Usage
+   PP^n
+  Inputs
+   n:ZZ
+  Outputs
+   :FlagBundle
+    a projective space over @ TO point @ of dimension $n$
+  Description
+   Example
+    X = PP^4
+    X.Base
+    dim X
+   Text
+    The projective space produced adheres to the older, "Fulton-style" notation, with a tautological subbundle of rank 1.  For the
+    opposite, "Grothendieck-style" notation, see @ TO PP' @.
+   Example
+    bundles X/rank
 --------
 Node
   Key
@@ -1261,7 +1271,7 @@ Node
     the intersection ring of $X$
   Description
    Example
-    intersectionRing PP^3
+    intersectionRing PP'^3
    Text
     The variables may not have been assigned their values in the intersection ring yet:
    Example
@@ -1383,7 +1393,7 @@ Node
     In the next example, we let $n$ be a free parameter in the ``intersection ring'' of the base variety.
    Example
     pt = base n
-    X = projectiveSpace_2 pt
+    X = projectiveSpace'_2 pt
     tangentBundle X
     F = symmetricPower_n oo
     chern F
@@ -1524,8 +1534,8 @@ Node
     the (absolute) tangent bundle of $X$ or the (relative) tangent bundle of $f$
   Description
    Example
-    X = projectiveSpace 2
-    Y = projectiveSpace_2 X
+    X = projectiveSpace' 2
+    Y = projectiveSpace'_2 X
     tangentBundle Y
     chern oo
     tangentBundle Y.StructureMap
@@ -1551,8 +1561,8 @@ Node
     the (absolute) cotangent bundle of $X$ or the (relative) cotangent bundle of $f$
   Description
    Example
-    X = projectiveSpace 2
-    Y = projectiveSpace_2 X
+    X = projectiveSpace' 2
+    Y = projectiveSpace'_2 X
     cotangentBundle Y
     chern oo
     cotangentBundle Y.StructureMap
@@ -1714,7 +1724,7 @@ Node
     The sheaves can be on different varieties if one of the varieties is over the other.
    Example
     ch OO_X(1)
-    Y = projectiveSpace(3,X,VariableName=>k)
+    Y = projectiveSpace'(3,X,VariableName=>k)
     ch OO_Y(2)
     OO_Y(2) ++ OO_X(1)
     ch oo
@@ -1788,7 +1798,7 @@ Node
   Description
    Example
     pt = base n
-    X = projectiveSpace(3,pt)
+    X = projectiveSpace'(3,pt)
     A = intersectionRing X
     ch ((OO_X(1)) ^** 2)
     ch ((OO_X(1)) ^** 3)
@@ -1817,11 +1827,11 @@ Node
     the line bundle whose first Chern class is {\tt n}.
   Description
    Example
-    X = projectiveSpace 4
+    X = projectiveSpace' 4
     OO_X(3)
     chi oo
     pt = base n
-    Y = projectiveSpace(4,pt)
+    Y = projectiveSpace'(4,pt)
     OO_Y(n)
     chi oo
    Text
@@ -1874,7 +1884,7 @@ Node
    the abstract sheaf $O_D$, defined as $1 - O(-D)$
  Description
   Example
-   X = PP^4
+   X = PP'^4
    h
    F = OO_h
    chern F
@@ -1895,7 +1905,7 @@ Node
     $X$
  Description
   Example
-   X = PP^4
+   X = PP'^4
    h
    variety h
 --------
@@ -1976,7 +1986,7 @@ Node
     the dual of {\tt F}
   Description
    Example
-    X = PP^1
+    X = PP'^1
     dual OO_X(-1)
     chi oo
 --------
@@ -2117,7 +2127,7 @@ Node
    (symbol ^*,AbstractVarietyMap)
   Description
    Example
-    X = PP^4
+    X = PP'^4
     f = X.StructureMap
     OO_X(1)
     f_* oo
@@ -2401,7 +2411,7 @@ Node
    > proj(3,h,all): factor(chi(o(n*h)));
 			     1/6 (n + 3) (n + 2) (n + 1)
   Example
-   Ph = projectiveSpace_3 base n
+   Ph = projectiveSpace'_3 base n
    factor chi OO(n*h)
   Pre
    > Ph[toddclass_];
@@ -2469,7 +2479,7 @@ Node
    > grass(2,4,b,all): 
   Example
    Gb = flagBundle({2,2}, base n, VariableNames => {,b})
-   Qb = last Gb.Bundles
+   Qb = last bundles Gb
   Pre
    > chi(Gb,Symm(n,Qb));
                                 2            3
@@ -2492,7 +2502,7 @@ Node
                         1/12 n  + 2/3 n  + ---- n  + 7/3 n + 1
                                             12
   Example
-   P5 = projectiveSpace(5,base n,VariableName=>H)
+   P5 = projectiveSpace'(5,base n,VariableName=>H)
    chi(OO(n*H)-OO((n-2)*H))
 Node
  Key
@@ -2506,7 +2516,7 @@ Node
    > grass(2,5,c):        # Lines in P^4. 
   Example
    Gc = flagBundle({3,2}, VariableNames => {,c})
-   (Sc,Qc) = Gc.Bundles
+   (Sc,Qc) = bundles Gc
   Pre
    > B:=symm(5,Qc):       # Qc is the rank 2 quotient bundle, B its 5th 
    >                      # symmetric power.
@@ -2534,7 +2544,7 @@ Node
    > grass(3,5,c):         # 2-planes in P^4.  
   Example
    Gc = flagBundle({2,3}, VariableNames => {,c})
-   (Sc,Qc) = Gc.Bundles
+   (Sc,Qc) = bundles Gc
   Pre
    > B:=Symm(2,Qc):        # The bundle of conics in the 2-plane. 
   Example
@@ -2542,7 +2552,7 @@ Node
   Pre
    > Proj(X,dual(B),z):    # X is the projective bundle of all conics. 
   Example
-   X = projectiveBundle(dual B, VariableNames => {,{z}})
+   X = projectiveBundle'(dual B, VariableNames => {,{z}})
   Pre
    > A:=Symm(5,Qc)-Symm(3,Qc)&*o(-z):  # The rank 11 bundle of quintics 
    >                                   # restricted to the universal conic. 
@@ -2570,11 +2580,11 @@ Node
    > grass(3,4,d,all):
   Example
    Gd = flagBundle({1,3}, VariableNames => {,"d"})
-   (Sd,Qd) = Gd.Bundles
+   (Sd,Qd) = bundles Gd
   Pre
    > Proj(f,dual(symm(2,Qd)),e):
   Example
-   f = projectiveBundle(dual symmetricPower_2 Qd, VariableNames => {,{e}})
+   f = projectiveBundle'(dual symmetricPower_2 Qd, VariableNames => {,{e}})
   Pre
    > integral(Gd,lowerstar(f,(2*d1+e)^8));
                                           92
@@ -2587,7 +2597,7 @@ Node
   Pre
    > proj(4,h,tang):            # need tangentbundle for chi
   Example
-   X = projectiveSpace(4,base n,VariableName => h)
+   X = projectiveSpace'(4,base n,VariableName => h)
   Pre
    > F:=sheaf(2,[5*h,10*h^2]):  # defines the Horrocks-Mumford bundle
   Example
@@ -2628,7 +2638,7 @@ Node
    > grass(3,6,c):
   Example
    Gc = flagBundle({3,3}, VariableNames => {,c})
-   (Sc,Qc) = Gc.Bundles
+   (Sc,Qc) = bundles Gc
   Pre
    > B:=Symm(3,Qc):
   Example
@@ -2636,7 +2646,7 @@ Node
   Pre
    > Proj(X,dual(B),z):
   Example
-   X = projectiveBundle(dual B, VariableNames => {,{z}})
+   X = projectiveBundle'(dual B, VariableNames => {,{z}})
   Pre
    > A:=Symm(6,Qc)-Symm(3,Qc)&@o(-z):
   Example
@@ -2688,12 +2698,12 @@ Node
   Text
     We we compute the arithmetic genus of a curve of degree $n$ in $\PP^2$:
   Example
-    Y = projectiveSpace_2 base n
+    Y = projectiveSpace'_2 base n
     factor p_a (n*h)
   Text
    Here we compute the arithmetic genus of a curve on with $\PP^1 \times \PP^1$:
   Example
-    Z = projectiveSpace_(1,VariableName => k) projectiveSpace_1 base(m,n)
+    Z = projectiveSpace'_(1,VariableName => k) projectiveSpace'_1 base(m,n)
     factor p_a (m*h + n*k)
   Text
    In the code above we have used the notation {\tt f_(a,b) x} as an abbreviation for {\tt f(a,b,x)}, see @ TO (symbol _,Function,Thing) @.
@@ -2898,11 +2908,11 @@ Node
       is not.
     Example
       X = flagBundle({2,2}) --the Grassmannian GG(1,3)
-      (S,Q) = X.Bundles
+      (S,Q) = bundles X
       L = exteriorPower(2,dual S)
       P = flagBundle({5,1}) --Grothendieck-style PP^5
       f = map(P,X,L) -- Plucker embedding of GG(1,3) in PP^5
-      H = P.Bundles#1
+      H = last bundles P
       f^* (chern(1,H)) -- hyperplane section, should be sigma_1
       f_* chern(0,S) --expect 2 times hyperplane class since GG(1,3) has degree 2
  
@@ -2921,7 +2931,8 @@ Node
   Outputs
     :
       An element $c'$ of a polynomial ring $B[s_\lambda]$ where $B$ is the base ring of G and
-      $\lambda$ runs over all diagrams in a $k\times n$ rectangle.  The element $c'$ is the
+      $\lambda$ runs over all diagrams in a $k\times n$ rectangle (this is the "Schubert ring" of G,
+      see @TO schubertRing@).  The element $c'$ is the
       representation of $c$ in terms of the Schubert basis of the intersection ring of G over B.
   Description
     Text
@@ -2929,11 +2940,13 @@ Node
       @TO schubertCycle@.
     Example
       A = flagBundle({3,3},VariableNames => H)
-      S = first A.Bundles
+      S = first bundles A
       G = flagBundle({1,2},S,VariableNames => K)
       RG = intersectionRing G
       c = H_(2,3)*((K_(2,1))^2) + H_(1,1)*K_(2,2)
       toSchubertBasis c
+  SeeAlso
+    schubertRing
 Node
   Key
     incidenceCorrespondence
@@ -2958,9 +2971,9 @@ Node
       P3 = flagBundle({1,3},VariableNames => H)
       GG13 = flagBundle({2,2},VariableNames => K)
       I = incidenceCorrespondence(GG13,P3)
-      c = chern(1, last P3.Bundles) --the hyperplane class
+      c = chern(1, last bundles P3) --the hyperplane class
       I_* (c^2) --the class in GG13 corresponding to lines meeting a given line, i.e. sigma_1
-      d = (chern(2, last GG13.Bundles))^2 --the class of a point in GG13
+      d = (chern(2, last bundles GG13))^2 --the class of a point in GG13
       I^* d --the class in $P3$ of points lying in the line corresponding to d, i.e. c^2
 Node
   Key
@@ -2980,7 +2993,7 @@ Node
   Description
     Example
       B = flagBundle({3,1})
-      E = first B.Bundles
+      E = first bundles B
       incidenceCorrespondence({1,2},E)
   SeeAlso
     (incidenceCorrespondence,FlagBundle,FlagBundle)
@@ -3171,6 +3184,52 @@ Node
       Used in @TO (symbol SPACE,AbstractSheaf,ZZ)@.
   SeeAlso
     (symbol SPACE,AbstractSheaf,ZZ)
+Node
+  Key
+    SchubertRing
+  Headline
+    a symbol used internally as a key
+  Description
+    Text
+      If $G$ is a Grassmannian (i.e. a @TO FlagBundle@ with rank sequence of length 2), and if
+      the Schubert ring of $G$ has already been built, then it is stored in 
+      {\tt G.cache.SchubertRing}.
+      This should not be used as an accessor; see @TO schubertRing@.
+  SeeAlso
+    schubertRing
+Node
+  Key
+    schubertRing
+    (schubertRing,FlagBundle)
+  Headline
+    get the Schubert ring of a Grassmannian
+  Usage
+    schubertRing G
+  Inputs
+    G:FlagBundle
+      a Grassmannian, with intersection ring $R$, say
+  Outputs
+    :
+      A triple $(S,T,U)$, where $S$ is the Schubert ring of $G$,
+      with generators corresponding to the (Fulton-style) Schubert
+      cycles of $G$ and with multiplication corresponding to multiplication in the intersection
+      ring of $G$, $T$ is the map from $R$ to $S$ converting from the Chern class basis to
+      the Schubert basis, and $U$ is the inverse map to $T$.
+  Consequences
+    Item
+      When run for the first time on $G$, the Schubert ring $S$ is built and cached in
+      {\tt G.cache.SchubertRing}, see @TO SchubertRing@, $T$ is built and cached in
+      {\tt G.cache.htoschubert}, and $U$ is built and cached in {\tt G.cache.schuberttoh}.
+  Description
+    Example
+      G = flagBundle({2,2})
+      (S,T,U) = schubertRing G
+      c = schubertCycle({1,0},G)
+      a = T c
+      a^2
+      U oo
+  SeeAlso
+    toSchubertBasis
 -- Local Variables:
 -- mode: M2
 -- coding: utf-8

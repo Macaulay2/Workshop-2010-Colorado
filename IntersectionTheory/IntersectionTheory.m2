@@ -789,10 +789,14 @@ end
 restart
 loadPackage "IntersectionTheory"
 installPackage("IntersectionTheory", RerunExamples=>true)
+installPackage("Schubert2", RerunExamples=>true)
 viewHelp IntersectionTheory
 X = flagBundle({2,2})
 s = schubertCycle'({1,0},X)
 toSchubertBasis s
+peek X
+(S,f) = schubertRing X
+S
 
 A = flagBundle({3,3},VariableNames => H)
 (S,Q) = A.Bundles

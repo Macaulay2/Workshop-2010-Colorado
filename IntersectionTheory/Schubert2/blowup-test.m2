@@ -35,8 +35,8 @@ end
 
 load "Schubert2/blowup.m2"
 -- blowup of P5 along the Veronese
-P5 = projectiveSpace(5, VariableName => symbol k)
-P2 = projectiveSpace(2, VariableName => symbol h)
+P5 = projectiveSpace'(5, VariableName => symbol k)
+P2 = projectiveSpace'(2, VariableName => symbol h)
 use P5
 chern tangentBundle P5
 A = intersectionRing P5
