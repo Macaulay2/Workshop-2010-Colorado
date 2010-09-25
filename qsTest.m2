@@ -54,11 +54,9 @@ restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
 R = QQ[x,y]
 f = matrix{{x^2*y+1,x+y-2,2*x*y}}
-isUnimodular(f)
 U = applyRowShortcut(f) -- Uses shortcut 2.2.1(2).
 det(U)
 f*U
-
 
 --Ex1. Yengui (Works fine, uses shortcut 2.2.2(1).)
 
@@ -102,6 +100,7 @@ restart;
 load("Documents/M2 Files/QuillenSuslin.m2");
 R = ZZ[x,y,z]
 f = matrix{{1-x*y-2*z-4*x*z-x^2*z-2*x*y*z+2*x^2*y^2*z-2*x*z^2-2*x*z^2-2*x^2*z^2+2*x*z^2+2*x^2*y*z^2,2+4*x+x^2+2*x*y-2*x^2*y^2+2*x*z+2*x^2*z-2*x^2*y*z,1+2*x+x*y-x^2*y^2+x*z+x^2*z-x^2*y*z,2+x+y-x*y^2+z-x*y*z}}
+changeVar(f,{x,y},z) -- No component of the row is monic in any of the variables.
 isUnimodular(f)
 ideal(f_(0,1),f_(0,2)) == R
 U = applyRowShortcut(f) -- Uses shortcut 2.2.1(2).
@@ -202,3 +201,112 @@ f = matrix{{2,x^2+1,x-2}} -- Test for error: not monic.
 f = matrix{{y+6,y+4}} -- Test for error: not unimodular.
 isUnimodular(f)
 (U,denom) = horrocks(f,y,I)
+
+
+-- Testing normalization process.
+
+-- Testing the special case n = 2.
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = ZZ[x]
+f = matrix{{2*x,2*x-1}}
+isUnimodular(f)
+(M,subs,invSubs) = changeVar(f,x)
+det(M)
+f*M
+
+-- Testing case where f already has a monic component.
+-- The routine moves the lowest degree monic component to
+-- the front.
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = QQ[x,y]
+f = matrix{{3*x*y^2+2*x*y+3,y^3+2*x^2*y+4,y^2}} -- The last entry is monic in y of degree 2.
+isUnimodular(f)
+(M,subs,invSubs) = changeVar(f,y)
+det(M)
+f*M
+sub(f*M,subs) -- The first component is now the smallest degree component that was monic in y.
+
+-- Testing the case where f contains a monic component
+-- in a different variable.  The routine finds the smallest
+-- degree where this happens and moves this to the front
+-- and makes the appropriate substitution.
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = QQ[t,x,y,z]
+-- The second component is monic in t of degree 2.
+f = matrix{{2*t*x*z+t*y^2+1,2*t*x*y+t^2,t*x^2}} -- Van den Essen example.
+isUnimodular(f)
+(M,subs,invSubs) = changeVar(f,z)
+det(M)
+f*M
+g = sub(f*M,subs) -- The first component of the row is now monic in z.
+-- Now we could use the horrocks method on this to find a local solution.
+U = horrocks(g,z,ideal(t,x,y))
+commonDenom(U)
+sub(det(U),R) % ideal(t,x,y)
+g*U
+
+-- Redundant row entry, so changeVar can use a shortcut method.
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = ZZ[x,y,z]
+f = matrix{{1-x*y-2*z-4*x*z-x^2*z-2*x*y*z+2*x^2*y^2*z-2*x*z^2-2*x*z^2-2*x^2*z^2+2*x*z^2+2*x^2*y*z^2,2+4*x+x^2+2*x*y-2*x^2*y^2+2*x*z+2*x^2*z-2*x^2*y*z,1+2*x+x*y-x^2*y^2+x*z+x^2*z-x^2*y*z,2+x+y-x*y^2+z-x*y*z}}
+isUnimodular(f)
+(M,subs,invSubs) = changeVar(f,z) -- One of the row entries is redundant so we can use a shortcut method.
+det(M)
+g = sub(f*M,subs)
+
+
+-- Over QQ. No component of the row is monic in x or y or is just a constant times x or y.
+-- Also all 3 components are needed to generate the entire ring.
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = QQ[x,y]
+f = matrix{{2*x^2*y+x*y+1,3*x^2*y^2+x*y,5*x^3*y^2+x*y}}
+isUnimodular(f)
+--changeVar(f,y)
+
+-- This would be the result if we just used 1/2 to make
+-- the highest total degree term of f1 monic, then used
+-- the appropriate change of variables.
+M = matrix{{1/2,0,0},{0,1,0},{0,0,1}}
+subs = matrix{{x+y,y}}
+invSubs = matrix{{x-y,y}}
+g = f*M
+g = sub(g,subs)
+leadCoeffVar(g_(0,0),y)
+U = horrocks(g,y,ideal(x)) -- U takes up about 150 lines of output.
+commonDenom(U)
+sub(det(U),R) % ideal(x)
+g*U
+
+-- This would be the result if instead we use the relation
+-- in ZZ on the leading coefficients of f2 and f3 (avoiding
+-- rational numbers) and then make the change of variables.
+subs = matrix{{x+y,y}}
+invSubs = matrix{{x-y,y}}
+M = matrix{{1,0,0},{2*x,1,0},{-1,0,1}}
+g = f*M
+g = sub(g,subs)
+leadCoeffVar(g_(0,0),y)
+U = horrocks(g,y,ideal(x)) -- U takes up about 320 lines of output.
+commonDenom(U)
+sub(det(U)*commonDenom(matrix{{det(U)}}),R) % ideal(x)
+g*U
+
+restart;
+load("Documents/M2 Files/QuillenSuslin.m2");
+R = ZZ[x,y]
+f = matrix{{2*x^2*y+2*x*y+1,2*x^2*y^2+2*x*y,2*x^3*y^2+x*y}}
+isUnimodular(f)
+M = matrix{{1,0,0},{x^2,1,0},{-x,0,1}}
+g = f*M
+
+
+R = ZZ[x]
+
+f = matrix{{2*x^3+2*x^2+1,2*(x^4+x^2),2*(x^5+x^2)}}
+isUnimodular(f)
+map(R^1) // f

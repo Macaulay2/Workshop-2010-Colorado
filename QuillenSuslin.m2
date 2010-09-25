@@ -86,7 +86,7 @@ isUnimodular(Matrix) := M -> (
 
 leadCoeffVar = method()
 leadCoeffVar(RingElement,RingElement) := (f,var) -> (
-     return (flatten coefficients(f,Variables =>{var}))#1_(0,0); 
+     return (coefficients(f,Variables =>{var}))#1_(0,0); 
 )     
      
 
@@ -95,7 +95,7 @@ leadCoeffVar(RingElement,RingElement) := (f,var) -> (
 
 degVar = method()
 degVar(RingElement,RingElement) := (f,var) -> (
-     return rank source((flatten coefficients(f,Variables =>{var}))#0) - 1;
+     return (((degrees((coefficients(f,Variables=>{var}))#0))#1)#0)#0;
 )
 
 
@@ -202,7 +202,7 @@ applyRowShortcut(Matrix) := g -> (
      );
     
      -- Fabianska shortcut 2.2.1(3).
-     s = scan(n, i -> (if ideal submatrix(g,,{i}) == R then break i));
+     s = scan(n, i -> (if ideal submatrix'(g,,{i}) == R then break i));
      if s =!= null then (
 	  print("Using shortcut 2.2.1(3).");
 	  M1 = mutableIdentity(R,n);
@@ -383,7 +383,7 @@ qsAlgorithmRow(Matrix) := f -> (
 	       
 	       	    else ( -- If f does not contain a component which is monic in currVar.
 			 print("Does not contain monic component.  Performing normalization step.");
-			 (f,phi) = changeVar(f,y); -- Normalize the row so that the first component is monic with respect to currVar.
+			 (f,subs,invSubs) = changeVar(f,varList,currVar); -- Normalize the row so that the first component is monic with respect to currVar.
 		    	 print("The first element of the row is now monic in "|toString(currVar)|": "|toString(f));
 		    );
 	            print("Computing local solutions.");
@@ -451,37 +451,147 @@ findMaxIdeal(Ideal) := (I) -> (
 -- Outputs: (1) new unimodular row with leading term of first entry a pure power
 -- of the "last" variable. (2) a function to reverse the change of variable.
 
--- 9/9/2010: Oops, I messed it up.  Fix this.
+-- 9/20/2010: Implemented normalization steps for various
+-- situations where shortcuts are available.
 
 changeVar = method()
-changeVar( Matrix, RingElement ) := (M,x) -> (
-     local f; local m; local R; local var; local varTail;
-     local y; local N1; local N2; local lc; local phi;
-     f = first flatten entries M;
-     m = first degree f + 1;
-
+changeVar( Matrix, RingElement ) := (f,currVar) -> (
+     local R; local n; local m; local g; local M; local subs; local invSubs;
+     local varList;
      R = ring f;
-     var = flatten entries vars R;
-     s = position( var, i -> ( i == x ) ); -- Very much depends on the way the user inputs the variables 
-     varTail = drop( var, s );
-     y = apply( s+1 , i -> ( var_i ) );
-               
-     y = toList apply( 0..(s-1) , i -> ( y_i - x^(m^(s-i)) ) ); -- Create the substitution for the first s-1 variables and keep x the same.
-     print(y);
-     y = y|varTail; -- Append the tail.  All variables after x stay the same.
-     print(y);
-     N1 = sub( M , matrix{ y } );
-     lc = leadCoeffVar(N1_(0,0),x);
-     print(lc);
-     y = replace(s,sub((1/lc),R)*x,y);
-     print(y);
-     N2 = sub(M, matrix{y});
-     y = toList apply( 0..(s-1) , i -> ( var_i + x^(m^(s-i)) ) );
-     y = y|varTail;
-     y = replace(s,lc*x,y);
-     print(y);
-     phi = (map(ring matrix{ y },ring M,matrix{ y }));
-     (N2,phi)
+     varList = take(flatten entries vars R,position(flatten entries vars R, i -> (i == currVar))); -- Make a list of the variables in R 'before' currVar.
+     n = rank source f; -- n = number of columns in f.
+     m = #varList + 1; -- m = number of variables currently being considered.
+     
+     -- If n = 2, then we can easily transform f to (1,0).
+     
+     if n == 2 then (
+	  print("Used n = 2 shortcut for normalization.");
+	  g = map(R^1) // f;
+	  M = mutableIdentity(R,2);
+	  M_(0,0) = g_(0,0);
+	  M_(1,0) = g_(1,0);
+	  M_(0,1) = -f_(0,1);
+	  M_(1,1) = f_(0,0);
+	  return(matrix M,vars R,vars R);
+     );
+
+     -- If a component already equals 1, then move it to the front.
+     -- This is just to make the degMatrix in the next step
+     -- work out nicely.  ie.  This removes the possibility that
+     -- a component of f is monic of degree zero.
+     
+     s = scan(n, i -> (if f_(0,i) == 1_R then break i;));
+     
+     if s =!= null then (
+	  M = mutableIdentity(R,n);
+	  M = columnSwap(M,0,s);
+	  return(matrix M,vars R,vars R);
+     );
+     
+     -- If none of the components are the constant 1, we create
+     -- a matrix (degMatrix) whose (i,j)th entry is zero if
+     -- f_(0,j) is not monic in varList#i (currVar counts as i = m-1)
+     -- and if degMatrix_(i,j) != 0, then degMatrix_(i,j) is the
+     -- degree of f_(0,j) viewed as a polynomial in varList#i.
+     -- The goal is to move the smallest degree monic component
+     -- to the front of f.
+     
+     degMatrix = mutableMatrix(R,m,n);
+     
+     for i from 0 to m-2 do (
+	  for j from 0 to n-1 do (
+	       if leadCoeffVar(f_(0,j),varList#i) == 1 then (
+		    degMatrix_(i,j) = degVar(f_(0,j),varList#i);
+	       );
+	  );
+     );
+     apply(0..n-1, i -> (if leadCoeffVar(f_(0,i),currVar) == 1 then (degMatrix_(m-1,i) = degVar(f_(0,i),currVar););));
+     
+     -- Now that degMatrix has been constructed, go through
+     -- and check if any nonzero entries exist (a nonzero
+     -- entry represents a row element which is monic in
+     -- one of the variables.)
+     
+     minEntry = (null,null,null);
+     apply(0..(m-1), i -> (apply(0..(n-1), j -> (if degMatrix_(i,j) > 0 then ( minEntry = (i,j,degMatrix_(i,j)); break;);))));
+     
+     if minEntry =!= (null,null,null) then (
+     	  apply(minEntry#0..(m-1), i -> (apply(0..(n-1), j -> (if degMatrix_(i,j) > 0 and degMatrix_(i,j) < minEntry#2 then minEntry = (i,j,degMatrix_(i,j))))));  
+     	  M = mutableIdentity(R,n);
+	  M = columnSwap(M,0,minEntry#1);
+	  subs = new MutableMatrix from vars R;
+	  subs = columnSwap(subs,minEntry#0,m-1); -- This map just transposes the two variables.  It is its own inverse.
+	  return(matrix M,matrix subs,matrix subs);
+     );
+
+     -- If minEntry == (null,null,null), this means that
+     -- there were not any components of f that were already
+     -- monic in one of the variables.
+     
+     print("No component of the row was monic in any of the variables.");
+     
+     -- The last normalization shortcut is to check whether
+     -- a smaller subset of the row elements generate the
+     -- entire ring.  If so, then we can use a unimodular
+     -- transformation to get 1 in the first position of f.
+     -- This is the same as shortcut 2.2.1(3) in applyRowShortcut.
+     
+     s = scan(n, i -> (if ideal submatrix'(f,,{i}) == R then break i));
+     if s =!= null then (
+	  M1 = mutableIdentity(R,n);
+	  M1 = columnSwap(M1,0,s);
+          fSwap = f*matrix(M1);
+	  -- Now fSwap_(0,1) = 0.
+	  h = map(R^1) // submatrix'(fSwap,,{0});
+	  M2 = mutableIdentity(R,n);
+	  apply(1..(n-1), i -> (M2_(i,0) = (1-fSwap_(0,0))*h_(i-1,0)));
+	  M3 = mutableIdentity(R,n);
+	  apply(1..(n-1), i -> (M3_(0,i) = -fSwap_(0,i)));
+	  M = matrix(M1)*matrix(M2)*matrix(M3);
+	  return (M,vars R,vars R);
+     );
+     
+     -- We will split into two cases, based on whether the
+     -- coefficient ring is a field or ZZ.
+     
+     if isField(coefficientRing(R)) == true then (
+	  print("Normalizing over QQ.");
+	  
+	  -- Method 1: Move the smallest total degree element
+	  -- to the front, multiply by the inverse of the
+	  -- leading coefficient, then make the change of
+	  -- variables.
+	  print("Using method 1.");
+	  
+	  
+	  
+	  
+	  -- Method 2: Check if the row has 2 integer leading
+	  -- coefficients (when considered in terms of total
+	  -- degrees) which are relatively prime.  If so,
+	  -- find a relation which converts the first entry
+	  -- to a monic polynomial when considering total degrees.
+	  print("Using method 2.");
+	  
+	  
+	  
+     );
+
+     if coefficientRing(R) === ZZ then (
+	  print("Normalizing over ZZ.");
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+     );
+
+     print("Unsupported coefficient ring.  Try QQ or ZZ.");
+     
 )
 
 
@@ -493,10 +603,12 @@ changeVar( Matrix, RingElement ) := (M,x) -> (
 
 suslinLemma = method()
 suslinLemma(RingElement,RingElement,RingElement,Ideal) := (f,g,var,I) -> (
+     local lcf; local lcg;
      lcf = leadCoeffVar(f,var);
      lcg = leadCoeffVar(g,var);
      while lcg % I == 0 do (
-	  g = lcf*var^(degVar(f,var)-degVar(f,var))*g - lcg*f;
+	  g = lcf*var^(degVar(f,var)-degVar(g,var))*g - lcg*f;
+	  print(g);
 	  lcg = leadCoeffVar(g,var);
      );
      return g;
@@ -514,7 +626,7 @@ suslinLemma(RingElement,RingElement,RingElement,Ideal) := (f,g,var,I) -> (
 
 horrocks = method()
 horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
-     
+     local R; local g; local nCol; local U;
      R = ring f;
      
      -- Throw errors if f does not meet requirements.
@@ -544,7 +656,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	  print("Using deg(f1)=0 shortcut."); -- Debugging.
 	  M = mutableIdentity(R, nCol);
 	  apply(1..(nCol-1), i -> (M_(0,i) = -f_(0,i)));
-	  return(matrix(M),1_R);
+	  return(matrix(M));
      );
      
      -- If nCol == 2, then (f1,f2) == R.
@@ -552,7 +664,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
      if nCol == 2 then (
 	  print("Using nCol=2 shortcut."); -- Debugging.
 	  M = map(R^1) // f;
-	  return(inverse(f || matrix{{-M_(1,0),M_(0,0)}}),1);
+	  return(inverse(f || matrix{{-M_(1,0),M_(0,0)}}));
      );
 
      -- Use the general procedure if nCol > 2 and deg(f1,currVar) > 0.
@@ -564,6 +676,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
           print("Entering while loop.  Deg(f1) = "|degVar(f_(0,0),currVar)); -- Debugging.
      	  for i from 1 to (nCol - 1) do (
 	       r = degVar(f_(0,i),currVar) - degVar(f_(0,0),currVar);
+	       print r;
 	       print("Reducing the degree of f"|i+1); -- Debugging.
 	       while r >= 0 do (
 	       	    M = mutableIdentity(R,nCol);
@@ -574,7 +687,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	       	    r = r-1;
 	       );
 	       
-	       -- Is fi a unit?  If so, swap it with f1 and finish.
+	       -- Is fi a unit in the smaller polynomial ring?  If so, swap it with f1 and finish.
 	       
 	       s = degVar(f_(0,i),currVar);
 	       if (s == 0 and leadCoeffVar(f_(0,i),currVar) % I != 0) then (
@@ -593,16 +706,16 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	       -- are units in the localization.
 	       
      	       j = 0;
-	       while (j <= s-1 and (flatten coefficients(f_(0,i),Variables=>{currVar}))#1_(j,0) % I == 0) do (
+	       while (j <= s and (flatten coefficients(f_(0,i),Variables=>{currVar}))#1_(j,0) % I == 0) do (
 	     	    j = j+1;
 	       );
 	  
-    	  -- If this terminates before j = s then the jth
+    	  -- If this terminates before j = s+1 then the jth
     	  -- coefficient of fi is a unit in the localization.
     	  -- Use an elementary column operation to move fi
     	  -- to the f2 spot.
-    
-               if j < s then (
+ 
+	       if j < s+1 then (
 		    print("Found a unit coefficient in f"|i+1); -- Debugging.
 	       	    M = mutableIdentity(R,nCol);
 	       	    M = columnSwap(M,1,i);
@@ -612,8 +725,9 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 	       -- If the leading coefficient of f2 is already
 	       -- a unit, use it to reduce the degree of f1.
 	       
-	            if leadCoeffVar(f_(0,1),currVar) % I =!= 0 then (
-		    	 print("Leading coefficient of f2 already a unit.  Using f2 to reduce degree of f1."); -- Debugging.
+	            if leadCoeffVar(f_(0,1),currVar) % I != 0 then (
+		    	 print leadCoeffVar(f_(0,1),currVar);
+			 print("Leading coefficient of f2 already a unit.  Using f2 to reduce degree of f1."); -- Debugging.
 			 while degVar(f_(0,0),currVar) >= degVar(f_(0,1),currVar) do (
 			      M = mutableIdentity(R,nCol);     
 			      M_(0,0) = leadCoeffVar(f_(0,1),currVar);
@@ -648,7 +762,7 @@ horrocks(Matrix,RingElement,Ideal) := (f,currVar,I) -> (
 			      M = mutableIdentity(R,nCol);     
 			      M_(0,2) = -leadCoeffVar(f_(0,2),currVar)*currVar^(degVar(f_(0,2),currVar)-degVar(g,currVar))*N_(0,0);
 			      M_(1,2) = -leadCoeffVar(f_(0,2),currVar)*currVar^(degVar(f_(0,2),currVar)-degVar(g,currVar))*N_(1,0);
-			      M_(2,2) = leadCoeff(g,currVar);
+			      M_(2,2) = leadCoeffVar(g,currVar);
 			      f = f*matrix(M);
 			      U = U*matrix(M);
 			 );		    
