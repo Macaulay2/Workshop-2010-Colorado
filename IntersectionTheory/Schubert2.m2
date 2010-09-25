@@ -15,10 +15,10 @@ newPackage(
     	Headline => "computations of characteristic classes for varieties without equations"
     	)
 
-export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety", "schubertCycle", "schubertCycle'", "ReturnType",
+export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety", "schubertCycle'", "schubertCycle", "ReturnType",
      "AbstractVarietyMap", "adams", "Base", "BundleRanks", "Bundles", "VarietyDimension", "Bundle",
      "TautologicalLineBundle", "ch", "chern", "ChernCharacter", "ChernClass", "ChernClassVariable", "ctop", "FlagBundle",
-     "flagBundle", "projectiveBundle", "projectiveBundle'", "projectiveSpace", "projectiveSpace'", "PP", "PP'", "integral", "IntersectionRing",
+     "flagBundle", "projectiveBundle'", "projectiveBundle", "projectiveSpace'", "projectiveSpace", "PP'", "PP", "integral", "IntersectionRing",
      "intersectionRing", "PullBack", "PushForward", "Rank", "ChernClassVariableTable",
      "schur", "SectionClass", "sectionClass", "segre", "StructureMap", "TangentBundle", "tangentBundle", "cotangentBundle", "todd",
      "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle","Pullback",
@@ -568,26 +568,26 @@ use AbstractVariety := AbstractVariety => X -> (
 
 installMethod(symbol SPACE, OO, RingElement, AbstractSheaf => (OO,h) -> OO_(variety ring h) (h))
 
-projectiveBundle = method(Options => { VariableNames => null }, TypicalValue => FlagBundle)
-projectiveBundle ZZ := opts -> n -> flagBundle({n,1},opts)
-projectiveBundle(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({n,1},X,opts)
-projectiveBundle AbstractSheaf := opts -> E -> flagBundle({rank E - 1, 1},E,opts)
-
 projectiveBundle' = method(Options => { VariableNames => null }, TypicalValue => FlagBundle)
-projectiveBundle' ZZ := opts -> n -> flagBundle({1,n},opts)
-projectiveBundle'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,opts)
-projectiveBundle' AbstractSheaf := opts -> E -> flagBundle({1, rank E - 1},E,opts)
+projectiveBundle' ZZ := opts -> n -> flagBundle({n,1},opts)
+projectiveBundle'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({n,1},X,opts)
+projectiveBundle' AbstractSheaf := opts -> E -> flagBundle({rank E - 1, 1},E,opts)
 
-projectiveSpace = method(Options => { VariableName => "h" }, TypicalValue => FlagBundle)
-projectiveSpace ZZ := opts -> n -> flagBundle({n,1},VariableNames => {,{fixvar opts.VariableName}})
-projectiveSpace(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({n,1},X,VariableNames => {,{fixvar opts.VariableName}})
+projectiveBundle = method(Options => { VariableNames => null }, TypicalValue => FlagBundle)
+projectiveBundle ZZ := opts -> n -> flagBundle({1,n},opts)
+projectiveBundle(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,opts)
+projectiveBundle AbstractSheaf := opts -> E -> flagBundle({1, rank E - 1},E,opts)
 
 projectiveSpace' = method(Options => { VariableName => "h" }, TypicalValue => FlagBundle)
-projectiveSpace' ZZ := opts -> n -> flagBundle({1,n},VariableNames => {{fixvar opts.VariableName},})
-projectiveSpace'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,VariableNames => {{fixvar opts.VariableName},})
+projectiveSpace' ZZ := opts -> n -> flagBundle({n,1},VariableNames => {,{fixvar opts.VariableName}})
+projectiveSpace'(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({n,1},X,VariableNames => {,{fixvar opts.VariableName}})
 
-PP  = new ScriptedFunctor from { superscript => i -> projectiveSpace i }
-PP' = new ScriptedFunctor from { superscript => i -> projectiveSpace' i }
+projectiveSpace = method(Options => { VariableName => "h" }, TypicalValue => FlagBundle)
+projectiveSpace ZZ := opts -> n -> flagBundle({1,n},VariableNames => {{fixvar opts.VariableName},})
+projectiveSpace(ZZ,AbstractVariety) := opts -> (n,X) -> flagBundle({1,n},X,VariableNames => {{fixvar opts.VariableName},})
+
+PP'  = new ScriptedFunctor from { superscript => i -> projectiveSpace' i }
+PP = new ScriptedFunctor from { superscript => i -> projectiveSpace i }
 
 bundles = method()
 bundles FlagBundle := X -> X.Bundles
@@ -1107,7 +1107,7 @@ symmetricPower(RingElement, AbstractSheaf) := AbstractSheaf => (n,F) -> (
      -- This uses Grothendieck-Riemann-Roch, together with the fact that
      -- f_!(OO_PF(n)) = f_*(symm(n,F)), since the higher direct images are 0.
      h := local h;
-     PF := projectiveBundle(F, VariableNames => h);
+     PF := projectiveBundle'(F, VariableNames => h);
      f := PF.StructureMap;
      abstractSheaf(X, f_*(part(0,dim PF,ch OO_PF(n) * todd f))))
 
@@ -1140,9 +1140,9 @@ schur(List, AbstractSheaf) := (p,E) -> (
 	                         apply(splice{n..2*n-1}, i -> R_i => 0)));
      abstractSheaf(variety E, ChernCharacter => F J))
 
-schubertCycle = method(TypicalValue => RingElement)
 schubertCycle' = method(TypicalValue => RingElement)
-FlagBundle _ Sequence := FlagBundle _ List := RingElement => (F,s) -> schubertCycle(s,F)
+schubertCycle = method(TypicalValue => RingElement)
+FlagBundle _ Sequence := FlagBundle _ List := RingElement => (F,s) -> schubertCycle'(s,F)
 giambelli =  (r,E,b) -> (
      p := matrix for i from 0 to r-1 list for j from 0 to r-1 list chern(b#i-i+j,E); -- Giambelli's formula, also called Jacobi-Trudi
      if debugLevel > 15 then stderr << "giambelli : " << p << endl;
@@ -1152,7 +1152,8 @@ listtoseq = (r,b) -> toSequence apply(#b, i -> r + i - b#i)
 seqtolist = (r,b) ->            apply(#b, i -> r + i - b#i)
 dualpart  = (r,b) -> splice for i from 0 to #b list ((if i === #b then r else b#(-i-1)) - (if i === 0 then 0 else b#-i)) : #b - i
 
-schubertCycle(Sequence,FlagBundle) := (a,X) -> (
+schubertCycle'(Sequence,FlagBundle) := (a,X) -> (
+     -- this is dual to the notation of Fulton's Intersection Theory page 271
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      n := X.Rank;
      E := dual first X.Bundles;
@@ -1166,8 +1167,8 @@ schubertCycle(Sequence,FlagBundle) := (a,X) -> (
 	  if not (ai < n) then error("expected a sequence of integers less than ",toString n);
 	  );
      giambelli(q,E,seqtolist(s,a)))
-schubertCycle(List,FlagBundle) := (b,X) -> (
-     -- see page 271 of Fulton's Intersection Theory for this notation
+schubertCycle'(List,FlagBundle) := (b,X) -> (
+     -- this is dual to the notation of Fulton's Intersection Theory page 271
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      E := dual first bundles X;
      s := rank E;
@@ -1181,7 +1182,8 @@ schubertCycle(List,FlagBundle) := (b,X) -> (
 	  if not (bi <= s) then error("expected a list of integers bounded by ",toString(s));
 	  );
      giambelli(q,E,b))
-schubertCycle'(Sequence,FlagBundle) := (a,X) -> (
+schubertCycle(Sequence,FlagBundle) := (a,X) -> (
+     -- see page 271 of Fulton's Intersection Theory for this notation
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      n := X.Rank;
      E := last X.Bundles;
@@ -1195,7 +1197,7 @@ schubertCycle'(Sequence,FlagBundle) := (a,X) -> (
 	  if (ai < n) then error("expected a sequence of integers less than", toString n);
 	  );
      giambelli(s,E,seqtolist(q,a)))
-schubertCycle'(List,FlagBundle) := (b,X) -> (
+schubertCycle(List,FlagBundle) := (b,X) -> (
      -- see page 271 of Fulton's Intersection Theory for this notation
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      E := last X.Bundles;
@@ -1227,7 +1229,7 @@ toSchubertBasis(RingElement) := c -> (
      B := intersectionRing (G.Base);
      (k,q) := toSequence(G.BundleRanks);
      P := diagrams(q,k);
-     M := apply(P, i-> schubertCycle'(i,G));
+     M := apply(P, i-> schubertCycle(i,G));
      E := flatten entries basis(R);
      local T';
      if R.cache.?htoschubert then T' = R.cache.htoschubert else (

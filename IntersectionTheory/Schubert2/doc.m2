@@ -562,15 +562,15 @@ Node
 --------
 Node
   Key
-      schubertCycle
+      schubertCycle'
       (symbol _,FlagBundle,List)
       (symbol _,FlagBundle,Sequence)
-      (schubertCycle,List,FlagBundle)
-      (schubertCycle,Sequence,FlagBundle)
+      (schubertCycle',List,FlagBundle)
+      (schubertCycle',Sequence,FlagBundle)
   Headline
-      compute Schubert Cycles on a Grassmannian
+      compute Schubert Cycles on a Grassmannian, Grothendieck-style
   Usage
-     schubertCycle(s,F)
+     schubertCycle'(s,F)
      F_s
   Inputs
      F:FlagBundle
@@ -584,19 +584,23 @@ Node
   Outputs
      c:
        the appropriate {\em Schubert class} or {\em Schubert variety}, depending on the the type of {\tt s}.  See 
-       page 271 of Fulton's book, {\em Intersection Theory} for the notations.
+       page 271 of Fulton's book, {\em Intersection Theory} for the notation for @TO schubertCycle@, of which this
+       is the dual.
 
        In the case where {\tt s} is a @ ofClass Sequence @, the value returned is the {\em homology} class of the {\em Schubert variety} in
        $ F $ consisting of those points corresponding to $(q-1)$-planes of $\PP(A)$ that meet $ W_j $ in dimension at least
        $ i $ with $0 \le{} i < q$, for each $ i $, where $ j = s_i $, and where $ W_j $ is the projective subspace of dimension
        $ j $ in a fixed (complete) flag $0 = W_0 \subset{} W_1 \subset{} ... \subset{} W_{n-1} = \PP(A) $.  Here $ \PP(A) $ denotes
-       the modern projective bundle parametrizing rank 1 quotient bundles of $A$; for the opposite, old-fashioned, version, see
-       @ TO schubertCycle' @.        
+       the modern Grothendieck-style projective bundle parametrizing rank 1 quotient bundles of $A$; for the older "Fulton-style" version,
+       see @ TO schubertCycle @.        
        
        In the case where {\tt s} is a @ ofClass List @, the result is the corresponding {\em Schubert class} in
        cohomology.  In {\em Schubert2} homology and cohomology are identified with each other.
        Given a sequence $(s_0, ..., s_{q-1})$, one can convert it to a list yielding the same Schubert
        class by the formula $ \{..., n-q+i-s_i, ...\} $.
+       
+       This is related to @TO schubertCycle@ as follows: if $E'$ is the dual bundle of $A$ and $G' = G(q,A')$ is the dual
+       Grassmannian, then {\tt schubertCycle'(s,G)} is carried to {\tt schubertCycle(s,G')} under the duality isomorphism.
   Description
    Example
      base(0, Bundle=>(A, n=8, a))
@@ -608,13 +612,13 @@ Node
 --------
 Node
   Key
-      schubertCycle'
-      (schubertCycle',List,FlagBundle)
-      (schubertCycle',Sequence,FlagBundle)
+      schubertCycle
+      (schubertCycle,List,FlagBundle)
+      (schubertCycle,Sequence,FlagBundle)
   Headline
-      compute Schubert Cycle's on a Grassmannian
+      compute Schubert Cycles on a Grassmannian, Fulton-style
   Usage
-     schubertCycle'(s,F)
+     schubertCycle(s,F)
   Inputs
      F:FlagBundle
        associated to a vector bundle $A$, say, of rank $n$.
@@ -631,10 +635,10 @@ Node
 
        In the case where {\tt s} is a @ ofClass Sequence @, the value returned is the {\em homology} class of the {\em Schubert variety} in
        $ F $ consisting of those points corresponding to $(r-1)$-planes of $\PP(A)$ that meet $ W_j $ in dimension at least
-       $ i $ with $0 \le{} i < q$, for each $ i $, where $ j = s_i $, and where $ W_j $ is the projective subspace of dimension
+       $ i $ with $0 \le{} i < r-1$, for each $ i $, where $ j = s_i $, and where $ W_j $ is the projective subspace of dimension
        $ j $ in a fixed (complete) flag $0 = W_0 \subset{} W_1 \subset{} ... \subset{} W_{n-1} = \PP(A) $.  Here $ \PP(A) $ denotes
-       the old-fashioned projective bundle parametrizing rank 1 sub-bundles of $A$; for the opposite modern version, see
-       @ TO schubertCycle @.        
+       the "Fulton-style"  projective bundle parametrizing rank 1 sub-bundles of $A$; for opposite "Grothendieck-style" version, see
+       @ TO schubertCycle' @.        
        
        In the case where {\tt s} is a @ ofClass List @, the result is the corresponding {\em Schubert class} in
        cohomology.  In {\em Schubert2} homology and cohomology are identified with each other.
@@ -645,9 +649,9 @@ Node
      base(0, Bundle=>(A, n=8, a))
      F = flagBundle ({r=5,3},A)
      CH = intersectionRing F;
-     schubertCycle'((0,1,5,6,7),F)
+     schubertCycle((0,1,5,6,7),F)
      {n-r+0-0,n-r+1-1,n-r+2-5,n-r+3-6,n-r+4-7}
-     schubertCycle'(oo,F)
+     schubertCycle(oo,F)
 --------
 Node
   Key
@@ -2922,7 +2926,7 @@ Node
   Description
     Text
       Note that the Schubert basis used here is in "Fulton-style" notation; see
-      @TO schubertCycle'@.
+      @TO schubertCycle@.
     Example
       A = flagBundle({3,3},VariableNames => H)
       S = first A.Bundles
