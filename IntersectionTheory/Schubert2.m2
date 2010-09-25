@@ -1155,61 +1155,61 @@ dualpart  = (r,b) -> splice for i from 0 to #b list ((if i === #b then r else b#
 schubertCycle(Sequence,FlagBundle) := (a,X) -> (
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      n := X.Rank;
-     E := last X.Bundles;
-     r := rank E;
-     r' := n-r;
-     if r != #a then error("expected a sequence of length ", toString r);
-     for i from 0 to r-1 do (
+     E := dual first X.Bundles;
+     s := rank E;
+     q := n-s;
+     if q != #a then error("expected a sequence of length ", toString q);
+     for i from 0 to q-1 do (
 	  ai := a#i;
 	  if not instance(ai,ZZ) or ai < 0 then error "expected a sequence of non-negative integers";
 	  if i>0 and not (a#(i-1) < a#i) then error "expected a strictly increasing sequence of integers";
 	  if not (ai < n) then error("expected a sequence of integers less than ",toString n);
 	  );
-     giambelli(r',E,dualpart(r',seqtolist(r',a))))
+     giambelli(q,E,seqtolist(s,a)))
 schubertCycle(List,FlagBundle) := (b,X) -> (
      -- see page 271 of Fulton's Intersection Theory for this notation
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
-     E := last X.Bundles;
-     r := rank E;
+     E := dual first bundles X;
+     s := rank E;
      n := X.Rank;
-     r' := n-r;
-     if r != #b then error("expected a list of length ", toString r);
-     for i from 0 to r-1 do (
+     q := n-s;
+     if q != #b then error("expected a list of length ", toString q);
+     for i from 0 to q-1 do (
 	  bi := b#i;
 	  if not instance(bi,ZZ) or bi < 0 then error "expected a list of non-negative integers";
 	  if i>0 and not (b#(i-1) >= b#i) then error "expected a decreasing list of integers";
-	  if not (bi <= r') then error("expected a list of integers bounded by ",toString(n-r));
+	  if not (bi <= s) then error("expected a list of integers bounded by ",toString(s));
 	  );
-     giambelli(r',E,dualpart(r',b)))
+     giambelli(q,E,b))
 schubertCycle'(Sequence,FlagBundle) := (a,X) -> (
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      n := X.Rank;
      E := last X.Bundles;
-     r := rank E;
-     r' := n-r;
-     if r' != #a then error("expected a sequence of length ", toString r');
-     for i from 0 to r'-1 do (
+     q := rank E;
+     s := n-q;
+     if s != #a then error("expected a sequence of length ", toString s);
+     for i from 0 to s-1 do (
 	  ai := a#i;
 	  if not instance(ai,ZZ) or ai < 0 then error "expected a sequence of non-negative integers";
 	  if i>0 and not (a#(i-1) < a#i) then error "expected a strictly increasing sequence of integers";
-	  if not (i <= ai) and (ai < n) then error("expected a sequence of integers a_i >= i and less than", toString n);
+	  if (ai < n) then error("expected a sequence of integers less than", toString n);
 	  );
-     giambelli(r',E,seqtolist(r,a)))
+     giambelli(s,E,seqtolist(q,a)))
 schubertCycle'(List,FlagBundle) := (b,X) -> (
      -- see page 271 of Fulton's Intersection Theory for this notation
      if #X.BundleRanks != 2 then error "expected a Grassmannian";
      E := last X.Bundles;
-     r := rank E;
+     q := rank E;
      n := X.Rank;
-     r' := n-r;
-     if r' != #b then error("expected a list of length ", toString r');
-     for i from 0 to r'-1 do (
+     s := n-q;
+     if s != #b then error("expected a list of length ", toString s);
+     for i from 0 to s-1 do (
 	  bi := b#i;
 	  if not instance(bi,ZZ) or bi < 0 then error "expected a list of non-negative integers";
 	  if i>0 and not (b#(i-1) >= b#i) then error "expected a decreasing list of integers";
-	  if not (bi <= r) then error("expected a list of integers bounded by ",toString(r));
+	  if not (bi <= q) then error("expected a list of integers bounded by ",toString(q));
 	  );
-     giambelli(r',E,b))
+     giambelli(s,E,b))
 
 diagrams = method()
 diagrams(ZZ,ZZ) := (k,n) -> ( --diagrams {k>=a_1>=...>=a_n>=0}
