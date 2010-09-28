@@ -24,7 +24,7 @@ export { "AbstractSheaf", "abstractSheaf", "AbstractVariety", "abstractVariety",
      "sectionZeroLocus", "degeneracyLocus", "degeneracyLocus2", "kernelBundle",
      "VariableNames", "VariableName", "SubBundles", "QuotientBundles", "point", "base", 
      "toSchubertBasis", "Correspondence", "IncidenceCorrespondence", "intermediates",
-     "incidenceCorrespondence","SchubertRing","multiFlag",
+     "incidenceCorrespondence","SchubertRing",
      "tautologicalLineBundle", "bundles", "schubertRing"}
 
 -- not exported, for now: "logg", "expp", "reciprocal", "ToddClass"
