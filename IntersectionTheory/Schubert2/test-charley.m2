@@ -31,7 +31,25 @@ assert (a == 2)
 ///
 
 TEST ///
---Should have tests for G(k,E) with E nontrivial, need to compute by hand first
+--Test 3 for toSchubertBasis
+P = flagBundle({4,1})
+B = first bundles P
+h = chern(1,last bundles P)
+G = flagBundle({2,2},B)
+(S,T,U) = schubertRing G
+gens S
+c1 = schubertCycle({1,0},G)
+c2 = schubertCycle({2,0},G)
+s1 = toSchubertBasis c1
+s2 = toSchubertBasis c2
+assert(s1 == (gens S)#1)
+assert(s2 == (gens S)#3) --note that this will fail if generator order is changed
+gens S
+assert(toSchubertBasis (c1^2) == (s1^2))
+assert(s1*s2 == (gens S)#4)
+s1^3
+--next formula was verified by hand
+assert((toSchubertBasis(-h^3-h^2*c1-h*(c1^2-c2)+2*c1*c2)) == s1^3)
 ///
 
 ----------
@@ -39,6 +57,44 @@ TEST ///
 ----------
 TEST ///
 --Test 1 for incidenceCorrespondence(FlagBundle,FlagBundle)
+P = flagBundle({1,3})
+G = flagBundle({2,2})
+RP = intersectionRing P
+RG = intersectionRing G
+I = incidenceCorrespondence(G,P)
+assert(source I === P)
+assert(target I === G)
+h = chern(1,last bundles P) --the hyperplane class
+s1 = chern(1,last bundles G) --sigma_1
+s2 = chern(2,last bundles G) --sigma_2
+--checking pushforward and pullback on bases of both rings:
+assert(I_* 1_RP == 0_RG)
+assert(I_* h == 1_RG)
+assert(I_* (h^2) == s1)
+assert(I_* (h^3) == s2)
+assert(I^* 1_RG == 0_RP)
+assert(I^* s1 == 0_RP)
+assert(I^* s2 == 1_RP)
+assert(I^* (s1^2 - s2) == 0_RP) --sigma_1,1
+assert(I^* (s1*s2) == h)
+assert(I^* s2^2 == h^2)
+///
+
+TEST ///
+--Test 2 for incidenceCorrespondence(FlagBundle,FlagBundle)
+--Comparing results for incidenceCorrespondence and forgetful maps
+X = flagBundle({4,5})
+Y = flagBundle({2,7})
+Z = flagBundle({2,2,5})--should be the intermediate variety of the inc cor
+I = incidenceCorrespondence(Y,X)
+f = map(X,Z)
+g = map(Y,Z)
+RX = intersectionRing X
+RY = intersectionRing Y
+for x in flatten entries basis RX do (
+     assert(I_* x == g_* f^* x))
+for y in flatten entries basis RY do (
+     assert(I^* y == f_* g^* y))
 ///
 
 ----------
@@ -188,3 +244,11 @@ assert(f_* 1_RP1xP1 == 2*chern(1,last bundles P3)) --should be surface of degree
 ----------
 --Tests for tautologicalLineBundle
 ----------
+
+TEST ///
+S = base n
+X = flagBundle({3,3,4},S)
+L = OO_X(1)
+chern L
+assert(X.TautologicalLineBundle === L)
+///
