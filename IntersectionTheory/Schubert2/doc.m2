@@ -882,7 +882,7 @@ Node
       key for this reason.
     Example
       X = projectiveSpace 3
-      try X.TautologicalLineBundle else "bundle not found"
+      try X.TautologicalLineBundle else print "bundle not found"
       L = tautologicalLineBundle X
       L === X.TautologicalLineBundle
       rank L

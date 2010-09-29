@@ -1,6 +1,8 @@
 ----------
 --Tests for toSchubertBasis
 ----------
+
+
 TEST ///
 --Test 1 for toSchubertBasis: GG(1,3) = G(2,4)
 G = flagBundle({2,2})
@@ -167,16 +169,16 @@ TEST ///
 --Test 4 for map(FlagBundle,AbstractVariety,AbstractSheaf):
 --maps from PP^1 x PP^1
 P1 = flagBundle({1,1})
-H = last bundles P1
+O1 = last bundles P1
 P1xP1 = flagBundle({1,1},P1)
 RP1xP1 = intersectionRing P1xP1
 p1 = P1xP1/P1
-O10 = p1^*H
+O10 = p1^*O1
 O01 = last bundles P1xP1
 p2 = map(P1,P1xP1,O01) --the second projection map
-assert(p2^*H === O01)
+assert(p2^*O1 === O01)
 assert(p2_* 1_RP1xP1 == 0)
-assert(p2_*(chern(1,O10)*chern(1,O01)) == chern(1,H))
+assert(p2_*(chern(1,O10)*chern(1,O01)) == chern(1,O1))
 P3 = flagBundle({1,3})
 L = O10**O01
 f = map(P3,P1xP1,L) --embedding of P1xP1 as a quadric surface
