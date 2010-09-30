@@ -163,14 +163,10 @@ degreeD(ZZ,ChainComplexMap) := (d, f) -> (
      Td := degreeD(d, T);
      a := min(min Sd, min Td);
      b := max(max Sd, max Td);
-     g := new ChainComplexMap;
-     g.ring = ring F;
-     for i from a to b do
-	  G#i = degreeD(d, F#i);
-     for i from a+1 to b do (
-	  G.dd#i = map(G#(i-1), G#i, degreeD(d, F.dd_i));
-	  );
-     G
+     map(Td, Sd, i -> (
+	       -- need the degree d part of the map from Sd_i --> Td_i
+	       degreeD(d, f_i)
+	       ))
      )
 
 
@@ -248,6 +244,11 @@ directImageComplex Module := opts -> (M) -> (
      G
      )
 
+RingMap ChainComplexMap := ChainComplexMap => (f,phi) -> (
+     S := f source phi;
+     T := f target phi;
+     map(T,S, i -> f phi_i))
+
 directImageComplex Matrix := opts -> (f) -> (
      -- plan: compute both regularities
      --   if a value is given, then it should be the max of the 2 regularities
@@ -277,22 +278,12 @@ directImageComplex Matrix := opts -> (f) -> (
      E := ring phiM;
      FM := complete res( image phiM, LengthLimit => max(1,1+regMN));
      FN := complete res( image phiN, LengthLimit => max(1,1+regMN));
-     fMN := extend(FN, FM, truncf);
+     fMN := extend(FN, FM, truncfA ** E);
      FM = E^{-xm} ** FM[regMN];
      FN = E^{-xm} ** FN[regMN];
      fMN0 := degreeD(0, fMN);
-     --FM0 := degreeD(0, FM);
-     --FN0 := degreeD(0, FN);
      EtoA := map(A,E,DegreeMap=> i -> drop(i,1));
-     error "debug me";
-     --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
-     F0A := EtoA FM0;
-     G:=new ChainComplex;
-     G.ring = ring F0A;
-     n := numgens ring M;
-     for i from -n+1 to 1 do(
-	  G.dd_i = F0A.dd_i);
-     G
+     EtoA fMN0
      )
 
 {* -- we will probably remove this soon (9/30/2010 DE+MES)
