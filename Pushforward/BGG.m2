@@ -153,9 +153,29 @@ degreeD(ZZ,ChainComplex) := (d, F) -> (
 	  );
      G
      )
+degreeD(ZZ,ChainComplexMap) := (d, f) -> (
+     -- takes the first degree d part of f : S --> T
+     -- assumption: that min C === min D
+     -- returning a new ChainComplexMap
+     S := source f;
+     T := target f;
+     Sd := degreeD(d, S);
+     Td := degreeD(d, T);
+     a := min(min Sd, min Td);
+     b := max(max Sd, max Td);
+     g := new ChainComplexMap;
+     g.ring = ring F;
+     for i from a to b do
+	  G#i = degreeD(d, F#i);
+     for i from a+1 to b do (
+	  G.dd#i = map(G#(i-1), G#i, degreeD(d, F.dd_i));
+	  );
+     G
+     )
+
 
 symmetricToExteriorOverA=method()
-symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) ->(
+symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) -> (
 --this function converts between a  presentation matrix m with 
 --entries m^i_j of degree deg_x m^i_j = 0 or 1 only 
 --of a module over a symmetric algebra A[x] and the linear part of the
@@ -199,7 +219,6 @@ symmetricToExteriorOverA(Module) := M -> (
      symmetricToExteriorOverA(presentation M, vars E, vars S)
      )
 
-
 directImageComplex = method(Options => {Regularity=>null})
 directImageComplex Module := opts -> (M) -> (
      S := ring M;
@@ -208,7 +227,7 @@ directImageComplex Module := opts -> (M) -> (
      if regM < 0 then (M = truncate(0, M); regM = 0);
      degsM := degrees M/first;
      if max degsM > regM then error("regularity is higher than you think!");
-     N := if min degsM === regM then M else truncate(regM,M);
+     N := if min degsM === regM then M else image basis(regM,M);
      --N := truncateMultiGraded(regM,M);
      
      xm := regM * degree(S_0);
@@ -229,22 +248,54 @@ directImageComplex Module := opts -> (M) -> (
      G
      )
 
-directImageComplex Matrix := opts -> (F) -> (
+directImageComplex Matrix := opts -> (f) -> (
      -- plan: compute both regularities
      --   if a value is given, then it should be the max of the 2 regularities
      -- 
-     M := source F;
-     N := target F;
-     S := ring F;
+     S := ring f;
+     A := coefficientRing S;
      regMN := if opts.Regularity === null 
               then (
-		   regM := regularityMultiGraded M;
-		   regN := regularityMultiGraded N;
+		   regM := regularityMultiGraded source f;
+		   regN := regularityMultiGraded target f;
 		   max(regM, regN))
 	      else opts.Regularity;
-     regMN
+     if regMN < 0 then (f = basis(0, f); regMN = 0);
+     degsM := degrees (source f)/first;
+     if max degsM > regMN then error("regularity is higher than you think!");
+     degsN := degrees (target f)/first;
+     if max degsN > regMN then error("regularity is higher than you think!");
+     truncf := if min degsM === regMN and min degsN === regMN then f else 
+       (basis(regMN,f);	<< "computed basis" << endl);
+     M := source truncf;
+     N := target truncf;
+     StoA := map(A,S,DegreeMap => i -> drop(i,1));
+     truncfA := StoA matrix truncf;
+     xm := regMN * degree(S_0);
+     phiM := symmetricToExteriorOverA(M ** S^{xm});
+     phiN := symmetricToExteriorOverA(N ** S^{xm});
+     E := ring phiM;
+     FM := complete res( image phiM, LengthLimit => max(1,1+regMN));
+     FN := complete res( image phiN, LengthLimit => max(1,1+regMN));
+     fMN := extend(FN, FM, truncf);
+     FM = E^{-xm} ** FM[regMN];
+     FN = E^{-xm} ** FN[regMN];
+     fMN0 := degreeD(0, fMN);
+     --FM0 := degreeD(0, FM);
+     --FN0 := degreeD(0, FN);
+     EtoA := map(A,E,DegreeMap=> i -> drop(i,1));
+     error "debug me";
+     --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
+     F0A := EtoA FM0;
+     G:=new ChainComplex;
+     G.ring = ring F0A;
+     n := numgens ring M;
+     for i from -n+1 to 1 do(
+	  G.dd_i = F0A.dd_i);
+     G
      )
 
+{* -- we will probably remove this soon (9/30/2010 DE+MES)
 truncateMultiGraded = method()
 truncateMultiGraded (ZZ, Module) := (d,M) -> (
      --Assumes that M is a module over a polynomial ring S=A[x0..xn]
@@ -261,6 +312,7 @@ truncateMultiGraded (ZZ, Module) := (d,M) -> (
 	  else Md = Md+((ideal f(basis(d-L#i, S0^1)))*(image M_{i})));
      Md
      )
+*}
 
 regularityMultiGraded = method()
 regularityMultiGraded (Module) := (M) -> (
@@ -711,7 +763,37 @@ TEST ///
           assert(matrix entries beilinson(alphad,S) == matrix {{x_0, 0, -x_2, 0, x_0, x_1}})
           alpha = map(E^{2:-1},E^{1:-2},{{e_1},{e_2}});
 	  assert(matrix entries beilinson(alpha,S) ==  map(S^6,S^1,{{0}, {-1}, {0}, {1}, {0}, {0}}))
-///,
+///
+
+
+TEST ///
+  R = ZZ/101[x,y]
+  M = R^{4}
+  C = directImageComplex M
+  assert(C^1 == 0)
+  assert(rank C^0 == 5)
+  assert(C^-1 == 0)
+///
+
+TEST ///
+  R = ZZ/101[x,y]
+  M = R^{-4}
+  C = directImageComplex M
+  assert(rank C^1 == 3)
+  assert(C^0 == 0)
+  assert(C^-1 == 0)
+///
+
+TEST ///
+  R = ZZ/101[x,y]
+  M = R^{0}
+  C = directImageComplex M
+  assert(C^1 == 0)
+  assert(rank C^0 == 1)
+  assert(C^-1 == 0)
+///
+
+
 end
 uninstallPackage "BGG"
 restart
