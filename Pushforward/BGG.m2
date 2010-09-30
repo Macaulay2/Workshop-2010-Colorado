@@ -224,8 +224,6 @@ directImageComplex Module := opts -> (M) -> (
      degsM := degrees M/first;
      if max degsM > regM then error("regularity is higher than you think!");
      N := if min degsM === regM then M else image basis(regM,M);
-     --N := truncateMultiGraded(regM,M);
-     
      xm := regM * degree(S_0);
      phi := symmetricToExteriorOverA(N ** S^{xm});
      E := ring phi;
@@ -240,14 +238,10 @@ directImageComplex Module := opts -> (M) -> (
      n := numgens ring M;
      for i from -n+1 to 1 do(
 	  G.dd_i = F0A.dd_i);
-     --error "debug me";
      G
      )
 
-RingMap ChainComplexMap := ChainComplexMap => (f,phi) -> (
-     S := f source phi;
-     T := f target phi;
-     map(T,S, i -> f phi_i))
+RingMap ChainComplexMap := ChainComplexMap => (f,phi) -> map(f target phi, f source phi, i -> f phi_i)
 
 directImageComplex Matrix := opts -> (f) -> (
      -- plan: compute both regularities
