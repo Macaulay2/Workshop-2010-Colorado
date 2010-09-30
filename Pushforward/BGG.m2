@@ -526,14 +526,15 @@ doc ///
    Inputs 
      M: Module
        graded over a ring of the form S = A[y_0..y_n], representing a sheaf on ${\bf P}^n_A$.
-     
+     Regularity=>ZZ
+       the Castelnuovo-Mumford regularity of {\tt M}.  If not provided, this value will be computed
    Outputs
      F: ChainComplex
        complex of free modules over A. Homology in homological degree -i is 
        $R^i \pi_* {\mathcal M}$, where ${\mathcal M}$ is the sheaf on ${\bf P}^n_A$ represented by M.
    Description
     Text
-      The computation is done by exterior algebra method described by Eisenbud and Schreyer,
+      The computation is done using the exterior algebra method described by Eisenbud and Schreyer,
       in Eisenbud, David; Schreyer, Frank-Olaf 
       ``Relative Beilinson monad and direct image for families of coherent sheaves.'' 
       Trans. Amer. Math. Soc. 360 (2008), no. 10, 5367--5396.
@@ -738,5 +739,6 @@ restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 uninstallPackage "BGG"
 installPackage "BGG"
+check BGG
 viewHelp 
 
