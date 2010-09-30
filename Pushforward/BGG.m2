@@ -20,7 +20,8 @@ export {
      symExt, bgg, tateResolution, 
      beilinson, cohomologyTable, 
      directImageComplex, universalExtension, Regularity, 
-     regularityMultiGraded
+     regularityMultiGraded,
+     Exterior
      }
 
 symExt = method()
@@ -72,7 +73,7 @@ beilinson1=(e,dege,i,S)->(
      r := i - dege;
      mr := if r < 0 or r >= numgens E then map(E^1, E^0, 0)
            else sortedBasis(r+1,E);
-     s = numgens source mr;
+     s := numgens source mr;
      if i === 0 and r === 0 then
           substitute(map(E^1,E^1,{{e}}),S)
      else if i>0 and r === i then substitute(e*id_(E^s),S)
@@ -89,11 +90,11 @@ beilinson = method()
 beilinson(Matrix,PolynomialRing) := Matrix => (o,S) -> (
      coldegs := degrees source o;
      rowdegs := degrees target o;
-     mats = table(numgens target o, numgens source o,
+     mats := table(numgens target o, numgens source o,
               (r,c) -> (
-                   rdeg = first rowdegs#r;
-                   cdeg = first coldegs#c;
-                   overS = beilinson1(o_(r,c),cdeg-rdeg,cdeg,S);
+                   rdeg := first rowdegs#r;
+                   cdeg := first coldegs#c;
+                   overS := beilinson1(o_(r,c),cdeg-rdeg,cdeg,S);
                    -- overS = substitute(overE,S);
                    map(UU(rdeg,S),UU(cdeg,S),overS)));
      if #mats === 0 then matrix(S,{{}})
@@ -204,17 +205,18 @@ directImageComplex Module := opts -> (M) -> (
      S := ring M;
      regM := if opts.Regularity === null then regularityMultiGraded M
           else opts.Regularity;
+     if regM < 0 then (M = truncate(0, M); regM = 0);
      degsM := degrees M/first;
      if max degsM > regM then error("regularity is higher than you think!");
      N := if min degsM === regM then M else truncate(regM,M);
-     --truncateMultiGraded(regM,M);
-
-     xm = regM * degree(S_0);
-     phi = symmetricToExteriorOverA(N ** S^{xm});
+     --N := truncateMultiGraded(regM,M);
+     
+     xm := regM * degree(S_0);
+     phi := symmetricToExteriorOverA(N ** S^{xm});
      E := ring phi;
-     F = complete res( image phi, LengthLimit => max(1,1+regM));
+     F := complete res( image phi, LengthLimit => max(1,1+regM));
      F = E^{-xm} ** F[regM];
-     F0 = degreeD(0, F);
+     F0 := degreeD(0, F);
      toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
      --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
      F0A := toA F0;
@@ -223,6 +225,7 @@ directImageComplex Module := opts -> (M) -> (
      n := numgens ring M;
      for i from -n+1 to 1 do(
 	  G.dd_i = F0A.dd_i);
+     --error "debug me";
      G
      )
 
@@ -271,6 +274,8 @@ universalExtension(List,List) := (La,Lb) -> (
      lb :=#Lb;
      c := min La;
      N := sum(la, p-> sum(lb, q-> Lb#q-c-1));
+     x := local x;
+     y := local y;
      A := kk[x_0..x_(N-1)];
      S := A[y_0,y_1];
 
