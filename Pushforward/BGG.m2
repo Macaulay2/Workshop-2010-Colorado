@@ -229,6 +229,22 @@ directImageComplex Module := opts -> (M) -> (
      G
      )
 
+directImageComplex Matrix := opts -> (F) -> (
+     -- plan: compute both regularities
+     --   if a value is given, then it should be the max of the 2 regularities
+     -- 
+     M := source F;
+     N := target F;
+     S := ring F;
+     regMN := if opts.Regularity === null 
+              then (
+		   regM := regularityMultiGraded M;
+		   regN := regularityMultiGraded N;
+		   max(regM, regN))
+	      else opts.Regularity;
+     regMN
+     )
+
 truncateMultiGraded = method()
 truncateMultiGraded (ZZ, Module) := (d,M) -> (
      --Assumes that M is a module over a polynomial ring S=A[x0..xn]
@@ -443,7 +459,7 @@ document {
      "Alternatively, this function takes as input      
      a presentation matrix ", TT "m", " of a finitely generated graded "
      , TT "S", "-module ", TT "M", "and an exterior algebra ", TT "E", "with the same number of variables. 
-     In this form, the function is equivalent to the fucntion ", TT "sheafCohomology", 
+     In this form, the function is equivalent to the function ", TT "sheafCohomology", 
      " in ", HREF("http://www.math.uiuc.edu/Macaulay2/Book/", "Sheaf Algorithms Using Exterior Algebra"),  ".",
      EXAMPLE lines ///
 	  S = ZZ/32003[x_0..x_2]; 
@@ -565,8 +581,8 @@ doc ///
       the (cone over a) conic, defined by the determinant of this matrix.
     Example
       M=universalExtension({-3}, {1})
-      S = ring M
-      A = coefficientRing S
+      S = ring M;
+      A = coefficientRing S;
       F = directImageComplex M
       F.dd_0
       det (F.dd_0)
@@ -574,16 +590,49 @@ doc ///
       Here is a larger example, the extension of 
       ${\mathcal O}_{P^1}^2$ by ${\mathcal O}_{P^1}(6)$
     Example
-      r=3
-      d=6
+      r=3;
+      d=6;
       M=universalExtension(splice {(r-1):0}, {d})
-      S = ring M
-      A = coefficientRing S
+      S = ring M;
+      A = coefficientRing S;
       L = for i from -d to 0 list directImageComplex(S^{{i,0}}**M);
       netList L
       maps = apply(L, F-> F.dd_0)
    Caveat
    SeeAlso 
+     universalExtension
+///
+
+doc ///
+   Key
+     (directImageComplex, Matrix)
+   Headline
+     map of direct image complexes
+   Usage
+     piF = directImageComplex F
+   Inputs
+     F:Matrix
+       a homomorphism $F : M \rightarrow N$ of graded $S = A[y_0..y_n]$ modules, graded of degree 0,
+       where we think of $M$ and $N$ as representing sheaves on ${\bf P}^n_A$
+   Outputs
+     piF:ChainComplexMap
+       the induced map on chain complexes {\tt piF : directImageComplex M --> directImageComplex N}
+   Description
+    Text
+    Example
+      A = ZZ/101[a,b]
+      B = A[c,d]
+      C = first flattenRing B
+      F = random(C^{{-2,1},{1,1}}, C^{{-3,0},{-3,0}})
+      F = sub(F, B)
+      isHomogeneous F
+      C1 = directImageComplex source F
+      C2 = directImageComplex target F
+      piF = directImageComplex F
+   Caveat
+     Currently, the direct image complexes of the source and target are recomputed, not stashed anywhere
+   SeeAlso
+     directImageComplex
      universalExtension
 ///
 
@@ -740,5 +789,5 @@ path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 uninstallPackage "BGG"
 installPackage "BGG"
 check BGG
-viewHelp 
+viewHelp BGG
 
