@@ -1,4 +1,4 @@
-load "Schubert2/blowup.m2"
+load "./blowup.m2"
 
 -- blow up of P5 along the Veronese
 A = QQ[z]/z^6
@@ -33,7 +33,7 @@ assert ( oo == 0)
 
 end
 
-load "Schubert2/blowup.m2"
+load "./blowup.m2"
 -- blowup of P5 along the Veronese
 P5 = projectiveSpace'(5, VariableName => symbol k)
 P2 = projectiveSpace'(2, VariableName => symbol h)
