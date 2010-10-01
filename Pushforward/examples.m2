@@ -285,13 +285,6 @@ directImageComplex phi
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 loadPackage "BGG"
-basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
-     F := target M;
-     G := source M;
-     monsF := basis(lo,hi,F,opts);
-     monsG := basis(lo,hi,G,opts);
-     basM := last coefficients(matrix (M * monsG), Monomials => monsF);
-     basM)
 
 -- on Spec A x P^1: 
 --make the universal extension of O(-3) by O, and a generic
@@ -345,13 +338,6 @@ directImageComplex phi
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 loadPackage "BGG"
-basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
-     F := target M;
-     G := source M;
-     monsF := basis(lo,hi,F,opts);
-     monsG := basis(lo,hi,G,opts);
-     basM := last coefficients(matrix (M * monsG), Monomials => monsF);
-     basM)
 
 --M = universalExtension({-1},{0})
 
@@ -360,23 +346,13 @@ basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 loadPackage "BGG"
+
 basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
      F := target M;
      G := source M;
      monsF := basis(lo,hi,F,opts);
      monsG := basis(lo,hi,G,opts);
      basM := last coefficients(matrix (M * monsG), Monomials => monsF);
-     basM)
+     map(image monsF, image monsG, basM))
 
-kk = ZZ/101
-A = kk[a]
-S = A[x,y]
-M = S^{{-1,0},{0,0}} -- problem
-M = S^{{-1,0}}
-M = S^{{0,0}}
-M = S^{{-2,0}}
-psi = id_M
-directImageComplex M
-directImageComplex(M, Regularity=>1)
 
-directImageComplex(psi)

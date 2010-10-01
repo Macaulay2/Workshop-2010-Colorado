@@ -262,8 +262,7 @@ directImageComplex Matrix := opts -> (f) -> (
      degsN := degrees (target f)/first;
      if max degsN > regMN then error("regularity is higher than you think!");
      truncf := if min degsM === regMN and min degsN === regMN then f else (
-        m := basis(regMN,f);
-        map(truncate(regMN, target f), truncate(regMN, source f), m));
+        basis(regMN,f));
      M := source truncf;
      N := target truncf;
      StoA := map(A,S,DegreeMap => i -> drop(i,1));
@@ -787,6 +786,26 @@ TEST ///
   assert(C^-1 == 0)
 ///
 
+TEST ///
+  needsPackage "ChainComplexExtras"
+  kk = ZZ/101
+  A = kk[a]
+  S = A[x,y]
+  M1 = S^{{-1,0},{0,0}}
+  C1 = directImageComplex(id_M1)
+  assert(C1_0 == 1)
+  assert isChainComplexMap C1
+
+  M2 = S^{{-1,0}}
+  C2 = directImageComplex(id_M2)
+  assert isChainComplexMap C2
+  assert(C2_0 == 0)
+
+  M3 = S^{{-2,0}}
+  C3 = directImageComplex(id_M3)
+  assert isChainComplexMap C3
+  assert(C3_0 == 0)
+///
 
 end
 uninstallPackage "BGG"
