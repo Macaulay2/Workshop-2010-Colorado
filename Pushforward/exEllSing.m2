@@ -1,4 +1,4 @@
---In this example we study the direct of two sheaves on 
+--In this example we study the direct image complexes of two sheaves on 
 --the resolution of singularities of an elliptic surface
 --singularity: the structure sheaf of the strict transform
 --and the structure sheaf of the total transform of the singular

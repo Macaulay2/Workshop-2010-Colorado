@@ -135,11 +135,13 @@ degreeD(ZZ,Module) := (d,F) -> (
      R := ring F;
      R^(-select(degrees F, e -> e#0 == d))
      )
+
 degreeD(ZZ,Matrix) := (d,m) -> (
      tar := positions(degrees target m, e -> e#0 == d);
      src := positions(degrees source m, e -> e#0 == d);
      submatrix(m, tar, src)
      )
+
 degreeD(ZZ,ChainComplex) := (d, F) -> (
      -- takes the first degree d part of F
      a := min F;
@@ -198,7 +200,6 @@ symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) -> (
      n:=rank source e -1;
      apply(n,j->G=G|(e_{j+1}**F)); -- (vars E)**F
      phi:=map(M1,M0,transpose G)
-     --presentation prune ker phi
      )
 
 symmetricToExteriorOverA(Module) := M -> (
@@ -233,7 +234,7 @@ directImageComplex Module := opts -> (M) -> (
      toA := map(coefficientRing E,E,DegreeMap=> i -> drop(i,1));
      --we should truncate away the terms that are 0, and (possibly) the terms above the (n+1)-st
      F0A := toA F0;
-     G:=new ChainComplex;
+     G := new ChainComplex;
      G.ring = ring F0A;
      n := numgens ring M;
      for i from -n+1 to 1 do(
@@ -360,7 +361,7 @@ ablock(List, List, Ring) := (La,Lb,S) ->(
      offset := 0;
      matrix apply(#La, p->apply(#Lb, q-> (
      	  	    mpq := map(S^{{La#p, 0}}, S^{(Lb#q-c-1):{c, -1}}, (i,j)->(
-	       		      sub(A_(offset+j),S)*S_1^(La#q-c)));
+	       		      sub(A_(offset+j),S)*S_1^(La#p-c))); --was La#q-c
 		    offset = offset+Lb#q-c-1;
 		    mpq)
      		 ))
@@ -578,7 +579,8 @@ doc ///
      F = directImageComplex M
    Inputs 
      M: Module
-       graded over a ring of the form S = A[y_0..y_n], representing a sheaf on ${\bf P}^n_A$.
+       graded over a ring of the form S = A[y_0..y_n], representing a sheaf on ${\bf P}^n_A$,
+       where A is a polynomial ring.
      Regularity=>ZZ
        the Castelnuovo-Mumford regularity of {\tt M}.  If not provided, this value will be computed
    Outputs
@@ -596,6 +598,12 @@ doc ///
       in the variables y_i. If not provided by the user,
       it is computed by the function. The default is Regularity => null, 
       which means it must be computed.
+      
+      The ring A must be a polynomial ring. For the moment, the module M must be homogeneous
+      for the variables of A as well as for the variables of S (bihomogeneous).
+      
+      It is proven in loc. cit. that every complex of free modules can be realized
+      as the direct image of a vector bundle on ${\bf P}^n_A$.
       
       The following example can be used to study the loci in the family of extensions
       of a pair of vector bundles on $\bf P^1$ where the extension bundle has a given 
@@ -635,7 +643,6 @@ doc ///
       L = for i from -d to 0 list directImageComplex(S^{{i,0}}**M);
       netList L
       maps = apply(L, F-> F.dd_0)
-   Caveat
    SeeAlso 
      universalExtension
 ///

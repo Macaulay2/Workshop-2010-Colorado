@@ -1,10 +1,43 @@
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
-uninstallPackage "BGG"
-installPackage "BGG"
+--uninstallPackage "BGG"
+--installPackage "BGG"
+loadPackage "BGG"
+--Elliptic singularity
+kk = ZZ/101
+A = kk[x_0..x_2]
+S = A[y_0..y_2]
+iX = minors(2, matrix{{x_0..x_2},{y_0..y_2}})
+itt = iX+ideal(sum(3,i->x_i^3)) --total transform of the cone
+ist = saturate(iX+ideal(sum(3,i->x_i^3)), sub(ideal(x_0..x_2),S)) --strict tr
+F=directImageComplex (S^1/itt)
+G=directImageComplex (S^1/ist)
+F.dd
+G.dd
+prune(HH G)#0
 
-M = universalExtension({-2},{2})
-directImageComplex M
+
+
+
+
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
+
+M = universalExtension({-2+d,-3+d},{2+d,3+d});
+     F=directImageComplex M;
+     A=ring F;
+     F.dd
+     
+netList for d from -5 to 1 list(
+M = universalExtension({-2+d,-3+d},{2+d,3+d});
+F=directImageComplex M;
+A=ring F;
+F.dd_0)
+
+
+
 
 kk=ZZ/101
 A=kk[x_0..x_3]
@@ -172,7 +205,54 @@ c=-2
 m=universalExtension( a, b, c)
 
 ----------
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
+
+-- on Spec A x P^1: 
+--make the universal extension of O(-3) by O, and a generic
+--extension of O(-2) by O, with the generic map from one to the other.
+--make the map of pushforwards.
+
 kk = ZZ/101
-A=kk[x]
-S=A[t]
-flattenRing S
+A=kk[a..i]
+S = A[x,y]
+--universal extension
+mat4 = matrix"x,0,0;
+     	       y,x,0;
+	       0,y,x;
+	       0,0,y;
+	       a,b,c"
+pres4 = map(S^{4:{-3,0},{-4,1}}, S^{3:{-4,0}}, mat4)
+degrees pres4
+isHomogeneous pres4
+--the following gives an error -- why??
+--prune dual dual(cokernel pres4)
+--viewHelp dual
+
+mat22 = matrix"x,0,0;
+     	       y,x,0;
+	       0,y,x;
+	       0,0,y;
+	       a,b,c;
+	       d,e,f;
+	       g,h,i"
+mat211 = map(S^{4:{-3,1}}, S^{2:{-5,0}},0)
+mat212 = matrix"x,0;
+     	        y,x;
+		0,y"
+mat211||mat212
+mat22
+pres2 = map(S^{4:{-3,0},3:{-4,1}}, S^{3:{-4,0},2:{-5,1}}, 
+	  mat22|(mat211||mat212))
+
+isHomogeneous pres2		
+degrees pres2
+
+H=Hom(coker pres2, coker pres4)
+netList degrees H
+phi = homomorphism H_{1}
+
+directImageComplex coker pres4
+directImageComplex coker pres2
+directImageComplex phi
