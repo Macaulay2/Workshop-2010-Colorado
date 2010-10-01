@@ -262,7 +262,7 @@ directImageComplex Matrix := opts -> (f) -> (
      degsN := degrees (target f)/first;
      if max degsN > regMN then error("regularity is higher than you think!");
      truncf := if min degsM === regMN and min degsN === regMN then f else 
-       (basis(regMN,f);	<< "computed basis" << endl);
+        basis(regMN,f);
      M := source truncf;
      N := target truncf;
      StoA := map(A,S,DegreeMap => i -> drop(i,1));

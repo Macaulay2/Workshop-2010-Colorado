@@ -51,3 +51,19 @@ gbTrace = 3
 time gb(I,Algorithm=>LinearAlgebra)
 li = leadTerm gens oo;
 --This one times out for me
+
+------- possible bug? --------------
+I = JJ(2,{2,2},BaseField=>ZZ/32003)
+gbTrace = 3
+M = time gens gb(I,Algorithm=>LinearAlgebra)
+J = ideal I_*
+N = gens gb J
+M == N
+M;
+N;
+ideal M == ideal N
+ideal leadTerm M == ideal leadTerm N
+(gens ideal M) % ideal N
+(gens ideal N) % ideal M
+M = ideal M;
+N = ideal N;

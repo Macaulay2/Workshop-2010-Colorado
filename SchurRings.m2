@@ -48,7 +48,8 @@ coefficientRing SchurRing := Ring => R -> last R.baseRings
 
 ck := i -> if i < 0 then error "expected decreasing row lengths" else i
 
-schur2monom = (a,Mgens) -> (
+schur2monom = (a,M) -> (
+     Mgens := M.generators;
      if # a === 0 then 1_M
      else product(# a, i -> (Mgens#i) ^ (
 	       ck if i+1 < # a 
@@ -153,10 +154,9 @@ schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
      -- toString M := net M := x -> first lines toString x;
      S := newSchur(R,M,p);
      dim S := s -> rawSchurDimension raw s;
-     Mgens := M.generators;
      t := new SchurRingIndexedVariableTable from p;
      t.SchurRing = S;
-     t#symbol _ = a -> ( m := schur2monom(a,Mgens); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
+     t#symbol _ = a -> ( m := schur2monom(a,M); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
      S.use = S -> (globalAssign(p,t); S);
      S.use S;
      S)

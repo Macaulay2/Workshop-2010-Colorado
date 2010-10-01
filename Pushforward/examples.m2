@@ -227,7 +227,7 @@ pres4 = map(S^{4:{-3,0},{-4,1}}, S^{3:{-4,0}}, mat4)
 degrees pres4
 isHomogeneous pres4
 --the following gives an error -- why??
---prune dual dual(cokernel pres4)
+prune dual dual(cokernel pres4)
 --viewHelp dual
 
 mat22 = matrix"x,0,0;
@@ -252,7 +252,36 @@ degrees pres2
 H=Hom(coker pres2, coker pres4)
 netList degrees H
 phi = homomorphism H_{1}
-
+phi = homomorphism H_{7}
+for i from 0 to numColumns gens H -1 do (
+     phi = homomorphism H_{i};
+     << "-----------------------" << i << endl;
+     print directImageComplex phi;
+     )
 directImageComplex coker pres4
 directImageComplex coker pres2
 directImageComplex phi
+
+-------------------------
+-- 
+kk = ZZ/101
+S = kk[x,y]
+M = S^1
+N = S^{1}
+phi = map(N,M,{{x}})
+directImageComplex phi
+-------------------------
+kk = ZZ/101
+S = kk[x,y,z]
+M = S^1/ideal z
+N = S^{1}/ideal z
+phi = map(N,M,{{x}})
+directImageComplex phi
+
+basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
+     F := target M;
+     G := source M;
+     monsF := basis(lo,hi,F,opts);
+     monsG := basis(lo,hi,G,opts);
+     basM := last coefficients(matrix (M * monsG), Monomials => monsF);
+     basM)
