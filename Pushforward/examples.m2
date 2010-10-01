@@ -278,6 +278,13 @@ N = S^{1}/ideal z
 phi = map(N,M,{{x}})
 directImageComplex phi
 
+
+
+---------------------
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
 basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
      F := target M;
      G := source M;
@@ -285,3 +292,88 @@ basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
      monsG := basis(lo,hi,G,opts);
      basM := last coefficients(matrix (M * monsG), Monomials => monsF);
      basM)
+
+-- on Spec A x P^1: 
+--make the universal extension of O(-3) by O, and a generic
+--extension of O(-2) by O, with the generic map from one to the other.
+--make the map of pushforwards.
+
+kk = ZZ/101
+M = universalExtension({-4},{0})
+S = ring M     
+NT = universalExtension({-2},{0})
+T = ring NT
+inc = map(S,T, {S_0, S_1, S_2})
+N = coker inc presentation NT
+H = Hom(M,N)
+netList degrees source presentation prune Hom(M,N)
+tally degrees source presentation prune Hom(M,N)
+--select (degrees source presentation prune Hom(M,N), j -> j==={2.0})
+--universal extension
+
+phi = homomorphism H_{8}
+
+directImageComplex M
+oo.dd
+directImageComplex N
+directImageComplex phi
+
+
+---------
+--phi: M\to N is the identity map,
+--the map "directImageComplex psi (or phi) is NOT even a map between
+--the right complexes.
+
+tw = -2
+M = universalExtension({tw},{0})
+S = ring M     
+NT = universalExtension({-2},{0})
+T = ring NT
+inc = map(S,T, {S_0, S_1, S_2})
+N = coker inc presentation NT
+H = Hom(M,N)
+
+phi = homomorphism H_{0}
+degrees phi
+directImageComplex M
+oo.dd
+directImageComplex N
+directImageComplex phi
+
+
+------------
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
+basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
+     F := target M;
+     G := source M;
+     monsF := basis(lo,hi,F,opts);
+     monsG := basis(lo,hi,G,opts);
+     basM := last coefficients(matrix (M * monsG), Monomials => monsF);
+     basM)
+
+--M = universalExtension({-1},{0})
+
+------simplest problem
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage "BGG"
+basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
+     F := target M;
+     G := source M;
+     monsF := basis(lo,hi,F,opts);
+     monsG := basis(lo,hi,G,opts);
+     basM := last coefficients(matrix (M * monsG), Monomials => monsF);
+     basM)
+
+S = ring M
+describe S
+kk = ZZ/101
+A = kk[a]
+S = A[x,y]
+M = S^{{-1,0},{0,0}}
+psi = id_M
+directImageComplex M
+directImageComplex psi
