@@ -1,8 +1,8 @@
 needsPackage "BoijSoederberg"
 newPackage(
 	"BGG",
-    	Version => "1.0", 
-    	Date => "June 30, 2008",
+    	Version => "1.4", 
+    	Date => "Oct 1, 2010",
     	Authors => {
 	     {Name => "Hirotachi Abo", Email => "abo@uidaho.edu", HomePage => "http://www.webpages.uidaho.edu/~abo/"},
 	     {Name => "Wolfram Decker", Email => "decker@math.uni-sb.de", HomePage => "http://www.math.uni-sb.de/ag/decker/"},
