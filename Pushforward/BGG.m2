@@ -261,8 +261,9 @@ directImageComplex Matrix := opts -> (f) -> (
      if max degsM > regMN then error("regularity is higher than you think!");
      degsN := degrees (target f)/first;
      if max degsN > regMN then error("regularity is higher than you think!");
-     truncf := if min degsM === regMN and min degsN === regMN then f else 
-        basis(regMN,f);
+     truncf := if min degsM === regMN and min degsN === regMN then f else (
+        m := basis(regMN,f);
+        map(truncate(regMN, target f), truncate(regMN, source f), m));
      M := source truncf;
      N := target truncf;
      StoA := map(A,S,DegreeMap => i -> drop(i,1));
@@ -274,6 +275,7 @@ directImageComplex Matrix := opts -> (f) -> (
      FM := complete res( image phiM, LengthLimit => max(1,1+regMN));
      FN := complete res( image phiN, LengthLimit => max(1,1+regMN));
      fMN := extend(FN, FM, truncfA ** E);
+     fMN = E^{-xm} ** fMN[regMN];
      FM = E^{-xm} ** FM[regMN];
      FN = E^{-xm} ** FN[regMN];
      fMN0 := degreeD(0, fMN);

@@ -324,7 +324,7 @@ directImageComplex phi
 --the map "directImageComplex psi (or phi) is NOT even a map between
 --the right complexes.
 
-tw = -2
+tw = -3
 M = universalExtension({tw},{0})
 S = ring M     
 NT = universalExtension({-2},{0})
@@ -368,12 +368,15 @@ basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
      basM := last coefficients(matrix (M * monsG), Monomials => monsF);
      basM)
 
-S = ring M
-describe S
 kk = ZZ/101
 A = kk[a]
 S = A[x,y]
-M = S^{{-1,0},{0,0}}
+M = S^{{-1,0},{0,0}} -- problem
+M = S^{{-1,0}}
+M = S^{{0,0}}
+M = S^{{-2,0}}
 psi = id_M
 directImageComplex M
-directImageComplex psi
+directImageComplex(M, Regularity=>1)
+
+directImageComplex(psi)
