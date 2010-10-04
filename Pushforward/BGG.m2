@@ -279,6 +279,7 @@ directImageComplex Matrix := opts -> (f) -> (
      FN = E^{-xm} ** FN[regMN];
      fMN0 := degreeD(0, fMN);
      EtoA := map(A,E,DegreeMap=> i -> drop(i,1));
+--     error("debug");
      EtoA fMN0
      )
 

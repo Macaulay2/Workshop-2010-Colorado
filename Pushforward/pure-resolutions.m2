@@ -1,12 +1,12 @@
 --Pure resolutions.
-basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
+{*basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
      F := target M;
      G := source M;
      monsF := basis(lo,hi,F,opts);
      monsG := basis(lo,hi,G,opts);
      basM := last coefficients(matrix (M * monsG), Monomials => monsF);
      basM)
-
+*}
 needsPackage "BGG"
 
 --first, the multilinear regular sequence
@@ -40,20 +40,19 @@ end
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 load "pure-resolutions.m2"
+debug BGG
 
-mm = {1,1} -- corresponds to P^(mm_0) x P^(mm_1) x ...
+mm = {2,2} -- corresponds to P^(mm_0) x P^(mm_1) x ...
 
 kk = ZZ/101
-v = splice for i from 0 to #mm-1 list(
-     x_(i,0)..x_(i,mm_i)
-     )
-S = kk[v]
-
 S = kk[x_(0,0)..x_(0,mm_0)][x_(1,0)..x_(1,mm_1)]
 n = matrix {multilinearSymmetricSequence mm}
-kn = koszul(3,n)
-source kn
-directImageComplex source kn
-directImageComplex target kn
-directImageComplex kn -- trouble!
+kn = koszul(mm_0+mm_1+1,n);
 
+--Eagon-Northcott complex
+D=directImageComplex kn
+betti dual res coker dual D_(-2)
+
+--Buchsbaum-Rim complex
+time D=directImageComplex (kn**S^{{1,0}})
+betti dual res coker dual D_(-2)
