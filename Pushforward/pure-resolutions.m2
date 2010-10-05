@@ -65,8 +65,8 @@ pureRes(Ring,List,List) := (A,p,e) -> (
      n := numgens A;
      if #p!= 2 then error("second arg  must be a list of length 2");
      if #e!= 2 then error("third arg  must be a list of length 2");   
---     if p_0<0 or or p_1<0 or p_1< p_0 or p_1>= nor p_0>=n then 
---         error("need 0<p_0<=p_1<numgens A");
+     if p_0<0 or p_1<0 or p_1< p_0 or p_1>= n or p_0>=n then 
+         print("need 0<p_0<=p_1<numgens A to get a pure resolution");
      if e_0<0 or e_1 < 0 then error("e_i must be positive");
      kk := coefficientRing A;
      S := A[x_(1,0)..x_(1,e_0)];
@@ -75,7 +75,12 @@ pureRes(Ring,List,List) := (A,p,e) -> (
      gotoS := map(S,B, sub((vars A),S)|matrix{{x_(1,0)..x_(1,e_0)}});
      T := B[x_(2,0)..x_(2,e_1)];
 
-     params = matrix {multilinearSymmetricSequence(T, {n-1,e_0,e_1})};
+     M := n-1+e_0+e_1; 
+     ell := 3;  -- number of sets of vars
+     params := matrix{for k from 0 to M list(
+	  P := pars(k,{n-1,e_0,e_1});
+	  sum(P, p -> product(ell, i->sub(x_(i, p_i), T))
+	  ))};
      len := n+e_0+e_1;
      kn := T^{{p_1+e_0-1,0}}**koszul(len,params);
 
@@ -101,6 +106,8 @@ betti (P = pureRes(A, {2,2},{3,1}))
 A = kk[a,b,c,d]
 betti (P=pureRes(A,{1,3},{2,1}))
 betti (Q=pureRes(A,{1,1},{3,0}))
+
+betti pureRes(A,{2,3},{1,2})
 I21 = ann coker P.dd_1
 I12 = ann coker Q.dd_1
 I12==I21
@@ -126,4 +133,19 @@ you get by taking pureRes(A, {1,1}, e). This seems to be a direct sum.
 factor.
 *}
 
+kk = ZZ/101
+A = kk[u,v,w]
+T = A[x,y]
+params = matrix"ux,uy+vx,vy+wx,wy"
+kn = koszul(4,params)
+D = directImageComplex kn
+m = transpose D_(-1)
+betti res coker m
 
+restart
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+load "pure-resolutions.m2"
+A = kk[A,B,C,D,E]
+betti pureRes(A,{2,3},{1,2})
