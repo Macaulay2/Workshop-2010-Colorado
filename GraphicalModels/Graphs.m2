@@ -53,6 +53,10 @@ export {Graph,
      }
 exportMutable {dotBinary,jpgViewer}
 
+graphData = "graphData"
+labels = "labels"
+newDigraph = "newDigraph"
+color = "color"
 
 ------------------------------------------------
 -- Set graph types and constructor functions. -- 
@@ -545,11 +549,13 @@ descendents(Digraph,Thing) := (G,v) -> (
 	       G.cache#descendents = new HashTable from h);
      	  dE)
      )
+
 descendents(MixedGraph, Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?descendents and G1.cache#descendents#?v then G1.cache#descendents#?v
      else (
 	  C := descendents(G1,v);
+	  dE := C;  -- added (Mike Stillman)
 	  if G1.cache#?descendents then (
 	       h := new MutableHashTable from G1.cache#descendents;
 	       h#v = dE;
@@ -904,6 +910,11 @@ topSort(Digraph) := G -> (
      else error("digraph must be acyclic")
      )     
 
+local p
+local d
+local f
+local t
+
 DFS = method()
      -- Input: A digraph
      -- Output: the discovery and finishing times for each vertex after a depth-first search
@@ -915,7 +926,7 @@ DFS(Digraph) := G -> (
      H#d = new MutableHashTable;
      H#f = new MutableHashTable;
      H#t = 0;
-     scan(keys(G),u->(H#color#u="white";H#p#u=nil));
+     scan(keys(G),u->(H#color#u="white";H#p#u=null));
      scan(keys(G),u->if H#color#u == "white" then H = DFSvisit(H,u));
      new HashTable from {"discoveryTime" => new HashTable from H#d, "finishingTime" => new HashTable from H#f}
      )
@@ -1380,6 +1391,19 @@ doc ///
 	     S:String     
      ///
 
+TEST /// ---- family members, neighbors and non-neighbors. 
+G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
+H = digraph{{a,{b,c}},{b,{c,d}},{c,{d}},{c,{}}}
+assert(neighbors(G,a) === set {b,c})
+assert(nonneighbors(G,b) === set {d,e})
+assert(parents(H,a) === set {})
+assert(parents(H,c) === set {a,b})
+assert(children(H,a) === set {b,c})
+assert(descendents(H,a) === set {b,c,d})
+assert(nondescendents(H,c) === set {a,b})
+assert(foreFathers(H,c) === set {a,b})
+///
+
 end
 
 
@@ -1456,18 +1480,6 @@ end
 restart
 loadPackage"Graphs"
 
-TEST /// ---- family members, neighbors and non-neighbors. 
-G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
-H = digraph{{a,{b,c}},{b,{c,d}},{c,{d}},{c,{}}}
-assert(neighbors(G,a) === set {b,c})
-assert(nonneighbors(G,b) === set {d,e})
-assert(parents(H,a) === set {})
-assert(parents(H,c) === set {a,b})
-assert(children(H,a) === set {b,c})
-assert(descendents(H,a) === set {b,c,d})
-assert(nondescendents(H,c) === set {a,b})
-assert(foreFathers(H,c) === set {a,b})
-///
 
 TEST /// ---- display?
 
