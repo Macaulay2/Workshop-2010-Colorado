@@ -1376,7 +1376,7 @@ doc ///
 	    	 showTikZ requires the external program dot2tex, available at http://www.fauskes.net/code/dot2tex/.
 		 
 		 The following code gives TikZ syntax for the complete graph K_5.
-            Example
+            Pre
      	       	 showTikZ completeGraph 5
       ///
       
@@ -1498,3 +1498,25 @@ TEST /// ---- Functions on Graphs.
 exportMutable {dotBinary,jpgViewer 
 
 break
+
+TEST ///
+  -- descendents of a Digraph and MixedGraph
+  restart
+  needsPackage "Graphs"
+  G = digraph { {1, {2,3}}, {2, {4}}, {3, {4}} }
+  assert(descendents(G, 1) === set{2,3,4})
+  assert(descendents(G, 4) === set{})
+  assert(try (descendents(G, 5); false) else true)
+  
+  G = digraph { {1, {2,3}}, {2, {4}}, {3, {4}} }
+  peek G
+  descendents(G, 1)
+  peek G.cache
+  
+  B = bigraph { {1,4}, {1,5} }
+  G1 = mixedGraph(G, B)
+  vertices G1
+  peek G1
+  peek G1.cache
+  descendents(G1, 1)
+///

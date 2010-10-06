@@ -93,6 +93,12 @@ export {pairMarkovStmts,
      
 needsPackage "Graphs"
 
+s = local s;
+a = local a;
+b = local b;
+
+
+
 --------------------------
 --   Markov relations   --
 --------------------------
@@ -315,13 +321,15 @@ removeRedundants = (Ds) -> (
 -------------------
 -- Markov rings ---
 -------------------
+markov = local markov
+markovVariables = local markovVariables
      
 markovRingList := new MutableHashTable;
 -- the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
 -- in principle, we can assign different names for the ring variable. 
 -- But this is still not yet fully implemented in 
 -- marginMap, hideMap, and prob.
-markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>getGlobalSymbol "p"})
+markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>getSymbol "p"})
 markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
@@ -330,11 +338,13 @@ markovRing Sequence := Ring => opts -> d -> (
      p := opts.VariableName;
      if (not markovRingList#?(d,kk,toString p)) then (
      	  start := (#d):1;
-	  markovRingList#(d,kk,toString p) = kk[p_start .. p_d]; 
+	  vlist := start .. d;
+	  R := kk[p_start .. p_d];
+	  markovRingList#(d,kk,toString p) = R;
+	  H := new HashTable from apply(#vlist, i -> vlist#i => R_i);
+	  R.markovVariables = H;
 	  -- markovRingList#(d,kk,toString p) = kk(monoid [p_start .. p_d]); -- does not work
      	  markovRingList#(d,kk,toString p).markov = d;
-	  -- this is part of a first attempt to be able to use arbitrary symbols to denote the indeterminates of markovRing 
-	  markovRingList#(d,kk,toString p).variable = p;
 	  );
      markovRingList#(d,kk,toString p)
      )
@@ -358,13 +368,14 @@ marginMap(ZZ,Ring) := RingMap => (v,R) -> (
      -- p_1,1  (of class IndexedVariable)
      -- p := R.variable;
      -- use R; -- Dan suggested to delete this line
+     p := i -> R.markovVariables#i;
      F := toList apply(((#d):1) .. d, i -> (
-	       if i#v > 1 then p_i
+	       if i#v > 1 then p i
 	       else (
 		    i0 := drop(i,1);
-		    p_i - sum(apply(toList(2..d#v), j -> (
+		    p i - sum(apply(toList(2..d#v), j -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
-			      p_newi))))));
+			      p newi))))));
      map(R,R,F))
 
  --------------
@@ -376,6 +387,7 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
      -- creates a ring map inclusion F : S --> A.
      v = v-1;
      R := ring presentation A;
+     p := i -> R.markovVariables#i;
      d := R.markov;
      e := drop(d, {v,v});
      S := markovRing e;
@@ -385,7 +397,7 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
      F := toList apply(((#e):1) .. e, i -> (
 	       sum(apply(toList(1..dv), j -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
-			      p_newi)))));
+			      p newi)))));
      map(A,S,F))
 
 -------------------
@@ -412,7 +424,7 @@ markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
                   matrix apply(Avals, 
 		       a -> apply(Bvals, b -> (
 				 e := toSequence(toList a + toList b + toList c);
-		      		 prob(d,e))))))))
+		      		 prob(R,e))))))))
      )
 
 markovIdeal = method()
@@ -426,7 +438,7 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
      )
 
 -------------------------------------------------------
--- Constructing the ideal of a independence relation --
+-- Constructing the ideal of a independence relation --/tmp/M2-1663-1___Graphical__Models.m2
 -------------------------------------------------------
 
 -- NOTE: ALL THE FUNCTIONS BELOW ARE DECLARED GLOBAL INSTEAD OF LOCAL
@@ -453,13 +465,15 @@ possibleValues = (d,A) ->
 	       else {0}))
      
 -- prob((d_1,...,d_n),(s_1,dots,s_n))
--- this function assumes that the indeterminates are called p_*
-prob = (d,s) -> (
+-- this function assumes that R is a markovRing
+prob = (R,s) -> (
+     d := R.markov;
+     p := i -> R.markovVariables#i;
      L := cartesian toList apply (#d, i -> 
 	   if s#i === 0 
 	   then toList(1..d#i) 
 	   else {s#i});
-     sum apply (L, v -> p_v))
+     sum apply (L, v -> p v))
 
 -----------------------------------------
 -- Gaussian directed acyclic graphs    --
@@ -467,7 +481,7 @@ prob = (d,s) -> (
 
 -- gaussRingList still not fully implemented
 gaussRingList := new MutableHashTable;
-gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>getGlobalSymbol "s"})
+gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>getSymbol "s"})
 gaussRing ZZ :=  Ring => opts -> (n) -> (
      -- s_{1,2} is the (1,2) entry in the covariance matrix.
      -- this assumes r.v.'s are labeled by integers.
@@ -591,7 +605,6 @@ gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
 -- gaussMatrices(Ring,Digraph) := List =>  (R,G) -> gaussMatrices(R,G,globalMarkovStmts G)
 
 
-
 -- THE FOLLOWING NEEDS TO BE COPIED TO THE GAUSSIAN STUFF:
 trekIdeal = method()
 trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
@@ -638,9 +651,9 @@ subsetsBetween = (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
 
 -- RINGS AND MATRICES --
 
-paramRing = method(Options=>{Coefficients=>QQ, VariableNameCovariance=>value "symbol s", 
-	                                       VariableNameDigraph=>value "symbol l", 
-					       VariableNameBigraph=>value "symbol p"})
+paramRing = method(Options=>{Coefficients=>QQ, VariableNameCovariance=>getSymbol "s", 
+	                                       VariableNameDigraph=>getSymbol "l", 
+					       VariableNameBigraph=>getSymbol "p"})
 -- makes a ring of parameters, l_(i,j) for all vertices i,j of a digraph G, and p_(i,j) for i<j,
 -- and of the entries of the covariance matrix s_(i,j)
 -- later, given the edges, we will set some of these parameters to zero
@@ -1112,9 +1125,10 @@ doc ///
       A polynomial ring with d1*d2*...*dr variables $p_{i_1,...,i_r}$,
       with each $i_j$ satisfying $1\leq i_j \leq d_j$.
   Consequences
-    Information about this sequence of integers is placed into the ring, and is used 
-    by other functions in this package.  Also, at most one ring for each such sequence
-    is created: the results are cached.
+    Item
+      Information about this sequence of integers is placed into the ring, and is used 
+      by other functions in this package.  Also, at most one ring for each such sequence
+      is created: the results are cached.
   Description
     Text 
       The sequence $d$ represents the number of states each discrete random variable can take.
@@ -1325,7 +1339,7 @@ doc///
        NEED TO INSERT THE DEFINITION OF WHAT THESE ARE !!!! 
      Example
        G = digraph { {1,{2,3}}, {2,{4}}, {3,{4}} } ;
-       d = (4:2) -- we have five binary random variables
+       d = (4:2) -- we have four binary random variables
        R = markovRing d ;
        Statements = localMarkovStmts G
        I = markovIdeal ( R, G, Statements)
