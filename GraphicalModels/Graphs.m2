@@ -1376,7 +1376,7 @@ doc ///
 	    	 showTikZ requires the external program dot2tex, available at http://www.fauskes.net/code/dot2tex/.
 		 
 		 The following code gives TikZ syntax for the complete graph K_5.
-            Pre
+            Text
      	       	 showTikZ completeGraph 5
       ///
       
