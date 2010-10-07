@@ -609,8 +609,6 @@ gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
 trekIdeal = method()
 trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --for a Digraph, the method is faster--so we just need to overload it for a DAG. 
-     --    G = convertToIntegers(G);
-     --    n := max vertices G;
      --G = a Digraph (assumed DAG)
      --R = the gaussRing of G
      n := #vertices G; 
@@ -624,7 +622,7 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --only the following loop does not work w/ general labels on the graph, and needs to be checked!
      for i from 1 to n-1 do (
 	  J := ideal apply(1..i, j -> s_(j,i+1)
-	     	              - sum apply(#P#i, k -> S_(k + numgens R) * sp(j,P#i#k))	       );
+	     	              - sum apply(#P#i, k -> S_(k + numgens R) * sp(j,P#i#k)));
 	  I = eliminate(newvars, I + J);
 	  );
      substitute(I,R)
