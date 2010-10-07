@@ -50,7 +50,7 @@ newPackage(
 --   cartesian -- [internal routine used in MarkovMatrices and MarkovIdeal]
 --   possibleValues -- [internal routine used in MarkovMatrices and MarkovIdeal]
 --   prob -- [internal routine used in MarkovMatrices and MarkovIdeal]
---   getPositionofKeys (Digraph G, list D) -- [internal routine]
+--   getPositionofVertices (Digraph G, list D) -- [internal routine]
 --   
 --  Gaussian directed acyclic graphs:
 --   gaussRing (Integer n)
@@ -404,9 +404,9 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 -- Markov ideals --
 -------------------
 
--- the following function retrieves the position of the keys in the graph G
--- for all keys contained in the list S
-getPositionOfKeys := (G,S) -> (
+-- the following function retrieves the position of the vertices in the graph G
+-- for all vertices contained in the list S
+getPositionOfVertices := (G,S) -> (
      --apply(S, v -> position(sort vertices G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
      apply(S, w -> position(vertices G, v -> v===w)))
 
@@ -417,9 +417,9 @@ markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
      -- independence statements
      d := R.markov;
      flatten apply(Stmts, stmt -> (
-     	       Avals := possibleValues(d,getPositionOfKeys(G,stmt#0)); 
-     	       Bvals := possibleValues(d,getPositionOfKeys(G,stmt#1)); 
-     	       Cvals := possibleValues(d,getPositionOfKeys(G,stmt#2)); 
+     	       Avals := possibleValues(d,getPositionOfVertices(G,stmt#0)); 
+     	       Bvals := possibleValues(d,getPositionOfVertices(G,stmt#1)); 
+     	       Cvals := possibleValues(d,getPositionOfVertices(G,stmt#2)); 
      	       apply(Cvals, c -> (
                   matrix apply(Avals, 
 		       a -> apply(Bvals, b -> (
@@ -498,7 +498,7 @@ gaussRing ZZ :=  Ring => opts -> (n) -> (
 gaussRing Digraph :=  Ring => opts -> (G) -> (
      -- Luis Garcia: Who wrote the 4 lines below?
      -- I want the input to be the Digraph G, 
-     -- and I am just going to read off the list of labels from the keys.
+     -- and I am just going to read off the list of labels from the vertices.
      -- This is done to avoid any ordering confusion. 
      -- DO NOT make an option for inputting list of labels!
      x := opts.VariableName;
@@ -513,14 +513,14 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
 -- Shaowei 9/15: old version of gaussRing
 -- gaussRing Digraph := opts -> (G) -> (
      --I want the input to be the Digraph G, 
-     --and I'm just gonna read off the list of labels from the keys.
+     --and I'm just gonna read off the list of labels from the vertices.
      -- This is done to avoid any ordering confusion. 
      -- DO NOT make an option for inputting list of labels!
 --     x := opts.VariableName;
 --     kk := opts.Coefficients;
---     v := flatten apply(keys G, i -> apply(keys G, j -> x_(i,j)));
+--     v := flatten apply(vertices G, i -> apply(vertices G, j -> x_(i,j)));
 --     R := kk[v, MonomialSize=>16];
---     R#gaussRing = #keys G;
+--     R#gaussRing = #vertices G;
 --     R
 --     )
 
@@ -543,8 +543,8 @@ gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      -- the list Stmt is one statement {A,B,C}.
      -- this function is NOT exported; it is called from gaussIdeal!
      -- This function does not work if called directly but it works within gaussIdeal!!!
-     rows := join(getPositionOfKeys(G,Stmt#0), getPositionOfKeys(G,Stmt#2)); 
-     cols := join(getPositionOfKeys(G,Stmt#1), getPositionOfKeys(G,Stmt#2));  
+     rows := join(getPositionOfVertices(G,Stmt#0), getPositionOfVertices(G,Stmt#2)); 
+     cols := join(getPositionOfVertices(G,Stmt#1), getPositionOfVertices(G,Stmt#2));  
      M1 := submatrix(M,rows,cols);
      minors(#Stmt#2+1,M1)     
      )
@@ -588,8 +588,8 @@ gaussMatrix = method()
 gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
      -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
      -- the list s is a statement of the form {A,B,C}.
-     	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));  --see 9/17 notes @getPositionOfKeys
-     	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2));  --see 9/17 notes @getPositionOfKeys
+     	       rows := join(getPositionOfVertices(G,s#0), getPositionOfVertices(G,s#2));  --see 9/17 notes @getPositionOfVertices
+     	       cols := join(getPositionOfVertices(G,s#1), getPositionOfVertices(G,s#2));  --see 9/17 notes @getPositionOfVertices
      	       submatrix(M,rows,cols)
      )
 
@@ -598,8 +598,8 @@ gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
 -- gaussMatrices(R,Digraph,List) := List =>  (R,G,S) -> (
 --        apply(S, s -> (
 -- 	       M := genericSymmetricMatrix(R, R#gaussRing);
---      	       rows := join(getPositionOfKeys(G,s#0), getPositionOfKeys(G,s#2));  
---      	       cols := join(getPositionOfKeys(G,s#1), getPositionOfKeys(G,s#2));  
+--      	       rows := join(getPositionOfVertices(G,s#0), getPositionOfVertices(G,s#2));  
+--      	       cols := join(getPositionOfVertices(G,s#1), getPositionOfVertices(G,s#2));  
 --      	       submatrix(M,rows,cols)))
 --      )
 -- gaussMatrices(Ring,Digraph) := List =>  (R,G) -> gaussMatrices(R,G,globalMarkovStmts G)
@@ -610,11 +610,11 @@ trekIdeal = method()
 trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --for a Digraph, the method is faster--so we just need to overload it for a DAG. 
      --    G = convertToIntegers(G);
-     --    n := max keys G;
+     --    n := max vertices G;
      --G = a Digraph (assumed DAG)
      --R = the gaussRing of G
-     n := #keys G; 
-     P := toList apply(keys G, i -> toList parents(G,i));
+     n := #vertices G; 
+     P := toList apply(vertices G, i -> toList parents(G,i));
      nv := max(P/(p -> #p));
      t := local t;
      S := (coefficientRing R)[generators R, t_1 .. t_nv];
@@ -638,7 +638,7 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
 
 -- INTERNAL FUNCTIONS --
 
--- returns the position in list h of the key x
+-- returns the position in list h of  x
 pos = (h, x) -> position(h, i->i===x)
 
 -- takes a list A, and a sublist B of A, and converts the membership sequence of 0's and 1's of elements of B in A to binary
@@ -646,7 +646,6 @@ setToBinary = (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then 
 
 -- returns all subsets of B which contain A
 subsetsBetween = (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
-
 
 
 -- RINGS AND MATRICES --
@@ -662,12 +661,12 @@ paramRing MixedGraph := Ring => opts -> (g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      bb := graph G#Bigraph;
-     vv := sort vertices g;
+     vv := vertices g;
      s := opts.VariableNameCovariance;
      l := opts.VariableNameDigraph;
      p := opts.VariableNameBigraph;
      kk := opts.Coefficients;
-     sL := delete(null, flatten apply(vv, x-> apply(vv,          y->if pos(vv,x)>pos(vv,y) then null else s_(x,y))));
+     sL := delete(null, flatten apply(vv, x-> apply(vv, y->if pos(vv,x)>pos(vv,y) then null else s_(x,y))));
      lL := delete(null, flatten apply(vv, x-> apply(toList dd#x, y->l_(x,y))));	 
      pL := join(apply(vv, i->p_(i,i)),delete(null, flatten apply(vv, x-> apply(toList bb#x, y->if pos(vv,x)>pos(vv,y) then null else p_(x,y)))));
      m := #lL+#pL;
@@ -681,7 +680,7 @@ covMatrix Ring := Matrix => (R) -> (
        n := R#gaussRing; 
        genericSymmetricMatrix(R,n))
 covMatrix (Ring,MixedGraph) := (R,g) -> (
-     vv := sort vertices g;
+     vv := vertices g;
      n := R#paramRing#0;
      s := value R#paramRing#1;
      SM := mutableMatrix(R,n,n);
@@ -692,7 +691,7 @@ diMatrix = method()
 diMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
-     vv := sort vertices g;
+     vv := vertices g;
      n := R#paramRing#0;
      l := value R#paramRing#2;
      LM := mutableMatrix(R,n,n);
@@ -703,7 +702,7 @@ biMatrix = method()
 biMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      bb := graph G#Bigraph;
-     vv := sort vertices g;
+     vv := vertices g;
      n := R#paramRing#0;
      p := value R#paramRing#3;
      PM := mutableMatrix(R,n,n);
@@ -839,7 +838,7 @@ trekSeparation MixedGraph := List => (g) -> (
 
 trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
      G := graph g;
-     vv := sort vertices g;
+     vv := vertices g;
      SM := covMatrix(R,g);	
      sum apply(Stmts,s->minors(#s#2+#s#3+1, submatrix(SM,apply(s#0,x->pos(vv,x)),apply(s#1,x->pos(vv,x))))))
 
@@ -1303,7 +1302,7 @@ doc///
        G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } ;
        Stmts = localMarkovStmts G;
        sta=Stmts_0 --take the first statement from the list
-       R = gaussRing (# keys graph G); --we need as many variables as there are nodes in the graph
+       R = gaussRing (# vertices G); --we need as many variables as there are nodes in the graph
        M = genericSymmetricMatrix(R, R#gaussRing);
        gaussMatrix(G,M,sta)
      Text
