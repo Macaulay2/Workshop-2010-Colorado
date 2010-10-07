@@ -55,14 +55,25 @@ newPackage(
 --  Gaussian directed acyclic graphs:
 --   gaussRing (Integer n)
 --   gaussRing (Digraph G)
+--   covMatrix (Ring R)
 --   gaussMinors (Digraph G, Matrix M, List S) -- [iternal routine]
---   gaussMatrices (Digraph G, Matrix M, List S)
+--   gaussMatrix (Digraph G, Matrix M, List S)
 --   gaussIdeal (Ring R, Digraph G, List S) 
+--   gaussIdeal (Ring R, Digraph G) 
 --   trekIdeal (Ring R, Digraph D)
 --    
 -- Gaussian mixed graphs (DAG + Bidirected)
---
---
+--   pos -- [internal routine used in ]
+--   setToBinary -- [internal routine used in ]
+--   subsetsBetween -- [internal routine used in ]
+--   gaussRing (MixedGraph G)
+--   covMatrix (Ring R, MixedGraph G)
+--   diMatrix (Ring R, MixedGraph G)
+--   biMatrix (Ring R, MixedGraph G)
+--   identify (Ring R, MixedGraph G)
+--   trekSeparation (MixedGraph G)
+--   trekIdeal (Ring R, MixedGraph G, List L)
+--   trekIdeal (Ring R, MixedGraph G)
 --
 ------------------------------------------
 
@@ -88,14 +99,15 @@ export {pairMarkovStmts,
 	covMatrix,
 	diMatrix,
 	biMatrix,
+	gaussParam,
         identify,
 	trekSeparation} 
      
 needsPackage "Graphs"
 
 s = local s;
-a = local a;
-b = local b;
+--a = local a;
+--b = local b;
 
 
 
@@ -524,6 +536,10 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
 --     R
 --     )
 
+covMatrix = method()
+covMatrix Ring := Matrix => (R) -> (
+       n := R#gaussRing; 
+       genericSymmetricMatrix(R,n))
 
 gaussMinors = method()
 --gaussMinors(Matrix,List) := (M,D) -> (
@@ -673,10 +689,6 @@ paramRing MixedGraph := Ring => opts -> (g) -> (
      R
      )
 
-covMatrix = method()
-covMatrix Ring := Matrix => (R) -> (
-       n := R#gaussRing; 
-       genericSymmetricMatrix(R,n))
 covMatrix (Ring,MixedGraph) := (R,g) -> (
      vv := vertices g;
      n := R#paramRing#0;
@@ -708,7 +720,15 @@ biMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      scan(vv,i->scan(toList bb#i, j->PM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then p_(i,j) else p_(j,i)));
      matrix PM) 
 
-
+gaussParam = method()
+gaussParam (Ring,MixedGraph) := Matrix => (R,g) -> (
+     SM := covMatrix(R,g);    
+     PM := biMatrix(R,g);     
+     LM := diMatrix(R,g);
+     
+     -- equate \Sigma with (I-\Lambda)^{-T}\Phi(I-\Lambda)^{-1}
+     Linv := inverse(1-matrix(LM));
+     transpose(Linv)*matrix(PM)*Linv)
 
 -- IDENTIFIABILITY --
 
@@ -716,45 +736,14 @@ identify = method()
 -- Input: a MixedGraph
 -- Output: a hash table H where for each parameter t, H#t is the ideal of relations involving t and the entries of the covariance matrix.
 identify (Ring,MixedGraph) := HashTable => (R,g) -> (
-     SM := covMatrix(R,g);    
-     PM := biMatrix(R,g);     
-     LM := diMatrix(R,g);
-     
-     -- equate \Sigma with (I-\Lambda)^{-T}\Phi(I-\Lambda)^{-1}
-     Linv := inverse(1-matrix(LM));
-     LiPL := transpose(Linv)*matrix(PM)*Linv;
-     MPmLiPL := SM-LiPL;
      -- form ideal of relations from this matrix equation
-     J := ideal unique flatten entries MPmLiPL;
-     -- print(MPmLiPL);
-     -- print(J);
-	
+     J := ideal unique flatten entries (covMatrix(R,g)-gaussParam(R,g));
+ 	
      -- create hash table of relations between a particular parameter t and the entries of \Sigma 
      G := graph g;
      m := #edges(G#Digraph)+#edges(G#Bigraph)+#vertices(g);
      plvars := toList apply(0..m-1,i->(flatten entries vars R)#i);
-     H := new MutableHashTable;
-     scan(plvars,t->H#t=eliminate(delete(t,plvars),J));
-     new HashTable from H
-
-	-- for t in plvars do
-	-- (
-	  -- Jmt := eliminate(delete(t,plvars),J);
-	  
-      	  -- the parameter we are checking identifiability with
-	  -- print(t);
-	  
-	  -- whether the image of the parameterization is dense in the probability space
-	  -- non-zero if it is dense, 0 if it is not dense
-	  -- print(min(apply(Jmt_*, q->degree(t,q))));
-	  
-	  -- minimum number of points in the fiber over a point in the image
-	  -- print(min(delete(0,apply(Jmt_*, q->degree(t,q)))));
-	  
-	  -- ideal of equations containing s_(i,j) and the parameter t
-	  -- print(Jmt);
-	--);
-)
+     new HashTable from apply(plvars,t->{t,eliminate(delete(t,plvars),J)}))
 
 
 
@@ -771,12 +760,12 @@ trekSeparation MixedGraph := List => (g) -> (
 
     -- Construct canonical double DAG cdG associated to mixed graph G
     cdG:= digraph join(
-      apply(vv,i->{(a,i),join(
-        apply(toList parents(G#Digraph,i),j->(a,j)),
-        {(b,i)}, apply(toList bb#i,j->(b,j)))}),
-      apply(vv,i->{(b,i),apply(toList dd#i,j->(b,j))}));
-    aVertices := apply(vv, i->(a,i));
-    bVertices := apply(vv, i->(b,i));
+      apply(vv,i->{(1,i),join(
+        apply(toList parents(G#Digraph,i),j->(1,j)),
+        {(2,i)}, apply(toList bb#i,j->(2,j)))}),
+      apply(vv,i->{(2,i),apply(toList dd#i,j->(2,j))}));
+    aVertices := apply(vv, i->(1,i));
+    bVertices := apply(vv, i->(2,i));
     allVertices := aVertices|bVertices;
     
     statements := {};
@@ -839,6 +828,8 @@ trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
      vv := vertices g;
      SM := covMatrix(R,g);	
      sum apply(Stmts,s->minors(#s#2+#s#3+1, submatrix(SM,apply(s#0,x->pos(vv,x)),apply(s#1,x->pos(vv,x))))))
+
+trekIdeal (Ring,MixedGraph) := Ideal => (R,g) -> trekIdeal(R,g,trekSeparation g)
 
 
 
@@ -1737,15 +1728,15 @@ B = biMatrix(R,g)
 --     | 0       0       p_(c,c) 0       |
 --     | p_(a,d) 0       0       p_(d,d) |
 identify(R,g)
---      new HashTable from {p_(a,d) => ideal(s_(a,c),s_(a,b),p_(a,d)-s_(a,d)), p_(d,d) =>
---      ideal(s_(a,c),s_(a,b),p_(d,d)*s_(b,c)^2-p_(d,d)*s_(b,b)*s_(c,c)-s_(b,d)^2*s_(c,c)+2*s_(b,c)*s_(b,d)*s_(c,d)-s_(b,b)*s_(c,d)^2-s_(b,c)^2*s_(d,d)+s_(b,
---      b)*s_(c,c)*s_(d,d)), p_(c,c) => ideal(s_(a,c),s_(a,b),p_(c,c)*s_(b,b)+s_(b,c)^2-s_(b,b)*s_(c,c)), p_(b,b) => ideal(s_(a,c),s_(a,b),p_(b,b)-s_(b,b)),
---      p_(a,a) => ideal(s_(a,c),s_(a,b),p_(a,a)-s_(a,a)), l_(b,c) => ideal(s_(a,c),s_(a,b),l_(b,c)*s_(b,b)-s_(b,c)), l_(b,d) =>
---      ideal(s_(a,c),s_(a,b),l_(b,d)*s_(b,c)^2-l_(b,d)*s_(b,b)*s_(c,c)+s_(b,d)*s_(c,c)-s_(b,c)*s_(c,d)), l_(c,d) =>
---      ideal(s_(a,c),s_(a,b),l_(c,d)*s_(b,c)^2-l_(c,d)*s_(b,b)*s_(c,c)-s_(b,c)*s_(b,d)+s_(b,b)*s_(c,d))}
-Stmts = trekSeparation(g)
+      new HashTable from {p_(a,d) => ideal(s_(a,c),s_(a,b),p_(a,d)-s_(a,d)), p_(d,d) =>
+      ideal(s_(a,c),s_(a,b),p_(d,d)*s_(b,c)^2-p_(d,d)*s_(b,b)*s_(c,c)-s_(b,d)^2*s_(c,c)+2*s_(b,c)*s_(b,d)*s_(c,d)-s_(b,b)*s_(c,d)^2-s_(b,c)^2*s_(d,d)+s_(b,
+      b)*s_(c,c)*s_(d,d)), p_(c,c) => ideal(s_(a,c),s_(a,b),p_(c,c)*s_(b,b)+s_(b,c)^2-s_(b,b)*s_(c,c)), p_(b,b) => ideal(s_(a,c),s_(a,b),p_(b,b)-s_(b,b)),
+      p_(a,a) => ideal(s_(a,c),s_(a,b),p_(a,a)-s_(a,a)), l_(b,c) => ideal(s_(a,c),s_(a,b),l_(b,c)*s_(b,b)-s_(b,c)), l_(b,d) =>
+      ideal(s_(a,c),s_(a,b),l_(b,d)*s_(b,c)^2-l_(b,d)*s_(b,b)*s_(c,c)+s_(b,d)*s_(c,c)-s_(b,c)*s_(c,d)), l_(c,d) =>
+      ideal(s_(a,c),s_(a,b),l_(c,d)*s_(b,c)^2-l_(c,d)*s_(b,b)*s_(c,c)-s_(b,c)*s_(b,d)+s_(b,b)*s_(c,d))}
+stmts = trekSeparation(g)
 --     {{{a}, {c, b}, {}, {}}, {{a, b}, {c, b}, {}, {b}}, {{b, c}, {a, b}, {}, {b}}, {{b, c}, {c, a}, {}, {c}}, {{b, c}, {d, a}, {}, {d}}}
-trekIdeal(R,g,Stmts)
+trekIdeal(R,g,stmts)
 --     ideal(s_(a,c),s_(a,b),s_(a,c)*s_(b,b)-s_(a,b)*s_(b,c),-s_(a,c)*s_(b,b)+s_(a,b)*s_(b,c),s_(a,c)*s_(b,c)-s_(a,b)*s_(c,c),s_(a,c)*s_(b,d)-s_(a,b)*s_(c,d))
 
 
