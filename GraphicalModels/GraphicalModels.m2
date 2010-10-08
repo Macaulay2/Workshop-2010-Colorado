@@ -25,10 +25,10 @@ newPackage(
 -- 
 -- Routines:
 --  Markov relations:
---   pairMarkovStmts (Digraph G)
---   localMarkovStmts (Digraph G)
---   globalMarkovStmts (Digraph G)
---   bayesBall (set A, set C, Digraph G)  [internal function used by globalMarkovStmts]
+--   pairMarkov (Digraph G)
+--   localMarkov (Digraph G)
+--   globalMarkov (Digraph G)
+--   bayesBall (set A, set C, Digraph G)  [internal function used by globalMarkov]
 --
 --  Removing redundant statements: 
 --   equivStmts (S,T) -- [internal routine used within Markov relation routines]
@@ -53,50 +53,50 @@ newPackage(
 --   getPositionofVertices (Digraph G, list D) -- [internal routine]
 --   
 --  Gaussian directed acyclic graphs:
---   gaussRing (Integer n)
---   gaussRing (Digraph G)
---   covMatrix (Ring R)
---   covMatrix (Ring R, Digraph G)
---   gaussMinors (Digraph G, Matrix M, List S) -- [iternal routine]
---   gaussMatrix (Digraph G, Matrix M, List S)
---   gaussIdeal (Ring R, Digraph G, List S) 
---   gaussIdeal (Ring R, Digraph G) 
+--   gaussianRing (Integer n)
+--   gaussianRing (Digraph G)
+--   covarianceMatrix (Ring R)
+--   covarianceMatrix (Ring R, Digraph G)
+--   gaussianMinors (Digraph G, Matrix M, List S) -- [iternal routine]
+--   gaussianMatrix (Digraph G, Matrix M, List S)
+--   gaussianIdeal (Ring R, Digraph G, List S) 
+--   gaussianIdeal (Ring R, Digraph G) 
 --   trekIdeal (Ring R, Digraph D)
 --    
 -- Gaussian mixed graphs (DAG + Bidirected)
 --   pos -- [internal routine]
 --   setToBinary -- [internal routine]
 --   subsetsBetween -- [internal routine]
---   gaussRing (MixedGraph G)
---   covMatrix (Ring R, MixedGraph G)
---   diMatrix (Ring R, MixedGraph G)
---   biMatrix (Ring R, MixedGraph G)
---   gaussParam (Ring R, MixedGraph G)
---   identify (Ring R, MixedGraph G)
+--   gaussianRing (MixedGraph G)
+--   covarianceMatrix (Ring R, MixedGraph G)
+--   directedEdgesMatrix (Ring R, MixedGraph G)
+--   bidirectedEdgesMatrix (Ring R, MixedGraph G)
+--   gaussianParametrization (Ring R, MixedGraph G)
+--   identifyParameters (Ring R, MixedGraph G)
 --   trekSeparation (MixedGraph G)
 --   trekIdeal (Ring R, MixedGraph G, List L)
 --   trekIdeal (Ring R, MixedGraph G)
 --
 ------------------------------------------
 
-export {biMatrix,
+export {bidirectedEdgesMatrix,
        Coefficients,
-       covMatrix,
-       diMatrix,
-       gaussIdeal, 
-       gaussMatrix,
-       gaussParam,
-       gaussParamSimple, 
-       gaussRing, 
-       globalMarkovStmts,
+       covarianceMatrix,
+       directedEdgesMatrix,
+       gaussianIdeal, 
+       gaussianMatrix,
+       gaussianParametrization,
+       gaussianParametrizationSimple, 
+       gaussianRing, 
+       globalMarkov,
        hideMap,
-       identify, 
-       localMarkovStmts,
+       identifyParameters, 
+       localMarkov,
        markovIdeal,
        markovMatrices, 
        markovRing,        
        marginMap, 
-       pairMarkovStmts, 
+       pairMarkov, 
        trekIdeal, 
        trekSeparation,
        VariableName
@@ -112,8 +112,8 @@ gaussVariables = local gaussVariables
 --   Markov relations   --
 --------------------------
 
-pairMarkovStmts = method()
-pairMarkovStmts Digraph := List => (G) -> (
+pairMarkov = method()
+pairMarkov Digraph := List => (G) -> (
      -- given a digraph G, returns a list of triples {A,B,C}
      -- where A,B,C are disjoint sets, and for every vertex v
      -- and non-descendent w of v,
@@ -124,8 +124,8 @@ pairMarkovStmts Digraph := List => (G) -> (
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
 
 
-localMarkovStmts = method()			 
-localMarkovStmts Digraph := List =>  (G) -> (
+localMarkov = method()			 
+localMarkov Digraph := List =>  (G) -> (
      -- Given a digraph G, return a list of triples {A,B,C}
      -- of the form {v, nondescendents - parents, parents}
      result := {};
@@ -137,8 +137,8 @@ localMarkovStmts Digraph := List =>  (G) -> (
      removeRedundants result)
 
 
-globalMarkovStmts = method()
-globalMarkovStmts Digraph := List => (G) -> (
+globalMarkov = method()
+globalMarkov Digraph := List => (G) -> (
      -- Given a graph G, return a complete list of triples {A,B,C}
      -- so that A and B are d-separated by C (in the graph G).
      -- If G is large, this should maybe be rewritten so that
@@ -252,7 +252,7 @@ bayesBall = (A,C,G) -> (
 -- check for symmetry:
 equivStmts = (S,T) -> S#2 === T#2 and set{S#0,S#1} === set{T#0,T#1} 
 
--- More serious removal of redundancies.  This was taken from MES's indeps.m2:
+-- More serious removal of redundancies.  
 setit = (d) -> {set{d#0,d#1},d#2}
 
 under = (d) -> (
@@ -311,7 +311,7 @@ removeRedundants = (Ds) -> (
      -- test1: returns true if D1 can be removed
      -- Return a sublist of Ds which removes any 
      -- that test1 declares not necessary.
-     --**CAVEAT: this works just fine when used internally, e.g. from localMarkovStmts. 
+     --**CAVEAT: this works just fine when used internally, e.g. from localMarkov. 
      --  However, if we export it and try to use it, there is a problem: we seem to be 
      --  attempting to add a List to a Set in 2 lines of "under".
      test1 := (D1,D2) -> (D1_2 === D2_2 and 
@@ -333,9 +333,6 @@ removeRedundants = (Ds) -> (
 
 markovRingList := new MutableHashTable;
 -- the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
--- in principle, we can assign different names for the ring variable. 
--- But this is still not yet fully implemented in 
--- marginMap, hideMap, and prob.
 markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>getSymbol "p"})
 markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
@@ -350,8 +347,7 @@ markovRing Sequence := Ring => opts -> d -> (
 	  markovRingList#(d,kk,toString p) = R;
 	  H := new HashTable from apply(#vlist, i -> vlist#i => R_i);
 	  R.markovVariables = H;
-	  -- markovRingList#(d,kk,toString p) = kk(monoid [p_start .. p_d]); -- does not work
-     	  markovRingList#(d,kk,toString p).markov = d;);
+	  markovRingList#(d,kk,toString p).markov = d;);
      markovRingList#(d,kk,toString p))
 
   --------------
@@ -367,11 +363,6 @@ marginMap(ZZ,Ring) := RingMap => (v,R) -> (
      -- R should be a Markov ring
      v = v-1;
      d := R.markov;
-     -- CAVEAT: The following line does not work as intended, 
-     -- it gives the following error
-     -- no method for binary operator - applied to objects
-     -- p_1,1  (of class IndexedVariable)
-     -- p := R.variable;
      -- use R; -- Dan suggested to delete this line
      p := i -> R.markovVariables#i;
      F := toList apply(((#d):1) .. d, i -> (
@@ -398,7 +389,6 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
      S := markovRing e;
      dv := d#v;
      -- use A; -- Dan suggested to delete this line
-     -- same problem with p_newi if we change the name of the ring variable
      F := toList apply(((#e):1) .. e, i -> (
 	       sum(apply(toList(1..dv), j -> (
 			      newi := join(take(i,v), {j}, take(i,v-#d+1));
@@ -412,7 +402,7 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 -- the following function retrieves the position of the vertices in the graph G
 -- for all vertices contained in the list S
 getPositionOfVertices := (G,S) -> (
-     --apply(S, v -> position(sort vertices G, k-> k===v)) --sort to be left here or not??-Shaowei/Sonja (see wiki)
+     -- vertices G returns a SORTED list of the vertices 
      apply(S, w -> position(vertices G, v -> v===w)))
 
 markovMatrices = method()
@@ -442,9 +432,9 @@ markovIdeal(Ring,Digraph,List) := (R,G,Stmts) -> (
      sum apply(M, m -> minors(2,m))
      )
 
--------------------------------------------------------
--- Constructing the ideal of a independence relation --/tmp/M2-1663-1___Graphical__Models.m2
--------------------------------------------------------
+--------------------------------------------------------
+-- Constructing the ideal of an independence relation --
+--------------------------------------------------------
 
 -- NOTE: ALL THE FUNCTIONS BELOW ARE DECLARED GLOBAL INSTEAD OF LOCAL
 -- FOR THE REASON THAT LOCAL DEFINITIONS WOULD INEXPLICABLY 
@@ -484,83 +474,53 @@ prob = (R,s) -> (
 -- Gaussian directed acyclic graphs    --
 -----------------------------------------
 
--- gaussRingList still not fully implemented
-gaussRingList := new MutableHashTable;
+-- gaussianRingList still not fully implemented
+-- gaussianRingList := new MutableHashTable;
 
-gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>{getSymbol "s",getSymbol "l",getSymbol "p"}})
-gaussRing ZZ :=  Ring => opts -> (n) -> (
+gaussianRing = method(Options=>{Coefficients=>QQ, VariableName=>{getSymbol "s",getSymbol "l",getSymbol "p"}})
+gaussianRing ZZ :=  Ring => opts -> (n) -> (
      -- s_{1,2} is the (1,2) entry in the covariance matrix.
      -- this assumes r.v.'s are labeled by integers.
-     x := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
+     s := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
      kk := opts.Coefficients;
      w := flatten toList apply(1..n, i -> toList apply(i..n, j -> (i,j)));
-     v := apply (w, ij -> x_ij);
-     -- xsR := kk[v, MonomialSize=>16];
+     v := apply (w, ij -> s_ij);
      R := kk(monoid [v, MonomialSize=>16]);
-     R#gaussRing = n;
+     R#gaussianRing = n;
      H := new HashTable from apply(#w, i -> w#i => R_i); 
      R.gaussVariables = H;
      R
      )
-     -- we want to be able to do s_{a,b} for example:
-
-gaussRing Digraph :=  Ring => opts -> (G) -> (
-     -- Luis Garcia: Who wrote the 4 lines below?
-     -- I want the input to be the Digraph G, 
-     -- and I am just going to read off the list of labels from the vertices.
+     
+-- we want to be able to do s_{a,b} 
+gaussianRing Digraph :=  Ring => opts -> (G) -> (
+     -- Input is a Digraph G, 
+     -- we read off the list of labels from the vertices.
      -- This is done to avoid any ordering confusion. 
-     -- DO NOT make an option for inputting list of labels!
-     x := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
+     s := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
      kk := opts.Coefficients;
-     vv := vertices G; -- sort vertices G
+     vv := vertices G; 
      w := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else (i,j))));
-     v := apply (w, ij -> x_ij);
-     -- xsR := kk[v, MonomialSize=>16];
+     v := apply (w, ij -> s_ij);
      R := kk(monoid [v, MonomialSize=>16]);
-     R#gaussRing = #vv;
+     R#gaussianRing = #vv;
      H := new HashTable from apply(#w, i -> w#i => R_i); 
      R.gaussVariables = H;
      R
      )
 
--- Shaowei 9/15: old version of gaussRing
--- gaussRing Digraph := opts -> (G) -> (
-     --I want the input to be the Digraph G, 
-     --and I'm just gonna read off the list of labels from the vertices.
-     -- This is done to avoid any ordering confusion. 
-     -- DO NOT make an option for inputting list of labels!
---     x := opts.VariableName;
---     kk := opts.Coefficients;
---     v := flatten apply(vertices G, i -> apply(vertices G, j -> x_(i,j)));
---     R := kk[v, MonomialSize=>16];
---     R#gaussRing = #vertices G;
---     R
---     )
-
-covMatrix = method()
-covMatrix(Ring) := Matrix => (R) -> (
-       n := R#gaussRing; 
+covarianceMatrix = method()
+covarianceMatrix(Ring) := Matrix => (R) -> (
+       n := R#gaussianRing; 
        genericSymmetricMatrix(R,n))
-covMatrix(Ring,Digraph) := Matrix => (R,g) -> covMatrix R
+covarianceMatrix(Ring,Digraph) := Matrix => (R,g) -> covarianceMatrix R
 
-gaussMinors = method()
---gaussMinors(Matrix,List) := (M,D) -> (
---     -- DO WE LEAVE THIS? WHERE WE DO NOT FORCE THE USER TO PASS THE DIGRAPH G???
---     -- M should be an n by n symmetric matrix, D mentions variables 1..n (at most)
---     -- the list D is a statement A,B,C. 
---     -- THIS CODE BELOW ASSUMES LABLES ARE 1..N, BUT NOW THEY CAN BE else
---     rows := join(D#0, D#2); --a union c
---     rows = rows/(i -> i-1); 
---     cols := join(D#1, D#2); --b union c
---     cols = cols/(i -> i-1);
---     M1 = submatrix(M,rows,cols);
---     minors(#D#2 + 1, M1)
---     )
-gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
-     -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
+gaussianMinors = method()
+gaussianMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
+     -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n 
      -- the list Stmt is one statement {A,B,C}.
-     -- this function is NOT exported; it is called from gaussIdeal!
-     -- This function does not work if called directly but it works within gaussIdeal!!!
+     -- this function is NOT exported; it is called from gaussianIdeal!
+     -- This function does not work if called directly but it works within gaussianIdeal!!!
      rows := join(getPositionOfVertices(G,Stmt#0), getPositionOfVertices(G,Stmt#2)); 
      cols := join(getPositionOfVertices(G,Stmt#1), getPositionOfVertices(G,Stmt#2));  
      M1 := submatrix(M,rows,cols);
@@ -568,46 +528,38 @@ gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      )
 ///EXAMPLE:
 G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-R = gaussRing G
-describe R --is a Poly ring!!
-M = covMatrix R;
+R = gaussianRing G
+describe R 
+M = covarianceMatrix R;
 peek M
 submatrix(M,{0},{1})
-Stmts = pairMarkovStmts G
+Stmts = pairMarkov G
 D=Stmts_0
-gaussMinors(G,M,D)
+gaussianMinors(G,M,D)
 ///
 
-gaussIdeal = method()
-gaussIdeal(Ring, Digraph, List) := Ideal =>  (R,G,Stmts) -> (
+gaussianIdeal = method()
+gaussianIdeal(Ring, Digraph, List) := Ideal =>  (R,G,Stmts) -> (
      -- for each statement, we take a set of minors
      -- Stmts = global markov statements of G
-     -- R = gaussRing of G
+     -- R = gaussianRing of G
      --NOTE we force the user to give us the digraph G due to flexibility in labeling!!
-     if not R#?gaussRing then error "expected a ring created with gaussRing";
-     M := covMatrix R;
-     sum apply(Stmts, D -> gaussMinors(G,M,D))     
+     if not R#?gaussianRing then error "expected a ring created with gaussianRing";
+     M := covarianceMatrix R;
+     sum apply(Stmts, D -> gaussianMinors(G,M,D))     
      )
 
---in case the global Stmts are not computed already :
-gaussIdeal(Ring,Digraph) := Ideal =>  (R,G) -> gaussIdeal(R,G,globalMarkovStmts G)
-
---gaussIdeal(Ring, List) := (R,Stmts) -> (
---     -- for each statement, we take a set of minors
---     if not R#?gaussRing then error "expected a ring created with gaussRing";
---     M = genericSymmetricMatrix(R, R#gaussRing);
---     sum apply(Stmts, D -> gaussMinors(M,D))     
---     )
---gaussIdeal(Ring,Digraph) := (R,G) -> gaussIdeal(R,globalMarkovStmts G)
+--in case the global Stmts are not computed already 
+gaussianIdeal(Ring,Digraph) := Ideal =>  (R,G) -> gaussianIdeal(R,G,globalMarkov G)
 
 
---in case user just wants to see the matrices we are taking minors of, here they are:
-gaussMatrix = method()
-gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
-     -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n (at most)
+--in case user just wants to see the matrix instead of the minors.
+gaussianMatrix = method()
+gaussianMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
+     -- M should be an n by n symmetric matrix, Stmts mentions variables 1..n 
      -- the list s is a statement of the form {A,B,C}.
-     	       rows := join(getPositionOfVertices(G,s#0), getPositionOfVertices(G,s#2));  --see 9/17 notes @getPositionOfVertices
-     	       cols := join(getPositionOfVertices(G,s#1), getPositionOfVertices(G,s#2));  --see 9/17 notes @getPositionOfVertices
+     	       rows := join(getPositionOfVertices(G,s#0), getPositionOfVertices(G,s#2));  
+     	       cols := join(getPositionOfVertices(G,s#1), getPositionOfVertices(G,s#2));  
      	       submatrix(M,rows,cols)
      )
 
@@ -615,20 +567,20 @@ gaussMatrix(Digraph,Matrix,List) := List =>  (G,M,s) -> (
 -- gaussMatrices = method()
 -- gaussMatrices(R,Digraph,List) := List =>  (R,G,S) -> (
 --        apply(S, s -> (
--- 	       M := genericSymmetricMatrix(R, R#gaussRing);
+-- 	       M := genericSymmetricMatrix(R, R#gaussianRing);
 --      	       rows := join(getPositionOfVertices(G,s#0), getPositionOfVertices(G,s#2));  
 --      	       cols := join(getPositionOfVertices(G,s#1), getPositionOfVertices(G,s#2));  
 --      	       submatrix(M,rows,cols)))
 --      )
--- gaussMatrices(Ring,Digraph) := List =>  (R,G) -> gaussMatrices(R,G,globalMarkovStmts G)
+-- gaussMatrices(Ring,Digraph) := List =>  (R,G) -> gaussMatrices(R,G,globalMarkov G)
 
 
--- THE FOLLOWING NEEDS TO BE COPIED TO THE GAUSSIAN STUFF:
+-- trekIdeal of a directed graph. Currently it assumes that the vertices have been topologically ordered.
 trekIdeal = method()
 trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --for a Digraph, the method is faster--so we just need to overload it for a DAG. 
-     --G = a Digraph (assumed DAG)
-     --R = the gaussRing of G
+     --G = a Digraph 
+     --R = the gaussianRing of G
      v := vertices G;
      n := #v; 
      P := toList apply(v, i -> toList parents(G,i));
@@ -652,11 +604,12 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
 -- Gaussian mixed graphs    --
 ------------------------------
 
-
-
+-------------------------
 -- INTERNAL FUNCTIONS --
+-------------------------
 
 -- returns the position in list h of  x
+-- Eventually it should be replaced by getPositionOfVertices
 pos = (h, x) -> position(h, i->i===x)
 
 -- takes a list A, and a sublist B of A, and converts the membership sequence of 0's and 1's of elements of B in A to binary
@@ -665,14 +618,15 @@ setToBinary = (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then 
 -- returns all subsets of B which contain A
 subsetsBetween = (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
 
-
+------------------------
 -- RINGS AND MATRICES --
+------------------------
 
 -- makes a ring of parameters, l_(i,j) for all vertices i,j of a digraph G, and p_(i,j) for i<j,
 -- and of the entries of the covariance matrix s_(i,j)
 -- later, given the edges, we will set some of these parameters to zero
 -- the reason we included all the other variables is so that it is easy to make the corresponding matrices
-gaussRing MixedGraph := Ring => opts -> (g) -> (
+gaussianRing MixedGraph := Ring => opts -> (g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      bb := graph G#Bigraph;
@@ -685,70 +639,75 @@ gaussRing MixedGraph := Ring => opts -> (g) -> (
      lL := delete(null, flatten apply(vv, x-> apply(toList dd#x, y->l_(x,y))));	 
      pL := join(apply(vv, i->p_(i,i)),delete(null, flatten apply(vv, x-> apply(toList bb#x, y->if pos(vv,x)>pos(vv,y) then null else p_(x,y)))));
      m := #lL+#pL;
-     R := kk[lL,pL,sL,MonomialOrder => Eliminate m];
-     R#gaussRing = {#vv,s,l,p};
+     R := kk(monoid [lL,pL,sL,MonomialOrder => Eliminate m, MonomialSize=>16]);
+     R#gaussianRing = {#vv,s,l,p};
      R
      )
 
-covMatrix (Ring,MixedGraph) := (R,g) -> (
+covarianceMatrix (Ring,MixedGraph) := (R,g) -> (
      vv := vertices g;
-     n := R#gaussRing#0;
-     s := value R#gaussRing#1;
+     n := R#gaussianRing#0;
+     s := value R#gaussianRing#1;
      SM := mutableMatrix(R,n,n);
      scan(vv,i->scan(vv, j->SM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then s_(i,j) else s_(j,i)));
      matrix SM) 
 
-diMatrix = method()
-diMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
+directedEdgesMatrix = method()
+directedEdgesMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      vv := vertices g;
-     n := R#gaussRing#0;
-     l := value R#gaussRing#2;
+     n := R#gaussianRing#0;
+     l := value R#gaussianRing#2;
      LM := mutableMatrix(R,n,n);
      scan(vv,i->scan(toList dd#i, j->LM_(pos(vv,i),pos(vv,j))=l_(i,j)));
      matrix LM) 
 
-biMatrix = method()
-biMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
+bidirectedEdgesMatrix = method()
+bidirectedEdgesMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      bb := graph G#Bigraph;
      vv := vertices g;
-     n := R#gaussRing#0;
-     p := value R#gaussRing#3;
+     n := R#gaussianRing#0;
+     p := value R#gaussianRing#3;
      PM := mutableMatrix(R,n,n);
      scan(vv,i->PM_(pos(vv,i),pos(vv,i))=p_(i,i));
      scan(vv,i->scan(toList bb#i, j->PM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then p_(i,j) else p_(j,i)));
      matrix PM) 
 
-gaussParam = method()
-gaussParam (Ring,MixedGraph) := Matrix => (R,g) -> (
-     SM := covMatrix(R,g);    
-     PM := biMatrix(R,g);     
-     LM := diMatrix(R,g);
-     
+-----------------------
+-- Paramaterizations --
+-----------------------
+
+gaussianParametrization = method()
+gaussianParametrization (Ring,MixedGraph) := Matrix => (R,g) -> (
+     SM := covarianceMatrix(R,g);    
+     PM := bidirectedEdgesMatrix(R,g);     
+     LM := directedEdgesMatrix(R,g);
      -- equate \Sigma with (I-\Lambda)^{-T}\Phi(I-\Lambda)^{-1}
      Linv := inverse(1-matrix(LM));
      transpose(Linv)*matrix(PM)*Linv)
 
-gaussParamSimple = method()
-gaussParamSimple (Ring,MixedGraph) := Matrix => (R,g) -> (
-     n := R#gaussRing#0;
-     M := gaussParam(R,g);
-     P := biMatrix(R,g);
+gaussianParametrizationSimple = method()
+gaussianParametrizationSimple (Ring,MixedGraph) := Matrix => (R,g) -> (
+     n := R#gaussianRing#0;
+     M := gaussianParametrization(R,g);
+     P := bidirectedEdgesMatrix(R,g);
      L := matrix {apply(n,i->P_(i,i)-M_(i,i)+1)};
      S := apply(n,i->P_(i,i)=>L_(0,i));
      scan(n,i->L=sub(L,S));
      sub(M,apply(n,i->P_(i,i)=>L_(0,i))))
 
+---------------------
 -- IDENTIFIABILITY --
+---------------------
 
-identify = method()
+identifyParameters = method()
 -- Input: a MixedGraph
 -- Output: a hash table H where for each parameter t, H#t is the ideal of relations involving t and the entries of the covariance matrix.
-identify (Ring,MixedGraph) := HashTable => (R,g) -> (
+identifyParameters (Ring,MixedGraph) := HashTable => (R,g) -> (
      -- form ideal of relations from this matrix equation
-     J := ideal unique flatten entries (covMatrix(R,g)-gaussParam(R,g));
+     J := ideal unique flatten entries (covarianceMatrix(R,g)-gaussianParametrization(R,g));
  	
      -- create hash table of relations between a particular parameter t and the entries of \Sigma 
      G := graph g;
@@ -757,8 +716,9 @@ identify (Ring,MixedGraph) := HashTable => (R,g) -> (
      new HashTable from apply(plvars,t->{t,eliminate(delete(t,plvars),J)}))
 
 
-
--- CONDITIONAL INDEPENDENCE --
+---------------------
+-- Trek Separation --
+---------------------
 
 trekSeparation = method()
     -- Input: A mixed graph containing a directed graph and a bidirected graph.
@@ -836,12 +796,10 @@ trekSeparation MixedGraph := List => (g) -> (
 
 trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
      vv := vertices g;
-     SM := covMatrix(R,g);	
+     SM := covarianceMatrix(R,g);	
      sum apply(Stmts,s->minors(#s#2+#s#3+1, submatrix(SM,apply(s#0,x->pos(vv,x)),apply(s#1,x->pos(vv,x))))))
 
 trekIdeal (Ring,MixedGraph) := Ideal => (R,g) -> trekIdeal(R,g,trekSeparation g)
-
-
 
 
 
@@ -905,7 +863,7 @@ doc ///
     Example
        G = digraph  {{a,{}},{b,{a}},{c,{a}},{d,{b,c}}}
        R = markovRing (2,2,2,2)
-       S = globalMarkovStmts G 
+       S = globalMarkov G 
        I = markovIdeal(R,G,S)
        netList pack(2,I_*)
     Text
@@ -928,7 +886,7 @@ doc ///
       The following example illustrates the caveat below.
     Example
        H = digraph {{d,{b,a}},{c,{}},{b,{c}},{a,{c}}}
-       T = globalMarkovStmts H  
+       T = globalMarkov H  
        J = markovIdeal(R,H,T);
        netList pack(2,J_*)
        F = marginMap(3,R);
@@ -950,12 +908,12 @@ doc ///
 
 doc ///
   Key
-    pairMarkovStmts
-    (pairMarkovStmts,Digraph)
+    pairMarkov
+    (pairMarkov,Digraph)
   Headline
     pairwise Markov statements for a directed graph
   Usage
-    pairMarkovStmts G
+    pairMarkov G
   Inputs
     G:Digraph 
   Outputs
@@ -972,23 +930,23 @@ doc ///
       we get the following pairwise Markov statements:
     Example
       D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-      L = pairMarkovStmts D
+      L = pairMarkov D
     Text
       Note that the method displays only non-redundant statements.
   SeeAlso
-    localMarkovStmts 
-    globalMarkovStmts
+    localMarkov 
+    globalMarkov
 ///
 
 
 doc ///
   Key
-    localMarkovStmts
-    (localMarkovStmts,Digraph)
+    localMarkov
+    (localMarkov,Digraph)
   Headline
     local Markov statements for a directed graph
   Usage
-    localMarkovStmts G
+    localMarkov G
   Inputs
     G:Digraph 
   Outputs
@@ -1006,22 +964,22 @@ doc ///
       we get the following local Markov statements:
     Example
       D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-      L = localMarkovStmts D
+      L = localMarkov D
     Text
       Note that the method displays only non-redundant statements.
   SeeAlso
-    pairMarkovStmts
-    globalMarkovStmts
+    pairMarkov
+    globalMarkov
 ///
 
 doc ///
   Key
-    globalMarkovStmts
-    (globalMarkovStmts,Digraph)
+    globalMarkov
+    (globalMarkov,Digraph)
   Headline
     global Markov statements for a directed graph
   Usage
-    globalMarkovStmts G
+    globalMarkov G
   Inputs
     G:Digraph 
   Outputs
@@ -1039,15 +997,15 @@ doc ///
       For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
       we get the following global Markov statements:
     Example
-      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} -- L = globalMarkovStmts D --NEEDS TO BE UNCOMMENTED ONCE BAYESBALL IS FIXED!
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} -- L = globalMarkov D --NEEDS TO BE UNCOMMENTED ONCE BAYESBALL IS FIXED!
     Text
       Note that the method displays only non-redundant statements.
   Caveat
     -- If G is large, this should maybe be rewritten so that
     -- one huge list of subsets is not made all at once
   SeeAlso
-    localMarkovStmts
-    pairMarkovStmts
+    localMarkov
+    pairMarkov
 ///
 
 
@@ -1170,10 +1128,10 @@ doc ///
   Description
     Text
       Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in 
-      the function @TO markovRing@ or @TO gaussRing@ 
+      the function @TO markovRing@ or @TO gaussianRing@ 
   SeeAlso
     markovRing
-    gaussRing
+    gaussianRing
 ///
 
 doc ///
@@ -1186,20 +1144,20 @@ doc ///
       Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function @TO markovRing@
   SeeAlso
     markovRing
-    gaussRing
+    gaussianRing
 ///
 
 
 doc ///
   Key 
-    gaussRing
-    (gaussRing,ZZ)
-    (gaussRing,Digraph)
-    [gaussRing, Coefficients, VariableName]
+    gaussianRing
+    (gaussianRing,ZZ)
+    (gaussianRing,Digraph)
+    [gaussianRing, Coefficients, VariableName]
   Headline
     ring of gaussian correlations on n random variables
   Usage
-    R = gaussRing n or R = gaussRing G or gaussRing(d,Coefficients=>Ring) or gaussRing(d,Variable=>Symbol)
+    R = gaussianRing n or R = gaussianRing G or gaussianRing(d,Coefficients=>Ring) or gaussianRing(d,Variable=>Symbol)
   Inputs
     n:ZZ
       the number of random variables
@@ -1210,14 +1168,14 @@ doc ///
       a ring with indeterminates $s_(i,j)$ for $1 \leq i \leq j \leq n$
   Description
     Text
-      The routines  @TO gaussIdeal@ and @TO trekIdeal@ require that the ring      
+      The routines  @TO gaussianIdeal@ and @TO trekIdeal@ require that the ring      
       be created by this function.
     Example
-      R = gaussRing 5;
+      R = gaussianRing 5;
       gens R
-      covMatrix R
+      covarianceMatrix R
   SeeAlso
-    gaussIdeal
+    gaussianIdeal
     trekIdeal
 ///
 
@@ -1226,16 +1184,16 @@ doc ///
 
 doc ///
    Key
-     gaussIdeal
-     (gaussIdeal,Ring,Digraph)
-     (gaussIdeal,Ring,Digraph,List)
+     gaussianIdeal
+     (gaussianIdeal,Ring,Digraph)
+     (gaussianIdeal,Ring,Digraph,List)
    Headline
      correlation ideal of a Bayesian network of joint Gaussian variables
    Usage
-     I = gaussIdeal(R,G) or I = gaussIdeal(R,G,S)
+     I = gaussianIdeal(R,G) or I = gaussianIdeal(R,G,S)
    Inputs
      R:Ring
-       created with @TO gaussRing@
+       created with @TO gaussianRing@
      G:Digraph
        an acyclic directed graph
      S:List
@@ -1254,31 +1212,31 @@ doc ///
        These ideals were first written down by Seth Sullivant, in "Algebraic geometry of Gaussian Bayesian networks". 
        The routines in this package involving Gaussian variables are all based on that paper.
      Example
-       R = gaussRing 5;
-       G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } --(globalMarkovStmts G)/print; --J = gaussIdeal(R,G) --this is broken until globalMarkovStmts gets fixed!!!
+       R = gaussianRing 5;
+       G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } --(globalMarkov G)/print; --J = gaussianIdeal(R,G) --this is broken until globalMarkov gets fixed!!!
      Text
-       A list of independence statments (as for example returned by globalMarkovStmts)
+       A list of independence statments (as for example returned by globalMarkov)
        can be provided instead of a graph:
      Example
-       S=pairMarkovStmts G --change to global!!!!
-       I = gaussIdeal(R,G,S) --- {{{1,2},{4,5},{3}}, {{1},{2},{3,4,5}}}) ---THIS LIST OF STMTS IS AN OLD EXAMPLE. erase?
+       S=pairMarkov G --change to global!!!!
+       I = gaussianIdeal(R,G,S) --- {{{1,2},{4,5},{3}}, {{1},{2},{3,4,5}}}) ---THIS LIST OF STMTS IS AN OLD EXAMPLE. erase?
        codim I
    SeeAlso
-     globalMarkovStmts
-     localMarkovStmts
-     gaussRing
-     gaussMatrix
+     globalMarkov
+     localMarkov
+     gaussianRing
+     gaussianMatrix
      trekIdeal
 ///
 
 doc///
    Key
-     gaussMatrix
-     (gaussMatrix,Digraph,Matrix,List)
+     gaussianMatrix
+     (gaussianMatrix,Digraph,Matrix,List)
    Headline
      matrices whose minors form the ideal corresponding to a conditional independence statement s
    Usage
-     mat = gaussMatrix(G,M,s)
+     mat = gaussianMatrix(G,M,s)
    Inputs
      G:Digraph
        a directed acyclic graph
@@ -1294,18 +1252,18 @@ doc///
        In case user just wnats to see the mtces we are taking minors of, here they are:
      Example
        G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } ;
-       Stmts = localMarkovStmts G;
+       Stmts = localMarkov G;
        sta=Stmts_0 --take the first statement from the list
-       R = gaussRing G; 
-       M = covMatrix R;
-       gaussMatrix(G,M,sta)
+       R = gaussianRing G; 
+       M = covarianceMatrix R;
+       gaussianMatrix(G,M,sta)
      Text
-       In fact, we can see, at once, all matrices whose minors form the ideal @TO gaussIdeal@ of G:
+       In fact, we can see, at once, all matrices whose minors form the ideal @TO gaussianIdeal@ of G:
      Example
-       apply(Stmts, sta-> gaussMatrix(G,M,sta))
+       apply(Stmts, sta-> gaussianMatrix(G,M,sta))
    SeeAlso
-     gaussRing
-     gaussIdeal
+     gaussianRing
+     gaussianIdeal
 ///
 
 doc/// 
@@ -1334,7 +1292,7 @@ doc///
        G = digraph { {1,{2,3}}, {2,{4}}, {3,{4}} } ;
        d = (4:2) -- we have four binary random variables
        R = markovRing d ;
-       Statements = localMarkovStmts G
+       Statements = localMarkov G
        I = markovIdeal ( R, G, Statements)
    SeeAlso
      markovRing
@@ -1365,9 +1323,9 @@ doc///
        NEED TO INSERT THE DEFINITION OF WHAT THESE ARE !!!! 
      Example
        G = digraph { {1,{2,3}}, {2,{4}}, {3,{4}} } ;
-       d = (4:2) -- we have five binary random variables
+       d = (4:2) -- we have four binary random variables
        R = markovRing d ;
-       Statements = localMarkovStmts G
+       Statements = localMarkov G
        matrices = markovMatrices ( R, G, Statements)
    SeeAlso
      markovRing
@@ -1384,7 +1342,7 @@ doc///
      I = trekIdeal(R,G,L)
    Inputs
      R:Ring
-       which should be a gaussRing???
+       which should be a gaussianRing???
      G:MixedGraph
        blabla
      L:List
@@ -1396,7 +1354,7 @@ doc///
      Text
        DEFINE THE TREK IDEAL HERE!!
      Example
-       R=gaussRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
+       R=gaussianRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
      Text
        ANOTHER COMMENT HERE!!
    SeeAlso
@@ -1421,7 +1379,7 @@ doc///
      Text
        DEFINE TREK SEPARATION HERE!!
      Example
-       R=gaussRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
+       R=gaussianRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
      Text
        ANOTHER COMMENT HERE!!
    SeeAlso
@@ -1442,8 +1400,8 @@ end
 --blank documentation node:
 doc/// 
    Key
-     gaussMatrix
-     (gaussMatrix,Digraph,Matrix,List) 
+     gaussianMatrix
+     (gaussianMatrix,Digraph,Matrix,List) 
    Headline
    Usage
    Inputs
@@ -1474,82 +1432,49 @@ installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
 --- OLD CODE THAT SHOULD BE REMOVED ----
 
 
-restart
-loadPackage "Markov"
-installPackage "Markov"
 G = makeGraph{{},{1},{1},{2,3},{2,3}}
-S = globalMarkovStmts G
+S = globalMarkov G
 
 R = markovRing(2,2,2,2,2)
 markovIdeal(R,S)
 
-R = gaussRing(5)
+R = gaussianRing(5)
 
 M = genericSymmetricMatrix(R,5)
 describe R
-gaussMinors(M,S_0)
-J = trim gaussIdeal(R,S)
+gaussianMinors(M,S_0)
+J = trim gaussianIdeal(R,S)
 J1 = ideal drop(flatten entries gens J,1)
 res J1
 support J1
 
-globalMarkovStmts G
+globalMarkov G
 minimize oo
 
 G = makeGraph{{2,3},{4},{4},{}}
 G1 = makeGraph{{},{1},{1},{2,3}}
-globalMarkovStmts G
-globalMarkovStmts G1
+globalMarkov G
+globalMarkov G1
 
 G4 = {{},{1},{1},{2,3}}
 
-restart
-loadPackage "Markov"
 G4 = makeGraph{{2,3},{4},{4},{}}
-R = gaussRing 4
+R = gaussianRing 4
 I = gaussTrekIdeal(R,G4)
-J = gaussIdeal(R,G4)
+J = gaussianIdeal(R,G4)
 I == J
 
 G4 = makeGraph{{2,3},{4},{4,5},{},{}}
 
 G = makeGraph{{3},{3,4},{4},{}}
-R = gaussRing 4
+R = gaussianRing 4
 I = gaussTrekIdeal(R,G)
-J = gaussIdeal(R,G)
+J = gaussianIdeal(R,G)
 I == J
 
 
-///
-restart 
-loadPackage"GraphicalModels"
 G = digraph({{a,{b,c}},{b,{c,d}},{c,{}},{d,{}}})
-convertToIntegers(G)
- ///   
-
-
-
-load "/Users/mike/local/src/M2-mike/markov/dags5.m2"
-D5s
-D5s = apply(D5s, g -> (
-	  G := reverse g;
-	  G = apply(G, s -> sort apply(s, si -> 6-si));
-	  G))
-R = gaussRing 5
-apply(D5s, g -> (
-	  G := makeGraph g;
-	  I := gaussTrekIdeal(R,G);
-	  J := gaussIdeal(R,G);
-	  if I != J then << "NOT EQUAL on " << g << endl;
-	  I != J))
-
-Gs = select(D5s, g -> (
-	  G := makeGraph g;
-	  I := gaussTrekIdeal(R,G);
-	  J := gaussIdeal(R,G);
-	  if I != J then << "NOT EQUAL on " << g << endl;
-	  I != J))
-Gs/print;
+   
 Gs = {
 {{4}, {4}, {4, 5}, {5}, {}},
 {{3, 5}, {3}, {4}, {5}, {}},
@@ -1562,8 +1487,7 @@ Gs = {
 {{2, 4, 5}, {3, 5}, {4}, {5}, {}}
 }
 
-Gs/(g -> globalMarkovStmts makeGraph g)
-scan(oo, s -> (s/print; print "-----------"));
+
 G = makeGraph {{4}, {4}, {4, 5}, {5}, {}}
 G = makeGraph {{3, 5}, {3}, {4}, {5}, {}}
 G = makeGraph {{2, 4}, {4}, {4, 5}, {5}, {}}
@@ -1576,98 +1500,33 @@ G = makeGraph {{2, 4}, {3, 5}, {4, 5}, {5}, {}}
 G = makeGraph {{2, 3, 5}, {4}, {4, 5}, {5}, {}}
 G = makeGraph {{2, 4, 5}, {3, 5}, {4}, {5}, {}}
 
-(globalMarkovStmts G)/print;
-J = gaussIdeal(R,G)
-I = gaussTrekIdeal(R,G)
-J : I
-res ideal select(flatten entries gens trim J, f -> first degree f > 1)
-betti oo
 
-i = 0
-G = makeGraph D5s#i
-I = gaussTrekIdeal(R,G)
-J = gaussIdeal(R,G)
-I == J
-	  
-removeNodes(G4,4)
-G3 = drop(G4,-1)
-G2 = drop(G3,-1)
-debug Markov
-G4 = makeGraph G4
-parents(G4, 1)
-parents(G4, 2)
-parents(G4, 3)
-parents(G4, 4)
-
--- We need a method to create all of the dags of size 6,7,8 (maybe not 8?)
-- By hand let's do 6:
-X = select(partitions 13, p -> #p <= 5)
-X = select(X, p ->  p#0 <= 5)
-X = select(X, p ->  #p <= 1 or p#1 <= 4)
-X = select(X, p ->  #p <= 2 or p#2 <= 3)
-X = select(X, p ->  #p <= 3 or p#3 <= 2)
-X = select(X, p ->  #p <= 4 or p#4 <= 1)
-
-X = select(partitions 11, p -> #p <= 6);
-X = select(X, p ->  p#0 <= 6);
-X = select(X, p ->  #p <= 1 or p#1 <= 5);
-X = select(X, p ->  #p <= 2 or p#2 <= 4);
-X = select(X, p ->  #p <= 3 or p#3 <= 3);
-X = select(X, p ->  #p <= 4 or p#4 <= 2);
-X = select(X, p ->  #p <= 5 or p#5 <= 1)
-
--- n=7 examples
-restart
-loadPackage "Markov"
-load "/Users/mike/local/src/M2-mike/markov/dags5.m2"
-F = lines get "dags7-part";
-R = gaussRing 7
-
-
-scan(F, g -> (
-	  g = value g;
-	  G := makeGraph g;
-	  I := gaussTrekIdeal(R,G);
-	  J := gaussIdeal(R,G);
-	  << g;
-	  if I != J then << " NOT EQUAL" << endl else << " equal" << endl;
-	  ))
-
-scan(F, g -> (
-	  g = value g;
-	  G := makeGraph g;
-	  --I := gaussTrekIdeal(R,G);
-	  J := trim gaussIdeal(R,G);
-	  linears = ideal select(flatten entries gens J, f -> first degree f == 1);
-	  J = trim ideal(gens J % linears);
-	  << g << codim J << ", " << betti res J << endl;
-	  ))
 
 -- tests for Gaussian Mixed Graphs
 
 restart
 loadPackage "GraphicalModels"
 g = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-R = gaussRing g
-M = covMatrix R
+R = gaussianRing g
+M = covarianceMatrix R
 g = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
-R = gaussRing g
-M = covMatrix(R,g)
+R = gaussianRing g
+M = covarianceMatrix(R,g)
 --     | s_(a,a) s_(a,b) s_(a,c) s_(a,d) |
 --     | s_(a,b) s_(b,b) s_(b,c) s_(b,d) |
 --     | s_(a,c) s_(b,c) s_(c,c) s_(c,d) |
 --     | s_(a,d) s_(b,d) s_(c,d) s_(d,d) |
-D = diMatrix(R,g)
+D = directedEdgesMatrix(R,g)
 --     | 0 0 0       0       |
 --     | 0 0 l_(b,c) l_(b,d) |
 --     | 0 0 0       l_(c,d) |
 --     | 0 0 0       0       |
-B = biMatrix(R,g)
+B = bidirectedEdgesMatrix(R,g)
 --     | p_(a,a) 0       0       p_(a,d) |
 --     | 0       p_(b,b) 0       0       |
 --     | 0       0       p_(c,c) 0       |
 --     | p_(a,d) 0       0       p_(d,d) |
-identify(R,g)
+identifyParameters(R,g)
       new HashTable from {p_(a,d) => ideal(s_(a,c),s_(a,b),p_(a,d)-s_(a,d)), p_(d,d) =>
       ideal(s_(a,c),s_(a,b),p_(d,d)*s_(b,c)^2-p_(d,d)*s_(b,b)*s_(c,c)-s_(b,d)^2*s_(c,c)+2*s_(b,c)*s_(b,d)*s_(c,d)-s_(b,b)*s_(c,d)^2-s_(b,c)^2*s_(d,d)+s_(b,
       b)*s_(c,c)*s_(d,d)), p_(c,c) => ideal(s_(a,c),s_(a,b),p_(c,c)*s_(b,b)+s_(b,c)^2-s_(b,b)*s_(c,c)), p_(b,b) => ideal(s_(a,c),s_(a,b),p_(b,b)-s_(b,b)),
@@ -1684,5 +1543,5 @@ trekIdeal(R,g,stmts)
 
 
 -- Local Variables:
--- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=Markov pre-install"
+-- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=GraphicalModels pre-install"
 -- End:
