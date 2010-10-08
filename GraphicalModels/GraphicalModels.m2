@@ -21,7 +21,7 @@ newPackage(
 ------------------------------------------
 -- Algebraic Statistics in Macaulay2
 -- Authors: Luis Garcia-Puente and Mike Stillman
--- Collaborators: Alex Diaz, Shaowei Lin, Augustine O'Keefe, Sonja Petrović, Amelia Taylor 
+-- Collaborators: Alex Diaz, Shaowei Lin, Sonja Petrović
 -- 
 -- Routines:
 --  Markov relations:
@@ -79,32 +79,34 @@ newPackage(
 --
 ------------------------------------------
 
-export {pairMarkovStmts, 
-        localMarkovStmts, 
-	globalMarkovStmts, 
-        markovRing, 
-	marginMap, 
-	hideMap, 
-	markovMatrices, 
-	markovIdeal,
-        gaussRing, 
-	gaussMatrix, 
-	gaussIdeal, 
-	trekIdeal, 
-        Coefficients, 
-	VariableName,
-	covMatrix,
-	diMatrix,
-	biMatrix,
-	gaussParam,
-	gaussParamSimple,
-        identify,
-	trekSeparation} 
+export {biMatrix,
+       Coefficients,
+       covMatrix,
+       diMatrix,
+       gaussIdeal, 
+       gaussMatrix,
+       gaussParam,
+       gaussParamSimple, 
+       gaussRing, 
+       globalMarkovStmts,
+       hideMap,
+       identify, 
+       localMarkovStmts,
+       markovIdeal,
+       markovMatrices, 
+       markovRing,        
+       marginMap, 
+       pairMarkovStmts, 
+       trekIdeal, 
+       trekSeparation,
+       VariableName
+	} 
      
 needsPackage "Graphs"
 
-
-
+markov = local markov
+markovVariables = local markovVariables
+gaussVariables = local gaussVariables
 
 --------------------------
 --   Markov relations   --
@@ -328,9 +330,7 @@ removeRedundants = (Ds) -> (
 -------------------
 -- Markov rings ---
 -------------------
-markov = local markov
-markovVariables = local markovVariables
-     
+
 markovRingList := new MutableHashTable;
 -- the hashtable is indexed by the sequence d, the coefficient ring kk, and the variable name p.
 -- in principle, we can assign different names for the ring variable. 
@@ -483,8 +483,6 @@ prob = (R,s) -> (
 -----------------------------------------
 -- Gaussian directed acyclic graphs    --
 -----------------------------------------
-
-gaussVariables = local gaussVariables
 
 -- gaussRingList still not fully implemented
 gaussRingList := new MutableHashTable;
