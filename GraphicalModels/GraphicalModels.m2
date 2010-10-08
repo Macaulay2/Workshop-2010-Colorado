@@ -56,6 +56,7 @@ newPackage(
 --   gaussRing (Integer n)
 --   gaussRing (Digraph G)
 --   covMatrix (Ring R)
+--   covMatrix (Ring R, Digraph G)
 --   gaussMinors (Digraph G, Matrix M, List S) -- [iternal routine]
 --   gaussMatrix (Digraph G, Matrix M, List S)
 --   gaussIdeal (Ring R, Digraph G, List S) 
@@ -63,20 +64,20 @@ newPackage(
 --   trekIdeal (Ring R, Digraph D)
 --    
 -- Gaussian mixed graphs (DAG + Bidirected)
---   pos -- [internal routine used in ]
---   setToBinary -- [internal routine used in ]
---   subsetsBetween -- [internal routine used in ]
+--   pos -- [internal routine]
+--   setToBinary -- [internal routine]
+--   subsetsBetween -- [internal routine]
 --   gaussRing (MixedGraph G)
 --   covMatrix (Ring R, MixedGraph G)
 --   diMatrix (Ring R, MixedGraph G)
 --   biMatrix (Ring R, MixedGraph G)
+--   gaussParam (Ring R, MixedGraph G)
 --   identify (Ring R, MixedGraph G)
 --   trekSeparation (MixedGraph G)
 --   trekIdeal (Ring R, MixedGraph G, List L)
 --   trekIdeal (Ring R, MixedGraph G)
 --
 ------------------------------------------
-
 
 export {pairMarkovStmts, 
         localMarkovStmts, 
@@ -92,22 +93,16 @@ export {pairMarkovStmts,
 	trekIdeal, 
         Coefficients, 
 	VariableName,
-	VariableNameBigraph, 
-	VariableNameDigraph, 
-	VariableNameCovariance, 
-        paramRing,
 	covMatrix,
 	diMatrix,
 	biMatrix,
 	gaussParam,
+	gaussParamSimple,
         identify,
 	trekSeparation} 
      
 needsPackage "Graphs"
 
-s = local s;
---a = local a;
---b = local b;
 
 
 
@@ -356,10 +351,8 @@ markovRing Sequence := Ring => opts -> d -> (
 	  H := new HashTable from apply(#vlist, i -> vlist#i => R_i);
 	  R.markovVariables = H;
 	  -- markovRingList#(d,kk,toString p) = kk(monoid [p_start .. p_d]); -- does not work
-     	  markovRingList#(d,kk,toString p).markov = d;
-	  );
-     markovRingList#(d,kk,toString p)
-     )
+     	  markovRingList#(d,kk,toString p).markov = d;);
+     markovRingList#(d,kk,toString p))
 
   --------------
   -- marginMap
@@ -495,11 +488,12 @@ gaussVariables = local gaussVariables
 
 -- gaussRingList still not fully implemented
 gaussRingList := new MutableHashTable;
-gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>getSymbol "s"})
+
+gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>{getSymbol "s",getSymbol "l",getSymbol "p"}})
 gaussRing ZZ :=  Ring => opts -> (n) -> (
      -- s_{1,2} is the (1,2) entry in the covariance matrix.
      -- this assumes r.v.'s are labeled by integers.
-     x := opts.VariableName;
+     x := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
      kk := opts.Coefficients;
      w := flatten toList apply(1..n, i -> toList apply(i..n, j -> (i,j)));
      v := apply (w, ij -> x_ij);
@@ -518,7 +512,7 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
      -- and I am just going to read off the list of labels from the vertices.
      -- This is done to avoid any ordering confusion. 
      -- DO NOT make an option for inputting list of labels!
-     x := opts.VariableName;
+     x := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
      kk := opts.Coefficients;
      vv := vertices G; -- sort vertices G
      w := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else (i,j))));
@@ -530,7 +524,7 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
      R.gaussVariables = H;
      R
      )
- 
+
 -- Shaowei 9/15: old version of gaussRing
 -- gaussRing Digraph := opts -> (G) -> (
      --I want the input to be the Digraph G, 
@@ -546,9 +540,10 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
 --     )
 
 covMatrix = method()
-covMatrix Ring := Matrix => (R) -> (
+covMatrix(Ring) := Matrix => (R) -> (
        n := R#gaussRing; 
        genericSymmetricMatrix(R,n))
+covMatrix(Ring,Digraph) := Matrix => (R,g) -> covMatrix R
 
 gaussMinors = method()
 --gaussMinors(Matrix,List) := (M,D) -> (
@@ -575,9 +570,9 @@ gaussMinors(Digraph,Matrix,List) :=  Ideal => (G,M,Stmt) -> (
      )
 ///EXAMPLE:
 G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-R=gaussRing G
+R = gaussRing G
 describe R --is a Poly ring!!
-M = genericSymmetricMatrix(R, R#gaussRing);
+M = covMatrix R;
 peek M
 submatrix(M,{0},{1})
 Stmts = pairMarkovStmts G
@@ -592,7 +587,7 @@ gaussIdeal(Ring, Digraph, List) := Ideal =>  (R,G,Stmts) -> (
      -- R = gaussRing of G
      --NOTE we force the user to give us the digraph G due to flexibility in labeling!!
      if not R#?gaussRing then error "expected a ring created with gaussRing";
-     M := genericSymmetricMatrix(R, R#gaussRing);
+     M := covMatrix R;
      sum apply(Stmts, D -> gaussMinors(G,M,D))     
      )
 
@@ -636,21 +631,22 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --for a Digraph, the method is faster--so we just need to overload it for a DAG. 
      --G = a Digraph (assumed DAG)
      --R = the gaussRing of G
-     n := #vertices G; 
-     s := i -> R.gaussVariables#i;
-     P := toList apply(vertices G, i -> toList parents(G,i));
-     nv := max(P/(p -> #p));
+     v := vertices G;
+     n := #v; 
+     P := toList apply(v, i -> toList parents(G,i));
+     nv := max(P/(p->#p));
      t := local t;
-     S := (coefficientRing R)[generators R, t_1 .. t_nv];
+     S := (coefficientRing R)[generators R,t_1 .. t_nv];
      newvars := toList apply(1..nv, i -> t_i);
      I := trim ideal(0_S);
-     sp := (i,j) -> if i > j then s (j,i) else s (i,j);
-     --only the following loop does not work w/ general labels on the graph, and needs to be checked!
-     for i from 1 to n-1 do (
-	  J := ideal apply(1..i, j -> s (j,i+1)
-	     	              - sum apply(#P#i, k -> S_(k + numgens R) * sp(j,P#i#k)));
-	  I = eliminate(newvars, I + J);
-	  );
+     s := applyValues(R.gaussVariables,i->substitute(i,S));
+     sp := (i,j) -> if pos(v,i) > pos(v,j) then s#(j,i) else s#(i,j);
+     -- need the vertices to be sorted topologically!
+     for i from 0 to n-2 do (
+     	  J := ideal apply(0..i, j -> s#(v#j,v#(i+1))
+     	     	              - sum apply(#P#i, k ->(print({S_(k+numgens R),promote(sp(v#j,P#i#k),S)}); print(class sp(v#j,P#i#k));t_(k+1) * sp(v#j,P#i#k))));
+     	  I = eliminate(newvars, I + J);
+     	  );
      substitute(I,R)
      )
 
@@ -674,35 +670,32 @@ subsetsBetween = (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
 
 -- RINGS AND MATRICES --
 
-paramRing = method(Options=>{Coefficients=>QQ, VariableNameCovariance=>getSymbol "s", 
-	                                       VariableNameDigraph=>getSymbol "l", 
-					       VariableNameBigraph=>getSymbol "p"})
 -- makes a ring of parameters, l_(i,j) for all vertices i,j of a digraph G, and p_(i,j) for i<j,
 -- and of the entries of the covariance matrix s_(i,j)
 -- later, given the edges, we will set some of these parameters to zero
 -- the reason we included all the other variables is so that it is easy to make the corresponding matrices
-paramRing MixedGraph := Ring => opts -> (g) -> (
+gaussRing MixedGraph := Ring => opts -> (g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      bb := graph G#Bigraph;
      vv := vertices g;
-     s := opts.VariableNameCovariance;
-     l := opts.VariableNameDigraph;
-     p := opts.VariableNameBigraph;
+     s := opts.VariableName#0;
+     l := opts.VariableName#1;
+     p := opts.VariableName#2;
      kk := opts.Coefficients;
      sL := delete(null, flatten apply(vv, x-> apply(vv, y->if pos(vv,x)>pos(vv,y) then null else s_(x,y))));
      lL := delete(null, flatten apply(vv, x-> apply(toList dd#x, y->l_(x,y))));	 
      pL := join(apply(vv, i->p_(i,i)),delete(null, flatten apply(vv, x-> apply(toList bb#x, y->if pos(vv,x)>pos(vv,y) then null else p_(x,y)))));
      m := #lL+#pL;
      R := kk[lL,pL,sL,MonomialOrder => Eliminate m];
-     R#paramRing = {#vv,s,l,p};
+     R#gaussRing = {#vv,s,l,p};
      R
      )
 
 covMatrix (Ring,MixedGraph) := (R,g) -> (
      vv := vertices g;
-     n := R#paramRing#0;
-     s := value R#paramRing#1;
+     n := R#gaussRing#0;
+     s := value R#gaussRing#1;
      SM := mutableMatrix(R,n,n);
      scan(vv,i->scan(vv, j->SM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then s_(i,j) else s_(j,i)));
      matrix SM) 
@@ -712,8 +705,8 @@ diMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
      vv := vertices g;
-     n := R#paramRing#0;
-     l := value R#paramRing#2;
+     n := R#gaussRing#0;
+     l := value R#gaussRing#2;
      LM := mutableMatrix(R,n,n);
      scan(vv,i->scan(toList dd#i, j->LM_(pos(vv,i),pos(vv,j))=l_(i,j)));
      matrix LM) 
@@ -723,8 +716,8 @@ biMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      G := graph collateVertices g;
      bb := graph G#Bigraph;
      vv := vertices g;
-     n := R#paramRing#0;
-     p := value R#paramRing#3;
+     n := R#gaussRing#0;
+     p := value R#gaussRing#3;
      PM := mutableMatrix(R,n,n);
      scan(vv,i->PM_(pos(vv,i),pos(vv,i))=p_(i,i));
      scan(vv,i->scan(toList bb#i, j->PM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then p_(i,j) else p_(j,i)));
@@ -739,6 +732,16 @@ gaussParam (Ring,MixedGraph) := Matrix => (R,g) -> (
      -- equate \Sigma with (I-\Lambda)^{-T}\Phi(I-\Lambda)^{-1}
      Linv := inverse(1-matrix(LM));
      transpose(Linv)*matrix(PM)*Linv)
+
+gaussParamSimple = method()
+gaussParamSimple (Ring,MixedGraph) := Matrix => (R,g) -> (
+     n := R#gaussRing#0;
+     M := gaussParam(R,g);
+     P := biMatrix(R,g);
+     L := matrix {apply(n,i->P_(i,i)-M_(i,i)+1)};
+     S := apply(n,i->P_(i,i)=>L_(0,i));
+     scan(n,i->L=sub(L,S));
+     sub(M,apply(n,i->P_(i,i)=>L_(0,i))))
 
 -- IDENTIFIABILITY --
 
@@ -834,7 +837,6 @@ trekSeparation MixedGraph := List => (g) -> (
 )
 
 trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
-     G := graph g;
      vv := vertices g;
      SM := covMatrix(R,g);	
      sum apply(Stmts,s->minors(#s#2+#s#3+1, submatrix(SM,apply(s#0,x->pos(vv,x)),apply(s#1,x->pos(vv,x))))))
@@ -1162,7 +1164,6 @@ doc ///
   SeeAlso
 ///
 
-
 doc ///
   Key
     Coefficients
@@ -1171,13 +1172,11 @@ doc ///
   Description
     Text
       Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in 
-      the function @TO markovRing@ or @TO gaussRing@ or @TO paramRing@. 
+      the function @TO markovRing@ or @TO gaussRing@ 
   SeeAlso
     markovRing
     gaussRing
-    paramRing
 ///
-
 
 doc ///
   Key
@@ -1186,11 +1185,10 @@ doc ///
     optional input to choose the letter for the variable name
   Description
     Text
-      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function @TO markovRing@ or @TO gaussRing@
+      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function @TO markovRing@
   SeeAlso
     markovRing
     gaussRing
-    paramRing
 ///
 
 
@@ -1219,7 +1217,7 @@ doc ///
     Example
       R = gaussRing 5;
       gens R
-      genericSymmetricMatrix(R,5)
+      covMatrix R
   SeeAlso
     gaussIdeal
     trekIdeal
@@ -1275,7 +1273,6 @@ doc ///
      trekIdeal
 ///
 
-
 doc///
    Key
      gaussMatrix
@@ -1301,8 +1298,8 @@ doc///
        G = digraph { {1,{2}}, {2,{3}}, {3,{4,5}},{4,{5}} } ;
        Stmts = localMarkovStmts G;
        sta=Stmts_0 --take the first statement from the list
-       R = gaussRing (# vertices G); --we need as many variables as there are nodes in the graph
-       M = genericSymmetricMatrix(R, R#gaussRing);
+       R = gaussRing G; 
+       M = covMatrix R;
        gaussMatrix(G,M,sta)
      Text
        In fact, we can see, at once, all matrices whose minors form the ideal @TO gaussIdeal@ of G:
@@ -1434,71 +1431,6 @@ doc///
 ///
 
 
-
-doc/// 
-   Key
-     paramRing
-     (paramRing,MixedGraph) 
-     [paramRing, Coefficients, VariableNameCovariance, VariableNameDigraph, VariableNameBigraph]
-   Headline
-     write me 
-   Usage
-     P = paramRing G
-   Inputs
-     G:MixedGraph
-       any required properties? if no, delete this line!
-   Outputs
-     P:Ring
-       properties!! insert here.
-   Description 
-     Text
-       -- makes a ring of parameters, $l_(i,j)$ for all vertices $i,j$ of a digraph G, and $p_(i,j)$ for i<j,
-       -- and of the entries of the covariance matrix $s_(i,j)$
-       -- later, given the edges, we will set some of these parameters to zero
-       -- the reason we included all the other variables is so that it is easy to make the corresponding matrices
-     Example
-     Text 
-       insert examples to show HOW TO USE EACH OF THE OPTIONAL INPUTS HERE!! For an example,
-       see the documentation for optional arguments for the function @TO markovRing@.
-       (Note htat we also have to document all htese optional inputs!!!!)
-   SeeAlso
-///
-
-doc ///
-  Key
-    VariableNameCovariance
-  Headline
-    optional input to choose the name for the covariance variables
-  Description
-    Text
-      Put {\tt  VariableNameCovariance=>value "symbol s"} for a choice of a variable name as an argument in the function @TO paramRing@.
-  SeeAlso
-    paramRing
-///
-
-doc ///
-  Key
-    VariableNameDigraph
-  Headline
-    optional input to choose the name for the digraph variables
-  Description
-    Text
-      Put {\tt  VariableNameDigraph=>value "symbol l"} for a choice of a variable name as an argument  in the function @TO paramRing@.
-  SeeAlso
-    paramRing
-///
-
-doc ///
-  Key
-    VariableNameBigraph
-  Headline
-    optional input to choose the name for the bigraph variables
-  Description
-    Text
-      Put {\tt VariableNameBigraph=>value "symbol p"} for a choice of a variable name as an argument  in the function @TO paramRing@.
-  SeeAlso
-    paramRing
-///
 
 
 
@@ -1721,7 +1653,7 @@ g = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
 R = gaussRing g
 M = covMatrix R
 g = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
-R = paramRing g
+R = gaussRing g
 M = covMatrix(R,g)
 --     | s_(a,a) s_(a,b) s_(a,c) s_(a,d) |
 --     | s_(a,b) s_(b,b) s_(b,c) s_(b,d) |
