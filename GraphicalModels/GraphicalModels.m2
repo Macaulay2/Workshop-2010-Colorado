@@ -351,7 +351,7 @@ markovRing Sequence := Ring => opts -> d -> (
      if (not markovRingList#?(d,kk,toString p)) then (
      	  start := (#d):1;
 	  vlist := start .. d;
-	  R := kk[p_start .. p_d];
+	  R := kk(monoid [p_start .. p_d, MonomialSize=>16]);
 	  markovRingList#(d,kk,toString p) = R;
 	  H := new HashTable from apply(#vlist, i -> vlist#i => R_i);
 	  R.markovVariables = H;
@@ -491,6 +491,8 @@ prob = (R,s) -> (
 -- Gaussian directed acyclic graphs    --
 -----------------------------------------
 
+gaussVariables = local gaussVariables
+
 -- gaussRingList still not fully implemented
 gaussRingList := new MutableHashTable;
 gaussRing = method(Options=>{Coefficients=>QQ, VariableName=>getSymbol "s"})
@@ -499,10 +501,13 @@ gaussRing ZZ :=  Ring => opts -> (n) -> (
      -- this assumes r.v.'s are labeled by integers.
      x := opts.VariableName;
      kk := opts.Coefficients;
-     v := flatten apply(1..n, i -> apply(i..n, j -> x_(i,j)));
+     w := flatten toList apply(1..n, i -> toList apply(i..n, j -> (i,j)));
+     v := apply (w, ij -> x_ij);
      -- xsR := kk[v, MonomialSize=>16];
      R := kk(monoid [v, MonomialSize=>16]);
      R#gaussRing = n;
+     H := new HashTable from apply(#w, i -> w#i => R_i); 
+     R.gaussVariables = H;
      R
      )
      -- we want to be able to do s_{a,b} for example:
@@ -516,12 +521,16 @@ gaussRing Digraph :=  Ring => opts -> (G) -> (
      x := opts.VariableName;
      kk := opts.Coefficients;
      vv := vertices G; -- sort vertices G
-     v := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else x_(i,j))));
-     R := kk[v, MonomialSize=>16];
+     w := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else (i,j))));
+     v := apply (w, ij -> x_ij);
+     -- xsR := kk[v, MonomialSize=>16];
+     R := kk(monoid [v, MonomialSize=>16]);
      R#gaussRing = #vv;
+     H := new HashTable from apply(#w, i -> w#i => R_i); 
+     R.gaussVariables = H;
      R
      )
-
+ 
 -- Shaowei 9/15: old version of gaussRing
 -- gaussRing Digraph := opts -> (G) -> (
      --I want the input to be the Digraph G, 
@@ -628,16 +637,17 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      --G = a Digraph (assumed DAG)
      --R = the gaussRing of G
      n := #vertices G; 
+     s := i -> R.gaussVariables#i;
      P := toList apply(vertices G, i -> toList parents(G,i));
      nv := max(P/(p -> #p));
      t := local t;
      S := (coefficientRing R)[generators R, t_1 .. t_nv];
      newvars := toList apply(1..nv, i -> t_i);
      I := trim ideal(0_S);
-     sp := (i,j) -> if i > j then s_(j,i) else s_(i,j);
+     sp := (i,j) -> if i > j then s (j,i) else s (i,j);
      --only the following loop does not work w/ general labels on the graph, and needs to be checked!
      for i from 1 to n-1 do (
-	  J := ideal apply(1..i, j -> s_(j,i+1)
+	  J := ideal apply(1..i, j -> s (j,i+1)
 	     	              - sum apply(#P#i, k -> S_(k + numgens R) * sp(j,P#i#k)));
 	  I = eliminate(newvars, I + J);
 	  );
