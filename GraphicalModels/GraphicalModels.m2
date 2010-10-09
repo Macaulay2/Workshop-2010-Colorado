@@ -86,7 +86,7 @@ export {bidirectedEdgesMatrix,
        gaussianIdeal, 
        gaussianMatrix,
        gaussianParametrization,
-       gaussianParametrizationSimple, 
+       SimpleTreks,
        gaussianRing, 
        globalMarkov,
        hideMap,
@@ -106,7 +106,7 @@ needsPackage "Graphs"
 
 markov = local markov
 markovVariables = local markovVariables
-gaussVariables = local gaussVariables
+gaussianVariables = local gaussianVariables
 
 --------------------------
 --   Markov relations   --
@@ -399,11 +399,12 @@ hideMap(ZZ,Ring) := RingMap => (v,A) -> (
 -- Markov ideals --
 -------------------
 
--- the following function retrieves the position of the vertices in the graph G
--- for all vertices contained in the list S
-getPositionOfVertices := (G,S) -> (
-     -- vertices G returns a SORTED list of the vertices 
-     apply(S, w -> position(vertices G, v -> v===w)))
+-- returns the position in list h of  x
+pos = (h, x) -> position(h, i->i===x)
+-- the following function retrieves the position of the vertices 
+-- in the graph G for all vertices contained in the list S
+-- vertices G returns a SORTED list of the vertices 
+getPositionOfVertices := (G,S) -> apply(S, w -> pos(vertices G, w))
 
 markovMatrices = method()
 markovMatrices(Ring,Digraph,List) := (R,G,Stmts) -> (
@@ -488,7 +489,7 @@ gaussianRing ZZ :=  Ring => opts -> (n) -> (
      R := kk(monoid [v, MonomialSize=>16]);
      R#gaussianRing = n;
      H := new HashTable from apply(#w, i -> w#i => R_i); 
-     R.gaussVariables = H;
+     R.gaussianVariables = H;
      R
      )
      
@@ -500,12 +501,13 @@ gaussianRing Digraph :=  Ring => opts -> (G) -> (
      s := if instance(opts.VariableName,Symbol) then opts.VariableName else opts.VariableName#0;
      kk := opts.Coefficients;
      vv := vertices G; 
+     print(vv);
      w := delete(null, flatten apply(vv, i -> apply(vv, j -> if pos(vv,i)>pos(vv,j) then null else (i,j))));
      v := apply (w, ij -> s_ij);
      R := kk(monoid [v, MonomialSize=>16]);
      R#gaussianRing = #vv;
      H := new HashTable from apply(#w, i -> w#i => R_i); 
-     R.gaussVariables = H;
+     R.gaussianVariables = H;
      R
      )
 
@@ -589,7 +591,7 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      S := (coefficientRing R)[generators R,t_1 .. t_nv];
      newvars := toList apply(1..nv, i -> t_i);
      I := trim ideal(0_S);
-     s := applyValues(R.gaussVariables,i->substitute(i,S));
+     s := applyValues(R.gaussianVariables,i->substitute(i,S));
      sp := (i,j) -> if pos(v,i) > pos(v,j) then s#(j,i) else s#(i,j);
      -- need the vertices to be sorted topologically!
      for i from 0 to n-2 do (
@@ -600,6 +602,7 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
      substitute(I,R)
      )
 
+
 ------------------------------
 -- Gaussian mixed graphs    --
 ------------------------------
@@ -608,24 +611,16 @@ trekIdeal(Ring, Digraph) := Ideal => (R,G) -> (
 -- INTERNAL FUNCTIONS --
 -------------------------
 
--- returns the position in list h of  x
--- Eventually it should be replaced by getPositionOfVertices
-pos = (h, x) -> position(h, i->i===x)
-
 -- takes a list A, and a sublist B of A, and converts the membership sequence of 0's and 1's of elements of B in A to binary
 setToBinary = (A,B) -> sum(toList apply(0..#A-1, i->2^i*(if (set B)#?(A#i) then 1 else 0)))
 
 -- returns all subsets of B which contain A
 subsetsBetween = (A,B) -> apply(subsets ((set B) - A), i->toList (i+set A))
 
-------------------------
--- RINGS AND MATRICES --
-------------------------
+------------------------------
+-- RINGS, MATRICES AND MAPS --
+------------------------------
 
--- makes a ring of parameters, l_(i,j) for all vertices i,j of a digraph G, and p_(i,j) for i<j,
--- and of the entries of the covariance matrix s_(i,j)
--- later, given the edges, we will set some of these parameters to zero
--- the reason we included all the other variables is so that it is easy to make the corresponding matrices
 gaussianRing MixedGraph := Ring => opts -> (g) -> (
      G := graph collateVertices g;
      dd := graph G#Digraph;
@@ -641,8 +636,7 @@ gaussianRing MixedGraph := Ring => opts -> (g) -> (
      m := #lL+#pL;
      R := kk(monoid [lL,pL,sL,MonomialOrder => Eliminate m, MonomialSize=>16]);
      R#gaussianRing = {#vv,s,l,p};
-     R
-     )
+     R)
 
 covarianceMatrix (Ring,MixedGraph) := (R,g) -> (
      vv := vertices g;
@@ -674,55 +668,40 @@ bidirectedEdgesMatrix (Ring,MixedGraph) := Matrix =>  (R,g) -> (
      scan(vv,i->PM_(pos(vv,i),pos(vv,i))=p_(i,i));
      scan(vv,i->scan(toList bb#i, j->PM_(pos(vv,i),pos(vv,j))=if pos(vv,i)<pos(vv,j) then p_(i,j) else p_(j,i)));
      matrix PM) 
-
------------------------
--- Paramaterizations --
------------------------
-
-gaussianParametrization = method()
-gaussianParametrization (Ring,MixedGraph) := Matrix => (R,g) -> (
-     SM := covarianceMatrix(R,g);    
-     PM := bidirectedEdgesMatrix(R,g);     
-     LM := directedEdgesMatrix(R,g);
-     -- equate \Sigma with (I-\Lambda)^{-T}\Phi(I-\Lambda)^{-1}
-     Linv := inverse(1-matrix(LM));
-     transpose(Linv)*matrix(PM)*Linv)
-
-gaussianParametrizationSimple = method()
-gaussianParametrizationSimple (Ring,MixedGraph) := Matrix => (R,g) -> (
-     n := R#gaussianRing#0;
-     M := gaussianParametrization(R,g);
-     P := bidirectedEdgesMatrix(R,g);
-     L := matrix {apply(n,i->P_(i,i)-M_(i,i)+1)};
-     S := apply(n,i->P_(i,i)=>L_(0,i));
-     scan(n,i->L=sub(L,S));
-     sub(M,apply(n,i->P_(i,i)=>L_(0,i))))
+ 
+gaussianParametrization = method(Options=>{SimpleTreks=>false})
+gaussianParametrization (Ring,MixedGraph) := Matrix => opts -> (R,g) -> (
+     S := covarianceMatrix(R,g);    
+     W := bidirectedEdgesMatrix(R,g);     
+     L := directedEdgesMatrix(R,g);
+     Li := inverse(1-matrix(L));
+     M := transpose(Li)*matrix(W)*Li;
+     if opts.SimpleTreks then (
+       n := R#gaussianRing#0;
+       P := matrix {apply(n,i->W_(i,i)-M_(i,i)+1)};
+       Q := apply(n,i->W_(i,i)=>P_(0,i));
+       scan(n,i->P=sub(P,Q));
+       sub(M,apply(n,i->W_(i,i)=>P_(0,i))))
+     else
+       M)
 
 ---------------------
 -- IDENTIFIABILITY --
 ---------------------
 
 identifyParameters = method()
--- Input: a MixedGraph
--- Output: a hash table H where for each parameter t, H#t is the ideal of relations involving t and the entries of the covariance matrix.
 identifyParameters (Ring,MixedGraph) := HashTable => (R,g) -> (
-     -- form ideal of relations from this matrix equation
      J := ideal unique flatten entries (covarianceMatrix(R,g)-gaussianParametrization(R,g));
- 	
-     -- create hash table of relations between a particular parameter t and the entries of \Sigma 
      G := graph g;
      m := #edges(G#Digraph)+#edges(G#Bigraph)+#vertices(g);
      plvars := toList apply(0..m-1,i->(flatten entries vars R)#i);
      new HashTable from apply(plvars,t->{t,eliminate(delete(t,plvars),J)}))
-
 
 ---------------------
 -- Trek Separation --
 ---------------------
 
 trekSeparation = method()
-    -- Input: A mixed graph containing a directed graph and a bidirected graph.
-    -- Output: A list L of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B.
 trekSeparation MixedGraph := List => (g) -> (
     G := graph collateVertices g;
     dd := graph G#Digraph;
@@ -752,9 +731,8 @@ trekSeparation MixedGraph := List => (g) -> (
           C := CA|CB;
 	  scan(allVertices,i->cdC#graph#i=cdG#graph#i);
           scan(C, i->scan(allVertices, j->(
-			 cdC#graph#i=cdC#graph#i-{j};
-			 cdC#graph#j=cdC#graph#j-{i};
-			 )));
+	    cdC#graph#i=cdC#graph#i-{j};
+	    cdC#graph#j=cdC#graph#j-{i};)));
 	  Alist := delete({},subsetsBetween(CA,aVertices));
           while #Alist > 0 do (
 	    minA := first Alist;
@@ -783,16 +761,9 @@ trekSeparation MixedGraph := List => (g) -> (
 		    (appendnS = false; true)
 		  else
 		    true)		  
-		else true		
-	      );
-              if appendnS then statements = append(statements, nS);
-            ););
-     	  );
-        );
-      );
-    );
-    statements
-)
+		else true);
+              if appendnS then statements = append(statements, nS);););););););
+    statements)
 
 trekIdeal (Ring,MixedGraph,List) := Ideal => (R,g,Stmts) -> (
      vv := vertices g;
@@ -905,7 +876,6 @@ doc ///
      to label the vertices in a consistent way (all numbers, or all letters, etc).
 ///;
 
-
 doc ///
   Key
     pairMarkov
@@ -937,7 +907,6 @@ doc ///
     localMarkov 
     globalMarkov
 ///
-
 
 doc ///
   Key
@@ -992,7 +961,7 @@ doc ///
       A is independent of B given C for every triple of sets of vertices A, B, and C, 
       such that A and B are $d$-separated by C (in the graph G).\break
 
-      {\bf add definition of d-separation criterion, and a reference!}\break
+      {\bf add definition of d-separation criterion, and a reference!}\break -- need to finish this part
       
       For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
       we get the following global Markov statements:
@@ -1007,7 +976,6 @@ doc ///
     localMarkov
     pairMarkov
 ///
-
 
 doc ///
   Key
@@ -1063,12 +1031,12 @@ doc ///
     marginMap
 ///
 
-
 doc ///
   Key
     markovRing
     (markovRing,Sequence)
-    [markovRing, Coefficients, VariableName]
+    [markovRing, Coefficients]
+    [markovRing, VariableName]
   Headline
     ring of probability distributions on several discrete random variables
   Usage
@@ -1141,46 +1109,64 @@ doc ///
     optional input to choose the letter for the variable name
   Description
     Text
-      Put {\tt VariableName => s} for a choice of a symbol s as an argument in the function @TO markovRing@
+      Put {\tt VariableName => s} for a choice of a symbol s as an argument in 
+      the function @TO markovRing@ or @TO gaussianRing@ for digraphs, and 
+      {\tt VariableName => \{s,l,w\}} in @TO gaussianRing@ for mixed graphs
   SeeAlso
     markovRing
     gaussianRing
 ///
-
 
 doc ///
   Key 
     gaussianRing
     (gaussianRing,ZZ)
     (gaussianRing,Digraph)
-    [gaussianRing, Coefficients, VariableName]
+    (gaussianRing,MixedGraph)
+    [gaussianRing, Coefficients]
+    [gaussianRing, VariableName]
   Headline
     ring of gaussian correlations on n random variables
   Usage
-    R = gaussianRing n or R = gaussianRing G or gaussianRing(d,Coefficients=>Ring) or gaussianRing(d,Variable=>Symbol)
+    R = gaussianRing n or R = gaussianRing G or gaussianRing(n,Coefficients=>Ring) or gaussianRing(n,Variable=>Symbol)
   Inputs
     n:ZZ
       the number of random variables
     G:Digraph
       an acyclic directed graph 
+    G:MixedGraph
+      an mixed graph with directed and bidirected edges
   Outputs
     R:Ring
-      a ring with indeterminates $s_(i,j)$ for $1 \leq i \leq j \leq n$
+      a ring with indeterminates $s_{(i,j)}$ for $1 \leq i \leq j \leq n$, and
+      additionally $l_{(i,j)}, w_{(i,j)}$ for mixed graphs
   Description
     Text
       The routines  @TO gaussianIdeal@ and @TO trekIdeal@ require that the ring      
-      be created by this function.
+      be created by this function. 
     Example
       R = gaussianRing 5;
       gens R
       covarianceMatrix R
+    Text
+      For mixed graphs, there is a variable $l_{(i,j)}$ for
+      each directed edge i-->j, a variable $w_{(i,i)}$ for each node i, and a variable $w_{(i,j)}$ 
+      for each bidirected edge i<-->j.
+    Example
+      G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+      R = gaussianRing G
+      gens R
+      covarianceMatrix(R,G)
+      directedEdgesMatrix(R,G)
+      bidirectedEdgesMatrix(R,G)
+
   SeeAlso
     gaussianIdeal
+    covarianceMatrix
+    directedEdgesMatrix
+    bidirectedEdgesMatrix
     trekIdeal
 ///
-
-
-
 
 doc ///
    Key
@@ -1206,7 +1192,7 @@ doc ///
      Text
        The ideal corresponding to a conditional independence statement {A,B,C} (where A,B,C,
        are disjoint lists of integers in the range 1..n (n is the number of random variables)
-       is the #C+1 x #C+1 minors of the submatrix of the generic symmetric matrix M = (s_(i,j)), whose
+       is the #C+1 x #C+1 minors of the submatrix of the generic symmetric matrix M = (s_{(i,j)}), whose
        rows are in A union C, and whose columns are in B union C.  In general, this ideal need not be prime.
        
        These ideals were first written down by Seth Sullivant, in "Algebraic geometry of Gaussian Bayesian networks". 
@@ -1334,29 +1320,241 @@ doc///
 
 doc/// 
    Key
-     trekIdeal
-     (trekIdeal,Ring,MixedGraph,List)
+     covarianceMatrix
+     (covarianceMatrix,Ring)
+     (covarianceMatrix,Ring,Digraph)
+     (covarianceMatrix,Ring,MixedGraph)
    Headline
-     write me 
+     the covariance matrix of a gaussian graphical model
    Usage
-     I = trekIdeal(R,G,L)
+     S = covarianceMatrix R or S = covarianceMatrix(R,G)
    Inputs
      R:Ring
-       which should be a gaussianRing???
+       which should be a gaussianRing
+     G:Digraph
+       directed acyclic graph
      G:MixedGraph
-       blabla
-     L:List
-       Independence statements that hold for G
+       mixed graph with directed and bidirected edges
+   Outputs
+     S:Matrix
+       the n x n covariance matrix of symbols where n is the number of vertices in G
+   Description 
+     Text
+       If this function is called without a graph G, it is assumed that R is the gauss ring of a directed acyclic graph.
+     Example
+       G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+       R = gaussianRing G
+       S = covarianceMatrix R
+     Text
+       Note that the covariance matrix is symmetric in the symbols.
+     Example
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       S = covarianceMatrix(R,G)
+   SeeAlso
+     gaussianRing
+     gaussianParametrization
+     bidirectedEdgesMatrix
+     directedEdgesMatrix
+///
+
+doc/// 
+   Key
+     bidirectedEdgesMatrix
+     (bidirectedEdgesMatrix,Ring,MixedGraph)
+   Headline
+     the matrix corresponding to the bidirected edges of a mixed graph
+   Usage
+     W = bidirectedEdgesMatrix(R,G)
+   Inputs
+     R:Ring
+       which should be a gaussianRing
+     G:MixedGraph
+       mixed graph with directed and bidirected edges
+   Outputs
+     S:Matrix
+       the n x n symmetric matrix of symbols where we have $w_{(i,i)}$ for each vertex i, 
+       $w_{(i,j)}$ if there is a bidirected edge between i and j, and 0 otherwise.
+   Description 
+     Text
+       Note that this matrix is symmetric in the symbols.
+     Example
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       S = bidirectedEdgesMatrix(R,G)
+   SeeAlso
+     gaussianRing
+     gaussianParametrization
+     covarianceMatrix
+     directedEdgesMatrix
+///
+
+doc/// 
+   Key
+     directedEdgesMatrix
+     (directedEdgesMatrix,Ring,MixedGraph)
+   Headline
+     the matrix corresponding to the directed edges of a mixed graph
+   Usage
+     L = directedEdgesMatrix(R,G)
+   Inputs
+     R:Ring
+       which should be a gaussianRing
+     G:MixedGraph
+       mixed graph with directed and bidirected edges
+   Outputs
+     L:Matrix
+       the n x n matrix of symbols where we have $l_{(i,j)}$ if there is a directed edge i-->j, and 0 otherwise.
+   Description 
+     Text
+       Note that this matrix is NOT symmetric in the symbols.
+     Example
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       S = directedEdgesMatrix(R,G)
+   SeeAlso
+     gaussianRing
+     gaussianParametrization
+     covarianceMatrix
+     bidirectedEdgesMatrix
+///
+
+doc/// 
+   Key
+     gaussianParametrization
+     (gaussianParametrization,Ring,MixedGraph)
+     [gaussianParametrization, SimpleTreks]
+   Headline
+     the parametrization of the covariance matrix in terms of treks
+   Usage
+     M = gaussianParametrization(R,G)
+   Inputs
+     R:Ring
+       which should be a gaussianRing
+     G:MixedGraph
+       mixed graph with directed and bidirected edges
+   Outputs
+     M:Matrix
+       the parametrization of the covariance matrix in terms of treks
+   Description 
+     Text
+       Given a mixed graph G with directed and bidirected edges, let L be the matrix corresponding to 
+       the directed edges (see @TO directedEdgesMatrix@) and let W be the matrix corresponding to 
+       the bidirected edges (see @TO bidirectedEdgesMatrix@). Then, the covariance matrix S 
+       (see @TO covarianceMatrix@) of the random variables in the gaussian graphical model corresponding
+       to the mixed graph G can be parametrized by the matrix equation $S = (I-L)^{-T}W(I-L)^{-1}$, where
+       I is the identity matrix.
+       
+       The entry $S_{(i,j)}$ of the covariance matrix can also be written as the sum of all monomials corresponding
+       to treks between vertices i and j. See @TO trekSeparation@ for the definition of a trek. The monomial corresponding
+       to a trek is the product of all parameters associated to the directed and bidirected edges on the trek.
+       
+       The following example shows how to compute the ideal of the model using the parametrization.
+     Example
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       S = covarianceMatrix(R,G)
+       L = directedEdgesMatrix(R,G)
+       W = bidirectedEdgesMatrix(R,G)       
+       M = gaussianParametrization(R,G)
+       J = delete(0_R, flatten entries (L|W))
+       eliminate(J, ideal(S-M))
+     Text
+       This next example shows how to use the option @TO SimpleTreks@ to compute a parametrization using simple treks 
+       instead of all treks. The resulting covariance matrix has diagonal entries equal to 1.
+     Example
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       M = gaussianParametrization(R,G,SimpleTreks=>true)
+   SeeAlso
+     covarianceMatrix
+     directedEdgesMatrix
+     bidirectedEdgesMatrix
+     trekSeparation
+///
+
+doc ///
+  Key
+    SimpleTreks
+  Headline
+    optional input to choose the type of parametrization in @TO gaussianParametrization@
+  Description
+    Text
+      Put {\tt SimpleTreks => true} as an argument in the function @TO gaussianParametrization@ to compute 
+      a parametrization of the covariance matrix S=(s_{(i,j)}) where s_{(i,j)} is the sum of monomials corresponding
+      to simple treks between vertices i and j. Here, a simple trek is a trek (P_L,P_R) where the paths P_L and P_R 
+      do not have any common vertices except perhaps at their source. See @TO trekSeparation@ for the definition of a trek.
+      
+      If the option {\tt SimpleTreks => false} is used, then the sum is over 
+      all treks, and not just simple treks. 
+  SeeAlso
+    gaussianParametrization
+///
+
+doc/// 
+   Key
+     identifyParameters
+     (identifyParameters,Ring,MixedGraph)
+   Headline
+     solving the identifiability problem: expressing each parameter in terms of covariances 
+   Usage
+     H = identifyParameters(R,G)
+   Inputs
+     R:Ring
+       which should be a gaussianRing
+     G:MixedGraph
+       mixed graph with directed and bidirected edges
+   Outputs
+     H:HashTable
+       where H#p is the ideal of equations involving only the parameter p and the covariances s_{(i,j)}
+   Description 
+     Text
+       If H#p contains a linear equation a*p+b where a is always nonzero, then p is identifiable.
+       
+       If H#p contains a linear equation a*p+b where a may be zero, then p is generically identifiable.
+       
+       If H#p contains a polynomial in p of degree d, then p is algebraically d-identifiable.
+       
+       If H#p does not contain any polynomial in p, then p is not generically identifiable.
+     Example
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       H = identifyParameters(R,G)
+   SeeAlso
+     gaussianRing
+///
+
+doc/// 
+   Key
+     trekIdeal
+     (trekIdeal,Ring,Digraph)
+     (trekIdeal,Ring,MixedGraph)
+     (trekIdeal,Ring,MixedGraph,List)
+   Headline
+     the ideal associated to the list of trek separation statements of the mixed graph
+   Usage
+     I = trekIdeal(R,G,S) or I = trekIdeal(R,G,S)
+   Inputs
+     R:Ring
+       which should be a gaussianRing
+     G:MixedGraph
+       mixed graph with directed and bidirected edges
+     S:List
+       trek separation statements that hold for G
    Outputs
      I:Ideal
        the trek separation ideal implied by statements S for the graph G
    Description 
      Text
-       DEFINE THE TREK IDEAL HERE!!
+       The ideal corresponding to a trek separation statement {A,B,CA,CB} (where A,B,CA,CB
+       are disjoint lists of vertices of G) is the r+1 x r+1 minors of the submatrix of the generic symmetric matrix M = (s_{(i,j)}), whose
+       rows are in A, and whose columns are in B, and where r = #CA+#CB. These ideals were first written down by Sullivant, 
+       Talaska and Draisma in "Trek Separation for Gaussian Graphical Models". 
      Example
-       R=gaussianRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
-     Text
-       ANOTHER COMMENT HERE!!
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       T = trekIdeal(R,G)
+       ideal gens gb T
    SeeAlso
      trekSeparation
 ///
@@ -1366,36 +1564,90 @@ doc///
      trekSeparation
      (trekSeparation,MixedGraph)
    Headline
-     write me 
+     the trek separation statements of a mixed graph 
    Usage
      trek = trekSeparation(G)
    Inputs
      G:MixedGraph
-       blabla
+       mixed graph with directed and bidirected edges
    Outputs
      trek:List
-        of lists {A,B,CA,CB}, where (CA,CB) trek separates A from B
+        of lists \{A,B,CA,CB\}, where (CA,CB) trek separates A from B
    Description 
      Text
-       DEFINE TREK SEPARATION HERE!!
+       A trek between vertices i and j in a mixed graph G with directed and bidirected edges is a triple 
+       (P_L,P_R) where P_L is a directed path of directed edges with sink i and source k, P_R is a directed path
+       of directed edges with sink j and source l, and either k=l or there is a bidirected edge between k and l.
+       Let A,B,CA,CB be subsets of vertices of G. 
+       
+       We say that (CA,CB) trek-separates A from B in G if for every trek 
+       (P_L,P_R) from a vertex in A to a vertex in B, either P_L contains a vertex in CA or P_R contains a vertex in CB.
+       
+       The function @TO trekSeparation@ returns a list of trek separation statements \{A,B,CA,CB\}\,where 
+       #CA + #CB < min(#A, #B). Each statement is maximal in the ordering where \{A1,B1,CA,CB\}\,<\,\{A2,B2,CA,CB\}\,if A1 is a 
+       subset of A2 and B1 is a subset of B2. Each statement is also unique up to symmetry, since \{B,A,CB,CA\}\,is a 
+       trek separation statement if and only if \{A,B,CA,CB\}.
      Example
-       R=gaussianRing 4 --- BLA BLA --- add thecall to trekIdeal to show how to use it!!
-     Text
-       ANOTHER COMMENT HERE!!
+       G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+       R = gaussianRing G
+       S = trekSeparation G
+       trekIdeal(R,G,S)
    SeeAlso
      trekIdeal
 ///
 
+TEST /// 
+G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+R = gaussianRing G
+assert(toString gaussianRing G === "QQ[s_(a,a), s_(a,b), s_(a,c), s_(a,d), s_(b,b), s_(b,c), s_(b,d), s_(c,c), s_(c,d), s_(d,d)]")
+M = covarianceMatrix R
+assert(M === matrix {{s_(a,a), s_(a,b), s_(a,c), s_(a,d)}, {s_(a,b), s_(b,b), s_(b,c), s_(b,d)}, {s_(a,c), s_(b,c), s_(c,c), s_(c,d)}, {s_(a,d), s_(b,d), s_(c,d), s_(d,d)}})
+G = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
+R = gaussianRing G
+assert(toString gaussianRing G === "QQ[l_(b,c), l_(b,d), l_(c,d), p_(a,a), p_(b,b), p_(c,c), p_(d,d), p_(a,d), s_(a,a), s_(a,b), s_(a,c), s_(a,d), s_(b,b), s_(b,c), s_(b,d), s_(c,c), s_(c,d), s_(d,d)]")
 
-
-
-
-				     
+///
+     
 --------------------------------------
 --------------------------------------
 end
 --------------------------------------
 --------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --blank documentation node:
 doc/// 
@@ -1500,43 +1752,6 @@ G = makeGraph {{2, 4}, {3, 5}, {4, 5}, {5}, {}}
 G = makeGraph {{2, 3, 5}, {4}, {4, 5}, {5}, {}}
 G = makeGraph {{2, 4, 5}, {3, 5}, {4}, {5}, {}}
 
-
-
--- tests for Gaussian Mixed Graphs
-
-restart
-loadPackage "GraphicalModels"
-g = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
-R = gaussianRing g
-M = covarianceMatrix R
-g = mixedGraph(digraph {{b,{c,d}},{c,{d}}},bigraph {{a,d}})
-R = gaussianRing g
-M = covarianceMatrix(R,g)
---     | s_(a,a) s_(a,b) s_(a,c) s_(a,d) |
---     | s_(a,b) s_(b,b) s_(b,c) s_(b,d) |
---     | s_(a,c) s_(b,c) s_(c,c) s_(c,d) |
---     | s_(a,d) s_(b,d) s_(c,d) s_(d,d) |
-D = directedEdgesMatrix(R,g)
---     | 0 0 0       0       |
---     | 0 0 l_(b,c) l_(b,d) |
---     | 0 0 0       l_(c,d) |
---     | 0 0 0       0       |
-B = bidirectedEdgesMatrix(R,g)
---     | p_(a,a) 0       0       p_(a,d) |
---     | 0       p_(b,b) 0       0       |
---     | 0       0       p_(c,c) 0       |
---     | p_(a,d) 0       0       p_(d,d) |
-identifyParameters(R,g)
-      new HashTable from {p_(a,d) => ideal(s_(a,c),s_(a,b),p_(a,d)-s_(a,d)), p_(d,d) =>
-      ideal(s_(a,c),s_(a,b),p_(d,d)*s_(b,c)^2-p_(d,d)*s_(b,b)*s_(c,c)-s_(b,d)^2*s_(c,c)+2*s_(b,c)*s_(b,d)*s_(c,d)-s_(b,b)*s_(c,d)^2-s_(b,c)^2*s_(d,d)+s_(b,
-      b)*s_(c,c)*s_(d,d)), p_(c,c) => ideal(s_(a,c),s_(a,b),p_(c,c)*s_(b,b)+s_(b,c)^2-s_(b,b)*s_(c,c)), p_(b,b) => ideal(s_(a,c),s_(a,b),p_(b,b)-s_(b,b)),
-      p_(a,a) => ideal(s_(a,c),s_(a,b),p_(a,a)-s_(a,a)), l_(b,c) => ideal(s_(a,c),s_(a,b),l_(b,c)*s_(b,b)-s_(b,c)), l_(b,d) =>
-      ideal(s_(a,c),s_(a,b),l_(b,d)*s_(b,c)^2-l_(b,d)*s_(b,b)*s_(c,c)+s_(b,d)*s_(c,c)-s_(b,c)*s_(c,d)), l_(c,d) =>
-      ideal(s_(a,c),s_(a,b),l_(c,d)*s_(b,c)^2-l_(c,d)*s_(b,b)*s_(c,c)-s_(b,c)*s_(b,d)+s_(b,b)*s_(c,d))}
-stmts = trekSeparation(g)
---     {{{a}, {c, b}, {}, {}}, {{a, b}, {c, b}, {}, {b}}, {{b, c}, {a, b}, {}, {b}}, {{b, c}, {c, a}, {}, {c}}, {{b, c}, {d, a}, {}, {d}}}
-trekIdeal(R,g,stmts)
---     ideal(s_(a,c),s_(a,b),s_(a,c)*s_(b,b)-s_(a,b)*s_(b,c),-s_(a,c)*s_(b,b)+s_(a,b)*s_(b,c),s_(a,c)*s_(b,c)-s_(a,b)*s_(c,c),s_(a,c)*s_(b,d)-s_(a,b)*s_(c,d))
 
 
 
