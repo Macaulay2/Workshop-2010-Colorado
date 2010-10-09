@@ -56,7 +56,6 @@ exportMutable {dotBinary,jpgViewer}
 graphData = "graphData"
 labels = "labels"
 newDigraph = "newDigraph"
-color = "color"
 
 ------------------------------------------------
 -- Set graph types and constructor functions. -- 
@@ -902,7 +901,7 @@ topSort(Digraph) := G -> (
      	  L := reverse apply(sort apply(pairs ((DFS G)#"finishingTime"),reverse),p->p_1);
      	  H := hashTable{
 	       digraph => G,
-	       newDigraph => digraph hashTable apply(#L,i->i+1=>apply(G#(L_i),j->position(L,k->k==j)+1)),
+	       newDigraph => digraph hashTable apply(#L,i->i+1=>apply(toList (graph G)#(L_i),j->position(L,k->k==j)+1)),
 	       map => hashTable apply(#L,i->L_i => i+1)
 	       };
      	  new SortedDigraph from H
@@ -910,35 +909,30 @@ topSort(Digraph) := G -> (
      else error("digraph must be acyclic")
      )     
 
-local p
-local d
-local f
-local t
-
 DFS = method()
      -- Input: A digraph
      -- Output: the discovery and finishing times for each vertex after a depth-first search
 DFS(Digraph) := G -> (
      H := new MutableHashTable;
      H#graph = G;
-     H#color = new MutableHashTable;
-     H#p = new MutableHashTable;
-     H#d = new MutableHashTable;
-     H#f = new MutableHashTable;
-     H#t = 0;
-     scan(keys(G),u->(H#color#u="white";H#p#u=null));
-     scan(keys(G),u->if H#color#u == "white" then H = DFSvisit(H,u));
-     new HashTable from {"discoveryTime" => new HashTable from H#d, "finishingTime" => new HashTable from H#f}
+     H#"color" = new MutableHashTable;
+     H#"p" = new MutableHashTable;
+     H#"d" = new MutableHashTable;
+     H#"f" = new MutableHashTable;
+     H#"t" = 0;
+     scan(vertices G,u->(H#"color"#u="white"; H#"p"#u=1));
+     scan(vertices G,u->if H#"color"#u == "white" then H = DFSvisit(H,u));
+     new HashTable from {"discoveryTime" => new HashTable from H#"d", "finishingTime" => new HashTable from H#"f"}
      )
 
 DFSvisit = (H,u) -> (
-     H#color#u = "gray";
-     H#t = H#t+1;
-     H#d#u = H#t;
-     scan(children(H#graph,u),v->if H#color#v == "white" then (H#p#v = u;H = DFSvisit(H,v)));
-     H#color#u = "black";
-     H#t = H#t+1;
-     H#f#u = H#t;
+     H#"color"#u = "gray";
+     H#"t" = H#"t"+1;
+     H#"d"#u = H#"t";
+     scan(toList children(H#graph,u),v->if H#"color"#v == "white" then (H#"p"#v = u;H = DFSvisit(H,v)));
+     H#"color"#u = "black";
+     H#"t" = H#"t"+1;
+     H#"f"#u = H#"t";
      H
      )
 
@@ -949,8 +943,8 @@ isCyclic = method()
 isCyclic(Digraph) := G -> (
      if instance(G,Graph) then error ("must be a digraph") else (
      	  D := DFS G;
-     	  member(true,flatten unique apply(select(keys G,u->#children(G,u)>0),u->(
-	       	    	 apply(children(G,u),v->(
+     	  member(true,flatten unique apply(select(vertices G,u->#children(G,u)>0),u->(
+	       	    	 apply(toList children(G,u),v->(
 		    	      	   L := {D#"discoveryTime"#v,D#"discoveryTime"#u,D#"finishingTime"#u,D#"finishingTime"#v};
      	       	    	      	   L == sort L
 		    	      	   )
