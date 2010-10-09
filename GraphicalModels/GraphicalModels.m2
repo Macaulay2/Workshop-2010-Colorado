@@ -1133,9 +1133,8 @@ doc ///
     n:ZZ
       the number of random variables
     G:Digraph
-      an acyclic directed graph 
-    G:MixedGraph
-      an mixed graph with directed and bidirected edges
+      a directed acyclic graph, 
+      or @ofClass MixedGraph@ with directed and bidirected edges
   Outputs
     R:Ring
       a ring with indeterminates $s_{(i,j)}$ for $1 \leq i \leq j \leq n$, and
@@ -1332,9 +1331,8 @@ doc///
      R:Ring
        which should be a gaussianRing
      G:Digraph
-       directed acyclic graph
-     G:MixedGraph
-       mixed graph with directed and bidirected edges
+       a directed acyclic graph, 
+       or @ofClass MixedGraph@ with directed and bidirected edges
    Outputs
      S:Matrix
        the n x n covariance matrix of symbols where n is the number of vertices in G
