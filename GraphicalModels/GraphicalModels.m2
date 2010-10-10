@@ -57,7 +57,7 @@ newPackage(
 --   gaussianRing (Digraph G)
 --   covarianceMatrix (Ring R)
 --   covarianceMatrix (Ring R, Digraph G)
---   gaussianMinors (Digraph G, Matrix M, List S) -- [iternal routine]
+--   gaussianMinors (Digraph G, Matrix M, List S) -- [internal routine]
 --   gaussianMatrix (Ring R, Digraph G, List S) -- [internal routine]
 --   gaussianMatrices (Ring R, Digraph G, List S) 
 --   gaussianIdeal (Ring R, Digraph G, List S) 
@@ -348,7 +348,7 @@ markovRing = method(Dispatch=>Thing, Options=>{Coefficients=>QQ,VariableName=>ge
 markovRing Sequence := Ring => opts -> d -> (
      -- d should be a sequence of integers di >= 1
      if any(d, di -> not instance(di,ZZ) or di <= 0)
-     then error "useMarkovRing expected positive integers";
+     then error "markovRing expected positive integers";
      kk := opts.Coefficients;
      p := opts.VariableName;
      if (not markovRingList#?(d,kk,toString p)) then (
@@ -968,8 +968,8 @@ doc ///
   Description
     Text
       Given a directed graph G, pairwise Markov statements are statements of the form \{v,w,nondescendents(G,v)-w\} 
-      for each vertex v of G. In other words, for every vertex v of G and all non-descendents w of v, 
-      v is independent of w given all other non-descendents. 
+      for each vertex v of G. In other words, for every vertex v of G and all nondescendents w of v, 
+      v is independent of w given all other nondescendents. 
       
       For example, for the digraph D on $4$ vertices with edges a->b, a->c, b->c, and b->d, 
       we get the following pairwise Markov statements:
@@ -1180,7 +1180,7 @@ doc ///
       Rnew = markovRing (d,Coefficients=>CC); 
       coefficientRing Rnew
     Text
-      We might prefer to give diferent names to our variables. The letter ''p'' suggests a joint probability, 
+      We might prefer to give different names to our variables. The letter ''p'' suggests a joint probability, 
       but it might be useful to create a new ring where the variables have changed. This can easily be done
       with the following option:
     Example
@@ -1254,7 +1254,7 @@ doc ///
   Description
     Text
       List of matrices encoding the independent statements of the Digraph G. The 2x2 minors of each matrix generate the ideal of 
-      independence contraints of the Digraph G. the  This method 
+      independence constraints of the Digraph G. the  This method 
       is used in markovIdeals. But it is exported to be able to see constraints not as 
       polynomials but as minors of matrices in this list. 
     Example
@@ -1276,7 +1276,7 @@ doc ///
     markovIdeal
     (markovIdeal,Ring,Digraph,List) 
   Headline
-    Ideal of contraints associated to a list of independent statements among discete random variables.
+    Ideal of constraints associated to a list of independent statements among discrete random variables.
   Usage
     markovIdeal(R,G,S)
   Inputs
@@ -1290,7 +1290,7 @@ doc ///
     :Ideal
   Description
     Text
-      This method computes the ideal of constraints associated to a list of independent statements among discete random variables.
+      This method computes the ideal of constraints associated to a list of independent statements among discrete random variables.
       These constraints are the 2x2 minors of the matrices computed by markovMatrices.
     Example
       G = digraph { {1, {2,3}}, {2, {4}}, {3, {4}} }
@@ -1395,7 +1395,7 @@ doc ///
        (globalMarkov G)/print; 
        J = gaussianIdeal(R,G) 
      Text
-       A list of independence statments (as for example returned by globalMarkov)
+       A list of independence statements (as for example returned by globalMarkov)
        can be provided instead of a graph:
      Example
        S=pairMarkov G 
