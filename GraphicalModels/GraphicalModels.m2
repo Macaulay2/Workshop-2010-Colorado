@@ -10,6 +10,9 @@ newPackage(
 	  {Name => "Luis Garcia-Puente",
 	   Email => "lgarcia@shsu.edu",
 	   HomePage => "http://www.shsu.edu/~ldg005"},
+          {Name => "Shaowei Lin",
+	   Email => "shaowei@math.berkeley.edu",
+	   HomePage => "http://math.berkeley.edu/~shaowei/"},    
 	  {Name => "Mike Stillman",
 	   Email => "mike@math.cornell.edu",
 	   HomePage => "http://www.math.cornell.edu/~mike/"} 
@@ -136,7 +139,7 @@ localMarkov Digraph := List =>  (G) -> (
 	         result = append(result,{set{v}, ND - P, P})));
      removeRedundants result)
 
-
+ 
 globalMarkov = method()
 globalMarkov Digraph := List => (G) -> (
      -- Given a graph G, return a complete list of triples {A,B,C}
