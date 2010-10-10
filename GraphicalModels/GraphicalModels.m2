@@ -23,8 +23,8 @@ newPackage(
 
 ------------------------------------------
 -- Algebraic Statistics in Macaulay2
--- Authors: Luis Garcia-Puente and Mike Stillman
--- Collaborators: Alex Diaz, Shaowei Lin, Sonja Petrović
+-- Authors: Luis Garcia-Puente, Shaowei Lin and Mike Stillman
+-- Collaborators: Alexander Diaz and Sonja Petrović
 -- 
 -- Routines:
 --  Markov relations:
@@ -45,7 +45,7 @@ newPackage(
 --  Markov Rings: 
 --   markovRing (sequence d)
 --   marginMap(R,i) : R --> R
---   hideMap(R,i) : R --> S
+--   hiddenMap(R,i) : R --> S
 --
 --  Markov Ideals:
 --   markovMatrices (Ring R, Digraph G, List S)  -- S is a list of independence statements
@@ -92,7 +92,7 @@ export {bidirectedEdgesMatrix,
        SimpleTreks,
        gaussianRing, 
        globalMarkov,
-       hideMap,
+       hiddenMap,
        identifyParameters, 
        localMarkov,
        markovIdeal,
@@ -115,6 +115,10 @@ gaussianVariables = local gaussianVariables
 --   Markov relations   --
 --------------------------
 
+--------------------------
+--   pairMarkov         --
+--------------------------
+
 pairMarkov = method()
 pairMarkov Digraph := List => (G) -> (
      -- given a digraph G, returns a list of triples {A,B,C}
@@ -126,6 +130,9 @@ pairMarkov Digraph := List => (G) -> (
 	       W := ND - parents(G,v);
 	       apply(toList W, w -> {set {v}, set{w}, ND - set{w}}))))
 
+--------------------------
+--   localMarkov        --
+--------------------------
 
 localMarkov = method()			 
 localMarkov Digraph := List =>  (G) -> (
@@ -139,6 +146,9 @@ localMarkov Digraph := List =>  (G) -> (
 	         result = append(result,{set{v}, ND - P, P})));
      removeRedundants result)
 
+--------------------------
+--   globalMarkov       --
+--------------------------
  
 globalMarkov = method()
 globalMarkov Digraph := List => (G) -> (
@@ -180,7 +190,7 @@ bayesBall = (A,C,G) -> (
      --   independent of A given C.
      -- The algorithm is the Bayes Ball algorithm,
      -- as implemented by Luis Garcia-Puente, after
-     -- the paper of Ross Schlacter
+     -- the paper of Ross D. Shachter.
      --
      V := vertices G;
      -- DEVELOPMENT NOTES: 
@@ -353,13 +363,13 @@ markovRing Sequence := Ring => opts -> d -> (
 	  markovRingList#(d,kk,toString p).markov = d;);
      markovRingList#(d,kk,toString p))
 
-  --------------
-  -- marginMap
-  -- Return the ring map F : R --> R such that
-  --   F p_(u1,u2,..., +, ,un) = p_(u1,u2,..., 1, ,un)
-  -- and
-  --   F p_(u1,u2,..., j, ,un) = p_(u1,u2,..., j, ,un), for j >= 2.
-  --------------
+ ----------------
+ -- marginMap ---
+ ----------------
+ -- Return the ring map F : R --> R such that
+ --   F p_(u1,u2,..., +, ,un) = p_(u1,u2,..., 1, ,un)
+ -- and
+ --   F p_(u1,u2,..., j, ,un) = p_(u1,u2,..., j, ,un), for j >= 2.
 
 marginMap = method()
 marginMap(ZZ,Ring) := RingMap => (v,R) -> (
@@ -377,19 +387,19 @@ marginMap(ZZ,Ring) := RingMap => (v,R) -> (
 			      p newi))))));
      map(R,R,F))
 
- --------------
- -- hideMap
- --------------
+----------------
+-- hiddenMap ---
+----------------
 
-hideMap = method()
-hideMap(ZZ,Ring) := RingMap => (v,A) -> (
+hiddenMap = method()
+hiddenMap(ZZ,Ring) := RingMap => (v,A) -> (
      -- creates a ring map inclusion F : S --> A.
      v = v-1;
-     R := ring presentation A;
-     p := i -> R.markovVariables#i;
-     d := R.markov;
+     -- R := ring presentation A;
+     p := i -> A.markovVariables#i;
+     d := A.markov;
      e := drop(d, {v,v});
-     S := markovRing e;
+     S := markovRing (e);
      dv := d#v;
      -- use A; -- Dan suggested to delete this line
      F := toList apply(((#e):1) .. e, i -> (
@@ -880,12 +890,16 @@ doc ///
      to label the vertices in a consistent way (all numbers, or all letters, etc).
 ///;
 
+--------------------------------
+-- Documentation pairMarkov ----
+--------------------------------
+
 doc ///
   Key
     pairMarkov
     (pairMarkov,Digraph)
   Headline
-    pairwise Markov statements for a directed graph
+    Pairwise Markov statements for a directed graph.
   Usage
     pairMarkov G
   Inputs
@@ -900,7 +914,7 @@ doc ///
       for each vertex v of G. In other words, for every vertex v of G and all non-descendents w of v, 
       v is independent of w given all other non-descendents. 
       
-      For example, for the digraph D on $4$ vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      For example, for the digraph D on $4$ vertices with edges a->b, a->c, b->c, and b->d, 
       we get the following pairwise Markov statements:
     Example
       D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
@@ -912,12 +926,16 @@ doc ///
     globalMarkov
 ///
 
+--------------------------------
+-- Documentation localMarkov ---
+--------------------------------
+
 doc ///
   Key
     localMarkov
     (localMarkov,Digraph)
   Headline
-    local Markov statements for a directed graph
+    Local Markov statements for a directed graph.
   Usage
     localMarkov G
   Inputs
@@ -933,7 +951,7 @@ doc ///
       That is, 
       every vertex $v$ of G is independent of its nondescendents (excluding parents) given the parents. 
       
-      For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      For example, for the digraph D on 4 vertices with edges a->b, a->c, b->c, and b->d, 
       we get the following local Markov statements:
     Example
       D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
@@ -945,12 +963,16 @@ doc ///
     globalMarkov
 ///
 
+--------------------------------
+-- Documentation globalMarkov --
+--------------------------------
+
 doc ///
   Key
     globalMarkov
     (globalMarkov,Digraph)
   Headline
-    global Markov statements for a directed graph
+    Global Markov statements for a directed graph.
   Usage
     globalMarkov G
   Inputs
@@ -964,13 +986,16 @@ doc ///
       Given a directed graph G, global Markov states that      
       A is independent of B given C for every triple of sets of vertices A, B, and C, 
       such that A and B are $d$-separated by C (in the graph G).\break
-
-      {\bf add definition of d-separation criterion, and a reference!}\break -- need to finish this part
+       
+      The global independent statements are computed using the Bayes ball algorithm,
+      as described in the paper "Bayes-Ball: The Rational Pastime (for Determining Irrelevance and Requisite Information
+      in Belief Networks and Influence Diagrams)" by Ross D. Shachter.
       
-      For example, for the digraph D on 4 vertices with edges a-->b, a-->c, b-->c, and b-->d, 
+      For example, for the digraph D on 4 vertices with edges a->b, a->c, b->c, and b->d, 
       we get the following global Markov statements:
     Example
-      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} -- L = globalMarkov D --NEEDS TO BE UNCOMMENTED ONCE BAYESBALL IS FIXED!
+      D = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}} 
+      L = globalMarkov D 
     Text
       Note that the method displays only non-redundant statements.
   Caveat
@@ -981,12 +1006,16 @@ doc ///
     pairMarkov
 ///
 
+--------------------------------
+-- Documentation marginMap    --
+--------------------------------
+
 doc ///
   Key
     marginMap
     (marginMap,ZZ,Ring)
   Headline
-    marginalize the map on joint probabilities for discrete variables
+    Generates a linear map on joint probabilities for discrete variables that replaces marginals for indeterminates.
   Usage
     phi = marginMap(i,R)
   Inputs
@@ -996,44 +1025,58 @@ doc ///
       a Markov ring
   Outputs
     phi:RingMap
-      with coordinates....................
   Description
     Text
-      Copying the description from the code:
-      -- Return the ring map F : R --> R such that
-      	  $ F p_{u1,u2,..., +, ,un} = p_{u1,u2,..., 1, ,un}$
-       and
-         $F p_{u1,u2,..., j, ,un} = p_{u1,u2,..., j, ,un}$, for $j\geq 2$.
+      Returns the ring map F : R -> R such that
+      $ F p_{u_1,u_2,..., +,...,u_n} = p_{u_1,u_2,...,1,...,u_n} $ and
+      $ F p_{u1,u2,..., j,...,un} = p_{u1,u2,..., j,...,un} $, for $ j\geq 2 $.
     Example
-      marginMap(2,markovRing(1,2)) --add more for example? to explain.
+      marginMap(1,markovRing(3,2)) 
+    Text
+      This linear transformation simplifies ideals and/or polynomials involving 
+      $ p_{u_1,u_2,..., +,...,u_n} $. In some cases, the resulting ideals are toric 
+      ideals as the example at the beginning of the documentation. For more details 
+      see the paper "Algebraic Geometry of Bayesian Networks" by Garcia, Stillman, and
+      Sturmfels. 
   SeeAlso
-    hideMap
+    hiddenMap
 ///
+
+--------------------------------
+-- Documentation hiddenMap    --
+--------------------------------`
 
 doc ///
   Key
-    hideMap
-    (hideMap,ZZ,Ring)
+    hiddenMap
+    (hiddenMap,ZZ,Ring)
   Headline
-    hide???marginalize the map on joint probabilities for discrete variables
+    Creates a linear map from a ring of probability distributions among observed discrete random variables into a ring of probability distributions among observed variables and one hidden variable specified by the integer input.
   Usage
-    phi = hideMap(i,R)
+    phi = hiddenMap(i,R)
   Inputs
     i:ZZ
-      the index of the variable to marginalize
+      the index corresponding to the hidden random variable
     R:Ring
       a Markov ring
   Outputs
     phi:RingMap
-      with coordinates....................
   Description
     Text
-      what does this do? 
+      A linear map from a ring of probability distributions among observed discrete random variables into 
+      a ring of probability distributions among observed variables and one hidden variable specified by the integer input. 
+      This method is used to work with Bayesian networks with hidden variables.
+      For more details see the paper "Algebraic Geometry of Bayesian Networks"
+      by Garcia, Stillman, and Sturmfels.
     Example
-      marginMap(1,markovRing(2,2)) --add more for example? to explain.
+      hiddenMap(1,markovRing(2,3,2)) 
   SeeAlso
     marginMap
 ///
+
+--------------------------------
+-- Documentation markovRing   --
+--------------------------------
 
 doc ///
   Key
@@ -1088,9 +1131,13 @@ doc ///
       markovRing (d,VariableName=>q);
       vars oo --here is the list of variables.
     Text
-      The LIST OF FNS USING THIS FUNCTION SHOULD BE INSERTED AS WELL.
+      -- The LIST OF FNS USING THIS FUNCTION SHOULD BE INSERTED AS WELL.
   SeeAlso
 ///
+
+------------------------------------
+-- Documentation Coefficients     --
+------------------------------------
 
 doc ///
   Key
@@ -1106,6 +1153,10 @@ doc ///
     gaussianRing
 ///
 
+------------------------------------
+-- Documentation variableName     --
+------------------------------------
+
 doc ///
   Key
     VariableName
@@ -1120,6 +1171,43 @@ doc ///
     markovRing
     gaussianRing
 ///
+
+------------------------------------
+-- Documentation markovMatrices   --
+------------------------------------
+
+doc ///
+  Key
+    Coefficients
+  Headline
+    optional input to choose the base field
+  Description
+    Text
+      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in 
+      the function @TO markovRing@ or @TO gaussianRing@ 
+  SeeAlso
+    markovRing
+    gaussianRing
+///
+
+------------------------------------
+-- Documentation markovIdeal      --
+------------------------------------
+
+doc ///
+  Key
+    Coefficients
+  Headline
+    optional input to choose the base field
+  Description
+    Text
+      Put {\tt Coefficients => r} for a choice of ring(field) r as an argument in 
+      the function @TO markovRing@ or @TO gaussianRing@ 
+  SeeAlso
+    markovRing
+    gaussianRing
+///
+
 
 doc ///
   Key 
@@ -1612,6 +1700,73 @@ doc///
      trekIdeal
 ///
 
+--------------------------
+---- TESTS GO HERE! ------
+--------------------------
+
+--------------------------
+---- TEST pairMarkov  ----
+--------------------------
+
+TEST ///
+G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
+S = pairMarkov G
+L = {{{c}, {d}, {b, a}}, {{a}, {d}, {b, c}}}
+assert(S === L)
+///
+
+--------------------------
+---- TEST localMarkov  ---
+--------------------------
+
+TEST ///
+G = digraph { {1, {2,3}}, {2, {4}}, {3, {4}} }
+S = localMarkov G
+L = {{{2}, {3}, {1}}, {{1}, {4}, {2, 3}}}
+assert(S === L)
+G = digraph { {1,{2,3,4}}, {5,{2,3,4}} }
+S = localMarkov G
+L = {{{2}, {3, 4}, {5, 1}}, {{2, 3}, {4}, {5, 1}}, {{2, 4}, {3}, {5, 1}}, {{1}, {5}, {}}}{{{2}, {3, 4}, {5, 1}}, {{2, 3}, {4}, {5, 1}}, {{2, 4}, {3}, {5, 1}}, {{1}, {5}, {}}}
+assert(S === L)
+///
+
+--------------------------
+--- TEST globalMarkov  ---
+--------------------------
+
+TEST ///
+G = digraph { {2, {1}}, {3,{2}}, {4,{1,3}} }
+S = globalMarkov G
+L = {{{1}, {3}, {4, 2}}, {{2}, {4}, {3}}}
+assert(S === L)
+///
+
+--------------------------
+--- TEST marginMap     ---
+--------------------------
+
+TEST ///
+R = markovRing (3,2)
+F = marginMap(1,R) 
+m = matrix {{p_(1,1)-p_(2,1)-p_(3,1), p_(1,2)-p_(2,2)-p_(3,2), p_(2,1), p_(2,2), p_(3,1), p_(3,2)}}
+assert(F.matrix === m)
+///
+
+--------------------------
+--- TEST hiddenMap     ---
+--------------------------
+
+TEST ///
+R = markovRing (2,3,2)
+F = hiddenMap(1,R) 
+m = matrix {{p_(1,1,1)+p_(2,1,1), p_(1,1,2)+p_(2,1,2), p_(1,2,1)+p_(2,2,1), p_(1,2,2)+p_(2,2,2), p_(1,3,1)+p_(2,3,1), p_(1,3,2)+p_(2,3,2)}}
+assert(F.matrix === m)
+///
+
+--------------------------
+--- TEST markovRing    ---
+--------------------------
+
 TEST /// 
 G = digraph {{a,{b,c}}, {b,{c,d}}, {c,{}}, {d,{}}}
 R = gaussianRing G
@@ -1648,40 +1803,6 @@ end
 --------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 --blank documentation node:
 doc/// 
    Key
@@ -1709,37 +1830,7 @@ installPackage("GraphicalModels",UserMode=>true,DebuggingMode => true)
 
 
 
-
----- TESTS GO HERE! ------
-
-
-
 --- OLD CODE THAT SHOULD BE REMOVED ----
-
-
-G = makeGraph{{},{1},{1},{2,3},{2,3}}
-S = globalMarkov G
-
-R = markovRing(2,2,2,2,2)
-markovIdeal(R,S)
-
-R = gaussianRing(5)
-
-M = genericSymmetricMatrix(R,5)
-describe R
-gaussianMinors(M,S_0)
-J = trim gaussianIdeal(R,S)
-J1 = ideal drop(flatten entries gens J,1)
-res J1
-support J1
-
-globalMarkov G
-minimize oo
-
-G = makeGraph{{2,3},{4},{4},{}}
-G1 = makeGraph{{},{1},{1},{2,3}}
-globalMarkov G
-globalMarkov G1
 
 G4 = {{},{1},{1},{2,3}}
 
@@ -1784,10 +1875,6 @@ G = makeGraph {{2, 3, 5}, {4}, {4}, {5}, {}}
 G = makeGraph {{2, 4}, {3, 5}, {4, 5}, {5}, {}}
 G = makeGraph {{2, 3, 5}, {4}, {4, 5}, {5}, {}}
 G = makeGraph {{2, 4, 5}, {3, 5}, {4}, {5}, {}}
-
-
-
-
 
 
 -- Local Variables:
