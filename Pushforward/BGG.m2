@@ -709,11 +709,11 @@ doc ///
       maps = apply(L, F-> F.dd_0)
    SeeAlso 
      universalExtension
+     (directImageComplex, Matrix)
 ///
 
 doc ///
    Key
-     directImageComplex
      (directImageComplex, Matrix)
    Headline
      map of direct image complexes
