@@ -1,73 +1,73 @@
-GRevLex Order of (I+FP):	1.83839 seconds.
-Lex order from GRevLex basis of (I+FP):	.960782 seconds.
+GRevLex Order of (I+FP):	1.82117 seconds.
+Lex order from GRevLex basis of (I+FP):	.970174 seconds.
 
-Quotient Ring GRevLex Order, Sugarless:	4.63791 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	13.687 seconds.
+Quotient Ring GRevLex Order, Sugarless:	4.66189 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	13.7357 seconds.
 
-gbBoolean:	3.41792 seconds.
-
-
-GRevLex Order of (I+FP):	.015233 seconds.
-Lex order from GRevLex basis of (I+FP):	.005536 seconds.
-
-Quotient Ring GRevLex Order, Sugarless:	.075107 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	.033527 seconds.
-
-gbBoolean:	.013114 seconds.
+gbBoolean:	3.4063 seconds.
 
 
-GRevLex Order of (I+FP):	13.4286 seconds.
-Lex order from GRevLex basis of (I+FP):	4.46486 seconds.
+GRevLex Order of (I+FP):	.016838 seconds.
+Lex order from GRevLex basis of (I+FP):	.005526 seconds.
 
-Quotient Ring GRevLex Order, Sugarless:	98.1022 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	10.2102 seconds.
+Quotient Ring GRevLex Order, Sugarless:	.074617 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.036144 seconds.
 
-gbBoolean:	.079894 seconds.
-
-
-GRevLex Order of (I+FP):	.021423 seconds.
-Lex order from GRevLex basis of (I+FP):	.002031 seconds.
-
-Quotient Ring GRevLex Order, Sugarless:	.117054 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	.001099 seconds.
-
-gbBoolean:	.368373 seconds.
+gbBoolean:	.013169 seconds.
 
 
-GRevLex Order of (I+FP):	.013413 seconds.
-Lex order from GRevLex basis of (I+FP):	.003478 seconds.
+GRevLex Order of (I+FP):	13.4589 seconds.
+Lex order from GRevLex basis of (I+FP):	4.46541 seconds.
 
-Quotient Ring GRevLex Order, Sugarless:	.036325 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	.004608 seconds.
+Quotient Ring GRevLex Order, Sugarless:	97.9968 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	9.95797 seconds.
 
-gbBoolean:	.003527 seconds.
-
-
-GRevLex Order of (I+FP):	.563629 seconds.
-Lex order from GRevLex basis of (I+FP):	.002109 seconds.
-
-Quotient Ring GRevLex Order, Sugarless:	.079592 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	.001109 seconds.
-
-gbBoolean:	.004326 seconds.
+gbBoolean:	.078887 seconds.
 
 
-GRevLex Order of (I+FP):	.009234 seconds.
-Lex order from GRevLex basis of (I+FP):	.00182 seconds.
+GRevLex Order of (I+FP):	.021057 seconds.
+Lex order from GRevLex basis of (I+FP):	.002212 seconds.
 
-Quotient Ring GRevLex Order, Sugarless:	.033503 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	.001052 seconds.
+Quotient Ring GRevLex Order, Sugarless:	.116612 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.001158 seconds.
 
-gbBoolean:	.601939 seconds.
+gbBoolean:	.359901 seconds.
 
 
-GRevLex Order of (I+FP):	.045828 seconds.
-Lex order from GRevLex basis of (I+FP):	.005202 seconds.
+GRevLex Order of (I+FP):	.013472 seconds.
+Lex order from GRevLex basis of (I+FP):	.003481 seconds.
 
-Quotient Ring GRevLex Order, Sugarless:	.090181 seconds.
-Quotient Ring Lex order from GRevLex basis, Sugarless:	.006931 seconds.
+Quotient Ring GRevLex Order, Sugarless:	.036923 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.004571 seconds.
 
-gbBoolean:	.012756 seconds.
+gbBoolean:	.003414 seconds.
+
+
+GRevLex Order of (I+FP):	.560207 seconds.
+Lex order from GRevLex basis of (I+FP):	.002067 seconds.
+
+Quotient Ring GRevLex Order, Sugarless:	.079725 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.001085 seconds.
+
+gbBoolean:	.004186 seconds.
+
+
+GRevLex Order of (I+FP):	.010679 seconds.
+Lex order from GRevLex basis of (I+FP):	.001814 seconds.
+
+Quotient Ring GRevLex Order, Sugarless:	.029221 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.000235 seconds.
+
+gbBoolean:	.139655 seconds.
+
+
+GRevLex Order of (I+FP):	.04689 seconds.
+Lex order from GRevLex basis of (I+FP):	.005462 seconds.
+
+Quotient Ring GRevLex Order, Sugarless:	.090045 seconds.
+Quotient Ring Lex order from GRevLex basis, Sugarless:	.005976 seconds.
+
+gbBoolean:	.01167 seconds.
 
 
 

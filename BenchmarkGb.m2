@@ -5,16 +5,16 @@ newPackage(
     Authors => {{Name => "Franziska Hinkelmann",
     Email => "",
     HomePage => ""}},
-    Headline => "",
+    Headline => "Benchmark",
     DebuggingMode => true
     )
 
-loadPackage "gbHelper"
-loadPackage "BooleanGB"
+needsPackage "gbHelper"
+needsPackage "BooleanGB"
 export {runBenchmark, makeBooleanNetwork, testgb}
 
 testgb = method()
-testgb Ideal := Bool => I -> (
+testgb Ideal := Boolean => I -> (
   gbTrace = 1;
   G := ideal gens gb I;
   print toString G;
@@ -49,41 +49,46 @@ runBenchmark Ideal := Ideal => I -> (
 )
 
 runBenchmark (Ideal,String) := Ideal => (I,ff) -> (
- R = ambient ring I;
+ R := ambient ring I;
  p := char R;
  assert( p == 2 );
  FP := ideal apply( gens R, x -> x^2 + x);
 
 -- lex in base ring
 
- Rlex = ZZ/(char R)[gens R, MonomialOrder=>Lex];
--- T := timing gens gb( sub( I, Rlex) + sub( FP, Rlex) );
--- tt := first T;
--- G := last T;
--- print ("Lex Order of (I+FP):\t" | toString tt | " seconds.");
--- ff << "Lex Order of (I+FP):\t" << toString tt << " seconds." << endl;
+  Rlex := ZZ/(char R)[gens R, MonomialOrder=>Lex];
+ T := timing gens gb( sub( I, Rlex) + sub( FP, Rlex) );
+ tt := first T;
+ G := last T;
+ print ("Lex Order of (I+FP):\t" | toString tt | " seconds.");
+ --ff << "Lex Order of (I+FP):\t" << toString tt << " seconds." << endl;
+ ff << toString tt << "\t";
 
- RgRevLex = ZZ/(char R)[gens R, MonomialOrder=>GRevLex];
+ RgRevLex := ZZ/(char R)[gens R, MonomialOrder=>GRevLex];
  T = timing gens gb( sub( I, RgRevLex) + sub( FP, RgRevLex) );
- tt = first T;
+ tt1 := first T;
  G = ideal last T;
  print ("GRevLex Order of (I+FP):\t" | toString tt | " seconds.");
- ff << "GRevLex Order of (I+FP):\t" << toString tt << " seconds." << endl;
+ --ff << "GRevLex Order of (I+FP):\t" << toString tt << " seconds." << endl;
+ --ff << toString tt << "\t";
 
  T = timing gens gb( sub( G, Rlex) + sub( FP, Rlex) );
- tt = first T;
+ tt2 := first T;
  G = ideal last T;
+ tt = tt1 + tt2;
  print ("Lex order from GRevLex basis of (I+FP):\t" | toString tt | " seconds.\n");
- ff << "Lex order from GRevLex basis of (I+FP):\t" << toString tt << " seconds.\n" << endl;
+ --ff << "Lex order from GRevLex basis of (I+FP):\t" << toString tt << " seconds.\n" << endl;
+ ff << toString tt << "\t";
 
 ---- lex in quotient ring
- QRlex = Rlex/ sub( FP, Rlex);
--- T = timing gens gb( sub( I, QRlex));
--- tt = first T;
--- G = last T;
--- print ("Quotient Ring Lex Order:\t" | toString tt | " seconds.");
+ QRlex := Rlex/ sub( FP, Rlex);
+ T = timing gens gb( sub( I, QRlex));
+ tt = first T;
+ G = last T;
+ print ("Quotient Ring Lex Order:\t" | toString tt | " seconds.");
+ ff << toString tt << "\t";
  
- QRgRevLex = RgRevLex/ sub( FP, RgRevLex);
+ QRgRevLex := RgRevLex/ sub( FP, RgRevLex);
 
 -- T = timing gens gb( sub( I, QRgRevLex));
 -- tt = first T;
@@ -108,22 +113,26 @@ runBenchmark (Ideal,String) := Ideal => (I,ff) -> (
 -- ff << "Quotient Ring Lex Order, Test:\t" << toString tt << " seconds." << endl;
 
  T = timing gens gb( sub( I, QRgRevLex), Algorithm=>Sugarless);
- tt = first T;
+ tt1 = first T;
  G = last T;
  print ("Quotient Ring GRevLex Order, Sugarless:\t" | toString tt | " seconds.");
- ff << "Quotient Ring GRevLex Order, Sugarless:\t" << toString tt << " seconds." << endl;
+ --ff << "Quotient Ring GRevLex Order, Sugarless:\t" << toString tt << " seconds." << endl;
+ --ff << toString tt << "\t";
 
  T = timing gens gb( sub( G, QRlex), Algorithm=>Sugarless);
- tt = first T;
+ tt2 = first T;
  G = last T;
+ tt = tt1 + tt2;
  print ("Quotient Ring Lex order from GRevLex basis, Sugarless:\t" | toString tt | " seconds.\n");
- ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t" << toString tt << " seconds.\n" << endl;
+ --ff << "Quotient Ring Lex order from GRevLex basis, Sugarless:\t" << toString tt << " seconds.\n" << endl;
+ ff << toString tt << "\t";
  
  T = timing gbBoolean I;
  tt = first T;
  G = last T;
- print ("gbBoolean:\t" | toString tt | " seconds.\n\n");
- ff << "gbBoolean:\t" << toString tt << " seconds.\n\n" << endl;
+ print ("-- gbBoolean:\t" | toString tt | " seconds.\n\n");
+ --ff << "gbBoolean:\t" << toString tt << " seconds.\n\n" << endl;
+ ff << toString tt << "\t"<<endl;
 
  G
 )
@@ -307,5 +316,7 @@ I = II6
  tt = first T;
  G = last T;
 
+restart
 installPackage "BenchmarkGb"
+loadPackage "BenchmarkGb"
 check "BenchmarkGb"
