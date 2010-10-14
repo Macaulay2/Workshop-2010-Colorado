@@ -1,13 +1,22 @@
 -- -*- coding: utf-8 -*-
+
+   {*
+   Copyright 2010 Amelia Taylor and Augustine O'Keefe.
+
+   You may redistribute this file under the terms of the GNU General Public
+   License as published by the Free Software Foundation, either version 2 of
+   the License, or any later version.
+   *}
+
 newPackage("Graphs",
      Authors => {
-	  {Name => "Amelia Taylor"},
-	  {Name => "Augustine O'Keefe"}
+	  {Name => "Amelia Taylor", Email => "originalbrickhouse@gmail.com"},
+	  {Name => "Augustine O'Keefe", Email => "aokeefe@tulane.edu"}
 	  },
      ---- Also Doug Torrance.  --- clearly a current author.  Current role of Amelia and Tina?
      ---- Shaowei Lin and Alex Diaz contributed mixedGraph
      DebuggingMode => true,
-     Headline => "Data types, visualization, and basic funcitons for graphs",
+     Headline => "Data types, visualization, and basic functions for graphs",
      Version => "0.1"
      )
 
@@ -53,6 +62,9 @@ export {Graph,
      }
 exportMutable {dotBinary,jpgViewer}
 
+graphData = "graphData"
+labels = "labels"
+newDigraph = "newDigraph"
 
 ------------------------------------------------
 -- Set graph types and constructor functions. -- 
@@ -484,13 +496,13 @@ vertices = method()
 vertices(Digraph) := G -> (
      if G#cache#?vertices then G#cache#vertices else(
      	  G1 := graph G;
-     	  V := keys G1;
+     	  V := sort keys G1;
      	  G#cache#vertices = V;
      	  V))   
 vertices(MixedGraph) := G -> (
      if G#cache#?vertices then G#cache#vertices else(
 	  G1 := graph G;
-	  V := toList sum(apply(keys(G1),i->set keys(graph G1#i)));
+	  V := sort toList sum(apply(keys(G1),i->set keys(graph G1#i)));
 	  G#cache#vertices = V;
 	  V))
 
@@ -545,11 +557,13 @@ descendents(Digraph,Thing) := (G,v) -> (
 	       G.cache#descendents = new HashTable from h);
      	  dE)
      )
+
 descendents(MixedGraph, Thing) := (G,v) -> (
      G1 := digraph G;
      if G1.cache#?descendents and G1.cache#descendents#?v then G1.cache#descendents#?v
      else (
 	  C := descendents(G1,v);
+	  dE := C;  -- added (Mike Stillman)
 	  if G1.cache#?descendents then (
 	       h := new MutableHashTable from G1.cache#descendents;
 	       h#v = dE;
@@ -896,7 +910,7 @@ topSort(Digraph) := G -> (
      	  L := reverse apply(sort apply(pairs ((DFS G)#"finishingTime"),reverse),p->p_1);
      	  H := hashTable{
 	       digraph => G,
-	       newDigraph => digraph hashTable apply(#L,i->i+1=>apply(G#(L_i),j->position(L,k->k==j)+1)),
+	       newDigraph => digraph hashTable apply(#L,i->i+1=>apply(toList (graph G)#(L_i),j->position(L,k->k==j)+1)),
 	       map => hashTable apply(#L,i->L_i => i+1)
 	       };
      	  new SortedDigraph from H
@@ -910,24 +924,24 @@ DFS = method()
 DFS(Digraph) := G -> (
      H := new MutableHashTable;
      H#graph = G;
-     H#color = new MutableHashTable;
-     H#p = new MutableHashTable;
-     H#d = new MutableHashTable;
-     H#f = new MutableHashTable;
-     H#t = 0;
-     scan(vertices G,u->(H#color#u="white";H#p#u=nil));
-     scan(vertices G,u->if H#color#u == "white" then H = DFSvisit(H,u));
-     new HashTable from {"discoveryTime" => new HashTable from H#d, "finishingTime" => new HashTable from H#f}
+     H#"color" = new MutableHashTable;
+     H#"p" = new MutableHashTable;
+     H#"d" = new MutableHashTable;
+     H#"f" = new MutableHashTable;
+     H#"t" = 0;
+     scan(vertices G,u->(H#"color"#u="white"; H#"p"#u=1));
+     scan(vertices G,u->if H#"color"#u == "white" then H = DFSvisit(H,u));
+     new HashTable from {"discoveryTime" => new HashTable from H#"d", "finishingTime" => new HashTable from H#"f"}
      )
 
 DFSvisit = (H,u) -> (
-     H#color#u = "gray";
-     H#t = H#t+1;
-     H#d#u = H#t;
-     scan(toList children(H#graph,u),v->if H#color#v == "white" then (H#p#v = u;H = DFSvisit(H,v)));
-     H#color#u = "black";
-     H#t = H#t+1;
-     H#f#u = H#t;
+     H#"color"#u = "gray";
+     H#"t" = H#"t"+1;
+     H#"d"#u = H#"t";
+     scan(toList children(H#graph,u),v->if H#"color"#v == "white" then (H#"p"#v = u;H = DFSvisit(H,v)));
+     H#"color"#u = "black";
+     H#"t" = H#"t"+1;
+     H#"f"#u = H#"t";
      H
      )
 
@@ -938,8 +952,8 @@ isCyclic = method()
 isCyclic(Digraph) := G -> (
      if instance(G,Graph) then error ("must be a digraph") else (
      	  D := DFS G;
-     	  member(true,flatten unique apply(select(keys G,u->#children(G,u)>0),u->(
-	       	    	 apply(children(G,u),v->(
+     	  member(true,flatten unique apply(select(vertices G,u->#children(G,u)>0),u->(
+	       	    	 apply(toList children(G,u),v->(
 		    	      	   L := {D#"discoveryTime"#v,D#"discoveryTime"#u,D#"finishingTime"#u,D#"finishingTime"#v};
      	       	    	      	   L == sort L
 		    	      	   )
@@ -1365,7 +1379,7 @@ doc ///
 	    	 showTikZ requires the external program dot2tex, available at http://www.fauskes.net/code/dot2tex/.
 		 
 		 The following code gives TikZ syntax for the complete graph K_5.
-            Example
+            Text
      	       	 showTikZ completeGraph 5
       ///
       
@@ -1379,6 +1393,19 @@ doc ///
 	Inputs
 	     S:String     
      ///
+
+TEST /// ---- family members, neighbors and non-neighbors. 
+G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
+H = digraph{{a,{b,c}},{b,{c,d}},{c,{d}},{c,{}}}
+assert(neighbors(G,a) === set {b,c})
+assert(nonneighbors(G,b) === set {d,e})
+assert(parents(H,a) === set {})
+assert(parents(H,c) === set {a,b})
+assert(children(H,a) === set {b,c})
+assert(descendents(H,a) === set {b,c,d})
+assert(nondescendents(H,c) === set {a,b})
+assert(foreFathers(H,c) === set {a,b})
+///
 
 end
 
@@ -1456,18 +1483,6 @@ end
 restart
 loadPackage"Graphs"
 
-TEST /// ---- family members, neighbors and non-neighbors. 
-G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
-H = digraph{{a,{b,c}},{b,{c,d}},{c,{d}},{c,{}}}
-assert(neighbors(G,a) === set {b,c})
-assert(nonneighbors(G,b) === set {d,e})
-assert(parents(H,a) === set {})
-assert(parents(H,c) === set {a,b})
-assert(children(H,a) === set {b,c})
-assert(descendents(H,a) === set {b,c,d})
-assert(nondescendents(H,c) === set {a,b})
-assert(foreFathers(H,c) === set {a,b})
-///
 
 TEST /// ---- display?
 
@@ -1486,3 +1501,25 @@ TEST /// ---- Functions on Graphs.
 exportMutable {dotBinary,jpgViewer 
 
 break
+
+TEST ///
+  -- descendents of a Digraph and MixedGraph
+  restart
+  needsPackage "Graphs"
+  G = digraph { {1, {2,3}}, {2, {4}}, {3, {4}} }
+  assert(descendents(G, 1) === set{2,3,4})
+  assert(descendents(G, 4) === set{})
+  assert(try (descendents(G, 5); false) else true)
+  
+  G = digraph { {1, {2,3}}, {2, {4}}, {3, {4}} }
+  peek G
+  descendents(G, 1)
+  peek G.cache
+  
+  B = bigraph { {1,4}, {1,5} }
+  G1 = mixedGraph(G, B)
+  vertices G1
+  peek G1
+  peek G1.cache
+  descendents(G1, 1)
+///
