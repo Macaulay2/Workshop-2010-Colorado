@@ -181,7 +181,8 @@ symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) -> (
 --    P=ker (Hom_A(E,(coker m)_0) -> Hom_A(E,(coker m)_1))
 --over the  exterior algebra A<e>.
 --                                 Berkeley, 19/12/2004, Frank Schreyer.
-     S:= ring x; E:=ring e;
+     S:= ring x; 
+     E:=ring e;
      a:=rank source m;
      La:=degrees source m;
      co:=toList select(0..a-1,i->  (La_i)_0==0);
@@ -282,6 +283,79 @@ directImageComplex Matrix := opts -> (f) -> (
 --     error("debug");
      EtoA fMN0
      )
+
+
+directImageComplex ChainComplex := opts -> (G) -> (
+     -- plan: compute both regularities
+     --   if a value is given, then it should be 
+     -- the max of the regularities of the terms of F
+     -- 
+     -- be sure that the lowest term of F is in position 0 to make book keeping simpler.
+     -- the following makes min F = 0.
+     F := G[min G]; 
+     S := ring F;
+     A := coefficientRing S;
+     StoA := map(A,S,DegreeMap => i -> drop(i,1));
+
+     len := max F; -- number of maps given in F, zero or not.
+     modules := apply(toList(0..len), i-> F_i);
+     maps := apply(toList(0..len-1 ), i->F.dd_(i+1));
+
+     regF := if opts.Regularity === null 
+              then (max apply(modules, 
+			M -> regularityMultiGraded M))
+	      else opts.Regularity;
+     if regF < 0 then regF = 0;
+
+{*     if regF < 0 then (
+	  maps = apply(maps, d-> basis(len+1, d); 
+	  regF = 0));
+*}
+--truncate len+1 steps beyond regF
+     maps = apply(len, i -> basis(regF+len+1,maps_i)); -- the maps are now numbered by the module they go TO.
+     modules = prepend(target maps_0, apply(maps, d->source d));
+     mapsA := apply(maps, d->StoA matrix d);
+     
+     xm := (1+len+regF) * degree(S_0);
+     Ediffs := apply(modules, M -> 
+	  symmetricToExteriorOverA(M ** S^{xm}));
+
+--     phiM := symmetricToExteriorOverA(M ** S^{xm});
+--     phiN := symmetricToExteriorOverA(N ** S^{xm});
+     E := ring Ediffs_0;
+     EtoA := map(A,E,DegreeMap=> i -> drop(i,1));     
+--     error();
+
+--     FM := complete res( image phiM, LengthLimit => max(1,1+regF));
+--     FN := complete res( image phiN, LengthLimit => max(1,1+regF));
+
+     Ereslen := apply(#modules, i -> complete res( image Ediffs_i, LengthLimit => len+1));
+     mapsE := apply(#mapsA, i -> map((Ereslen_i)_0, Ereslen_(i+1)_0, mapsA_i ** E));
+     FE := apply(#mapsA, i -> extend(Ereslen_i, Ereslen_(i+1), mapsE_i));
+
+--     FMN := extend(FN, FM, truncFA ** E);
+--     FMN = E^{-xm} ** FMN[regF];
+
+
+     Ereslen = apply(Ereslen, EE -> E^{-xm} ** EE[regF+len+1]);     	 
+     FE = apply(FE, FEi -> E^{-xm} ** FEi[regF+len+1]);     	 
+     E1 := directSum apply(len, i-> (Ereslen_i)_(-i+1));
+     E0 := directSum apply(len, i-> (Ereslen_i)_(-i));     
+     
+     D :=  apply(len, i-> apply(len, j->
+	       if i == j then (Ereslen_i).dd_(-i+1) else 
+	       if i==j-1 then ((FE_i)_(-i)) else 
+	       map((Ereslen_i)_(-i), (Ereslen_j)_(-j+1), 0)));
+     Dmat := matrix D;
+     Eres := complete res(coker Dmat, LengthLimit => max(1,1+regF+len));
+     ans := EtoA degreeD(0,Eres);
+     error();
+     )
+
+
+
+
+
 
 {* -- we will probably remove this soon (9/30/2010 DE+MES)
 truncateMultiGraded = method()

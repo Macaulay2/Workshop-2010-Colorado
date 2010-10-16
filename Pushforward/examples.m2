@@ -356,3 +356,75 @@ basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
      map(image monsF, image monsG, basM))
 
 
+------------------
+--directImageComplex(Complex)
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+--uninstallPackage "BGG"
+--installPackage "BGG"
+loadPackage("BGG", Reload =>true)
+debug BGG
+
+--complex with just one term:
+A =kk[a]--a dummy var
+S = A[x,y]
+n = -2
+F = chainComplex(map(S^0, S^{{n,0}}, 0), map(S^{{n,0}}, S^0, 0))
+directImageComplex (F[-1])
+regularityMultiGraded( S^{{n,0}})
+----
+A =kk[a]--a dummy var
+S = A[x,y]
+F = res ideal vars S
+directImageComplex F -- should be a constant map!
+D
+betti D
+EtoA degreeD(0, res coker D)
+
+F_0 = A^2
+F_1 = A^3
+
+G_0 = A^1
+G_1 = A^4
+
+directSum apply(2, i-> map(F_i,G_i,0))
+
+matrix{{map(F_0,F_0,1), map(F_0,G_1,0)}}
+
+map(F_0++F_1,G_0++G_1, (i,j)-> map(F_i,G_j, 0))
+map(F_0,F_0, (i,j)-> (i,j)->map(F_0,F_0, 0))
+
+F_0++F_1,G_0++G_1
+map(F1,G2,0)
+viewHelp zero
+
+viewHelp directSum
+K = Ediffs/source
+f1=map(K_0, K_1, sub(mapsA_0,E))
+f2=map(K_1, K_2, sub(mapsA_1,E))
+f1*f2
+
+G = S^1
+H = S^{1:{0,-1}}
+
+symmetricToExteriorOverA G
+symmetricToExteriorOverA truncate(1,G)
+
+
+e0 = Ediffs_0
+dual target e0
+Ediffs/target
+
+apply(Ediffs, res
+--Example: Eagon Northcott Complex as direct image of the Koszul
+--
+--viewHelp ChainComplex
+A=kk[a_(0,0)..a_(1,2)]
+S = A [x_0,x_1]
+M = sub(map(A^2, A^{3:-1},transpose genericMatrix(A,a_(0,0),3,2)), S)
+Y = (vars S)*M
+maps = apply(5, i-> koszul(i,Y))
+F = chainComplex maps -- the Koszul complex to push forward
+directImage F
+

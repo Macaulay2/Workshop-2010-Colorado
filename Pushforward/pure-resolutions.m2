@@ -98,7 +98,9 @@ pureRes(Ring,List,List) := (A,p,e) -> (
 end
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
-load "pure-resolutions.m2"
+loadPackage "BGG"
+
+--load "pure-resolutions.m2"
 
 A = kk[vars(0..4)]
 betti (P = pureRes(A, {2,2},{3,1}))
