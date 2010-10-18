@@ -428,6 +428,12 @@ EN.dd
 betti directImageComplex(F**S^{{1,0}})
 
 --Eagon Northcott family of Complexex for a p x q matrix
+--this code produces the list of all the "Eagon-Northcott" type
+--complexes for a given matrix. Try p,q = 2,6 or 3,6.
+--There's a funny error msg:
+--warning: clearing value of symbol p to allow access to subscripted variables based on it
+--What's that from?
+
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 loadPackage("BGG", Reload =>true)
