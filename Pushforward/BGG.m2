@@ -914,9 +914,9 @@ doc ///
      Eisenbud, Commutative Algebra, 1995, section A2.6.  This method can be generalized 
      to produce pure resolutions of any degree sequence.
 
-     These are the complexes associated to a generic 2 by 6 matrix.          
+     These are the complexes associated to a generic 2 by 5 matrix.
     Example
-      (p,q) = (2,6) -- number of rows and columns
+      (p,q) = (2,5) -- number of rows and columns
       A=ZZ/101[a_(0,0)..a_(p-1,q-1)];
       S = A [x_0..x_(p-1)];
       M = sub(map(A^p, A^{q:-1},transpose genericMatrix(A,a_(0,0),q,p)), S)
@@ -1058,6 +1058,22 @@ TEST ///
   C3 = directImageComplex(id_M3)
   assert isChainComplexMap C3
   assert(C3_0 == 0)
+///
+
+///
+  (p,q) = (2,5)
+  kk = ZZ/101
+  A=kk[a_(0,0)..a_(p-1,q-1)]
+  S = A [x_0..x_(p-1)]
+  M = sub(map(A^p, A^{q:-1},transpose genericMatrix(A,a_(0,0),q,p)), S)
+
+  Y = map(S^1, S^{q:{-1,-1}}, (vars S)*M)
+  F = koszul Y
+  L = directImageComplex(F**S^{{2,0}})
+  ans = new BettiTally from {(0,{0},0) => 3, (3,{4},4) => 5, 
+       (1,{1},1) => 10, (4,{5},5) => 2,
+       (2,{2},2) => 10};
+  assert(betti L == ans)
 ///
 
 end
