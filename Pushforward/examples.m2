@@ -437,7 +437,7 @@ betti directImageComplex(F**S^{{1,0}})
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 loadPackage("BGG", Reload =>true)
-(p,q) = (3,6)
+(p,q) = (2,6)
 A=kk[a_(0,0)..a_(p-1,q-1)]
 S = A [x_0..x_(p-1)]
 M = sub(map(A^p, A^{q:-1},transpose genericMatrix(A,a_(0,0),q,p)), S)
@@ -448,6 +448,6 @@ maps = apply(q, i->
 	  koszul(i+1,Y)));
 F = chainComplex maps; -- the Koszul complex to push forward
 betti (F, Weights=>{1,0})
-time L= for i from 0 to q-p+1 list directImageComplex(F**S^{{i,0}})
---50 seconds
+time L= for i from -1 to q-p+1 list directImageComplex(F**S^{{i,0}});
+--4.5 sec for p,q = 2,6 but 50 seconds for p,q = 3,6
 L/betti

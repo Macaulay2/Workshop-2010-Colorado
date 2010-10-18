@@ -285,15 +285,16 @@ directImageComplex Matrix := opts -> (f) -> (
      )
 
 
-directImageComplex ChainComplex := opts -> (G) -> (
-     -- plan: compute both regularities
-     --   if a value is given, then it should be 
-     -- the max of the regularities of the terms of F
-     -- 
-     -- be sure that the lowest term of F is in position 0 to make book keeping simpler.
-     -- the following makes min F = 0.
---     F := G[min G];
-     F := G;
+directImageComplex ChainComplex := opts -> F -> (
+     --The idea is to take the Tate resolutions of th modules
+     --in F at a point where they're all linear (beyond all the
+     --regularities) and form one map of the double complex
+     --there. Then resolve backward and take the degree zero part
+     --as usual.
+
+     --at the moment we don't handle the user-supplied regularity
+     --option.
+
      S := ring F;
      A := coefficientRing S;
      StoA := map(A,S,DegreeMap => i -> drop(i,1));
@@ -314,11 +315,10 @@ directImageComplex ChainComplex := opts -> (G) -> (
 	      else opts.Regularity;
      if regF < 0 then regF = 0;
 
-{*     if regF < 0 then (
-	  maps = apply(maps, d-> basis(len+1, d); 
-	  regF = 0));
-*}
---truncate len+1 steps beyond regF. This can be refined a bit.
+     --at the moment we don't handle the user-supplied regularity
+     --option.
+     
+     --truncate len+1 steps beyond regF. This can be refined a bit.
      truncMaps := apply(len, i -> basis(regF+len+1,maps_i)); -- the maps are now numbered by the module they go TO.
      truncModules := prepend(target truncMaps_0, apply(truncMaps, d->source d));
      mapsA := apply(truncMaps, d->StoA matrix d);
@@ -329,22 +329,12 @@ directImageComplex ChainComplex := opts -> (G) -> (
      --note: the sources of Ediffs seem to  be free modules over E
      --generated in degree zero.
 
---     phiM := symmetricToExteriorOverA(M ** S^{xm});
---     phiN := symmetricToExteriorOverA(N ** S^{xm});
      E := ring Ediffs_0;
      EtoA := map(A,E,DegreeMap=> i -> drop(i,1));     
---     error();
-
---     FM := complete res( image phiM, LengthLimit => max(1,1+regF));
---     FN := complete res( image phiN, LengthLimit => max(1,1+regF));
 
      Ereslen := apply(len+1, i -> complete res( image Ediffs_i, LengthLimit => len+1));
      mapsE := apply(len, i -> map((Ereslen_i)_0, Ereslen_(i+1)_0, mapsA_i ** E));
      FE := apply(len, i -> extend(Ereslen_i, Ereslen_(i+1), mapsE_i));
---error();
---     FMN := extend(FN, FM, truncFA ** E);
---     FMN = E^{-xm} ** FMN[regF];
-
 
      Ereslen = apply(Ereslen, EE -> E^{-xm} ** EE[regF+len+1]);     	 
      FE = apply(FE, FEi -> E^{-xm} ** FEi[regF+len+1]);     	 
@@ -361,9 +351,9 @@ directImageComplex ChainComplex := opts -> (G) -> (
 	       map(CE0_i, CE1_j, 0)));
      Dmat := matrix D;
      Eres := complete res(coker Dmat, LengthLimit => max(1,1+regF+len));
-     ans := (EtoA degreeD(0,Eres));
---     error();
-     ans[regF+1-minF])
+     (EtoA degreeD(0,Eres))[regF+1-minF]
+     )
+
 
 
 
