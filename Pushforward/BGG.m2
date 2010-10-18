@@ -113,7 +113,8 @@ cohomologyTable = method()
 cohomologyTable(CoherentSheaf, ZZ, ZZ) := CohomologyTally => (F,lo,hi) -> (
      M := module F;
      S := ring M;
-     E := (coefficientRing S)[Variables=>numgens S, SkewCommutative=>true];
+     e := local e;
+     E := (coefficientRing S)[e_0..e_(numgens S-1), SkewCommutative=>true];
      T := tateResolution(presentation M, E, lo, hi);
      tateToCohomTable T
      )
@@ -210,8 +211,9 @@ symmetricToExteriorOverA(Module) := M -> (
      xvars := vars S;
      A := coefficientRing S;
      if not S.?Exterior then(
+	  e := local e;
 	  --S.Exterior = exterior alg over A on dual vars to the vars of S (new vars have deg = {-1,0})
-	  S.Exterior = A[Variables => numgens S, SkewCommutative => true, Degrees=>{numgens S:-1}]
+	  S.Exterior = A[e_0 .. e_(numgens S - 1), SkewCommutative => true, Degrees=>{numgens S:-1}]
 	  );
      E := S.Exterior;
      symmetricToExteriorOverA(presentation M, vars E, vars S)
