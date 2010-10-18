@@ -292,14 +292,21 @@ directImageComplex ChainComplex := opts -> (G) -> (
      -- 
      -- be sure that the lowest term of F is in position 0 to make book keeping simpler.
      -- the following makes min F = 0.
-     F := G[min G]; 
+--     F := G[min G];
+     F := G;
      S := ring F;
      A := coefficientRing S;
      StoA := map(A,S,DegreeMap => i -> drop(i,1));
 
-     len := max F; -- number of maps given in F, zero or not.
-     modules := apply(toList(0..len), i-> F_i);
-     maps := apply(toList(0..len-1 ), i->F.dd_(i+1));
+     minF := min F; --lowest index i such that F_i is defined
+     maxF := max F; --highest index i such that F_i is defined     
+
+     len := max F-min F; -- number of maps given in F
+
+     modules := apply(toList(minF..maxF), i-> F_i);
+     --note: modules_i = F_(minF+i)
+     maps := apply(toList(minF+1..maxF), i->F.dd_i);
+     --note: maps_i = is the map with TARGET F_(minF+i)
 
      regF := if opts.Regularity === null 
               then (max apply(modules, 
@@ -311,14 +318,16 @@ directImageComplex ChainComplex := opts -> (G) -> (
 	  maps = apply(maps, d-> basis(len+1, d); 
 	  regF = 0));
 *}
---truncate len+1 steps beyond regF
-     maps = apply(len, i -> basis(regF+len+1,maps_i)); -- the maps are now numbered by the module they go TO.
-     modules = prepend(target maps_0, apply(maps, d->source d));
-     mapsA := apply(maps, d->StoA matrix d);
+--truncate len+1 steps beyond regF. This can be refined a bit.
+     truncMaps := apply(len, i -> basis(regF+len+1,maps_i)); -- the maps are now numbered by the module they go TO.
+     truncModules := prepend(target truncMaps_0, apply(truncMaps, d->source d));
+     mapsA := apply(truncMaps, d->StoA matrix d);
      
      xm := (1+len+regF) * degree(S_0);
-     Ediffs := apply(modules, M -> 
+     Ediffs := apply(truncModules, M -> 
 	  symmetricToExteriorOverA(M ** S^{xm}));
+     --note: the sources of Ediffs seem to  be free modules over E
+     --generated in degree zero.
 
 --     phiM := symmetricToExteriorOverA(M ** S^{xm});
 --     phiN := symmetricToExteriorOverA(N ** S^{xm});
@@ -329,28 +338,32 @@ directImageComplex ChainComplex := opts -> (G) -> (
 --     FM := complete res( image phiM, LengthLimit => max(1,1+regF));
 --     FN := complete res( image phiN, LengthLimit => max(1,1+regF));
 
-     Ereslen := apply(#modules, i -> complete res( image Ediffs_i, LengthLimit => len+1));
-     mapsE := apply(#mapsA, i -> map((Ereslen_i)_0, Ereslen_(i+1)_0, mapsA_i ** E));
-     FE := apply(#mapsA, i -> extend(Ereslen_i, Ereslen_(i+1), mapsE_i));
-
+     Ereslen := apply(len+1, i -> complete res( image Ediffs_i, LengthLimit => len+1));
+     mapsE := apply(len, i -> map((Ereslen_i)_0, Ereslen_(i+1)_0, mapsA_i ** E));
+     FE := apply(len, i -> extend(Ereslen_i, Ereslen_(i+1), mapsE_i));
+--error();
 --     FMN := extend(FN, FM, truncFA ** E);
 --     FMN = E^{-xm} ** FMN[regF];
 
 
      Ereslen = apply(Ereslen, EE -> E^{-xm} ** EE[regF+len+1]);     	 
      FE = apply(FE, FEi -> E^{-xm} ** FEi[regF+len+1]);     	 
-     E1 := directSum apply(len, i-> (Ereslen_i)_(-i+1));
-     E0 := directSum apply(len, i-> (Ereslen_i)_(-i));     
-     
-     D :=  apply(len, i-> apply(len, j->
-	       if i == j then (Ereslen_i).dd_(-i+1) else 
-	       if i==j-1 then ((FE_i)_(-i)) else 
-	       map((Ereslen_i)_(-i), (Ereslen_j)_(-j+1), 0)));
+
+     E1 := directSum apply(len+1, i-> (Ereslen_i)_(-regF-i));
+     CE1 := components E1;
+
+     E0 := directSum apply(len+1, i-> (Ereslen_i)_(-regF-i-1));     
+     CE0 := components E0;
+          
+     D :=  apply(len+1, i-> apply(len+1, j->
+	       if j == i   then -((Ereslen_i).dd_(-regF-i)) else 
+	       if j == i+1 then ((FE_i)_(-regF-j)) else 
+	       map(CE0_i, CE1_j, 0)));
      Dmat := matrix D;
      Eres := complete res(coker Dmat, LengthLimit => max(1,1+regF+len));
-     ans := EtoA degreeD(0,Eres);
-     error();
-     )
+     ans := (EtoA degreeD(0,Eres));
+--     error();
+     ans[regF+1-minF])
 
 
 

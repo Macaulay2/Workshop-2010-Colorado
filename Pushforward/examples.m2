@@ -361,70 +361,87 @@ basis(List,List,Matrix) := opts -> (lo,hi,M) -> (
 
 restart
 path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
---uninstallPackage "BGG"
---installPackage "BGG"
 loadPackage("BGG", Reload =>true)
 debug BGG
-
 --complex with just one term:
 A =kk[a]--a dummy var
 S = A[x,y]
+n=2
+F = chainComplex(map(S^{{0,0}}, S^{{-n,0}}, matrix{{x^(n-1)*y}}))
+F.dd_1
+piF =directImageComplex F
+netList apply(toList(min Eres..max Eres), i->degrees Eres_i)
+--
 n = -2
-F = chainComplex(map(S^0, S^{{n,0}}, 0), map(S^{{n,0}}, S^0, 0))
-directImageComplex (F[-1])
-regularityMultiGraded( S^{{n,0}})
-----
-A =kk[a]--a dummy var
+F1 = chainComplex(map(S^{{n+1,0}}, S^{2:{n,0}}, matrix{{x,y}}))
+isHomogeneous (F1.dd_1)
+F0 = F1[1]
+
+piF0 = directImageComplex (F0)
+piF0.dd_(0)
+piF1 = directImageComplex (F1)
+piF1.dd_1
+
+
+--
+F1 = chainComplex(map(S^0, S^{{n,0}}, 0), 
+                 map(S^{{n,0}}, S^0, 0),
+		 map(S^0,S^0,0))
+F0 = F1[1]
+
+piF0 = directImageComplex (F0)
+piF1 = directImageComplex (F1)
+
+
+----Koszul complex on two vars to Eagon Northcott for a 2x2 matrix
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage("BGG", Reload =>true)
+debug BGG
+A =kk[a,b,c,d]--a dummy var
 S = A[x,y]
 F = res ideal vars S
-directImageComplex F -- should be a constant map!
-D
-betti D
-EtoA degreeD(0, res coker D)
+F = res ideal"ax+by,cx+dy"
+directImageComplex F 
+oo.dd_1
 
-F_0 = A^2
-F_1 = A^3
-
-G_0 = A^1
-G_1 = A^4
-
-directSum apply(2, i-> map(F_i,G_i,0))
-
-matrix{{map(F_0,F_0,1), map(F_0,G_1,0)}}
-
-map(F_0++F_1,G_0++G_1, (i,j)-> map(F_i,G_j, 0))
-map(F_0,F_0, (i,j)-> (i,j)->map(F_0,F_0, 0))
-
-F_0++F_1,G_0++G_1
-map(F1,G2,0)
-viewHelp zero
-
-viewHelp directSum
-K = Ediffs/source
-f1=map(K_0, K_1, sub(mapsA_0,E))
-f2=map(K_1, K_2, sub(mapsA_1,E))
-f1*f2
-
-G = S^1
-H = S^{1:{0,-1}}
-
-symmetricToExteriorOverA G
-symmetricToExteriorOverA truncate(1,G)
-
-
-e0 = Ediffs_0
-dual target e0
-Ediffs/target
-
-apply(Ediffs, res
---Example: Eagon Northcott Complex as direct image of the Koszul
---
---viewHelp ChainComplex
+--Eagon Northcott Complex for a 2x3 matrix
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage("BGG", Reload =>true)
+debug BGG
 A=kk[a_(0,0)..a_(1,2)]
 S = A [x_0,x_1]
 M = sub(map(A^2, A^{3:-1},transpose genericMatrix(A,a_(0,0),3,2)), S)
 Y = (vars S)*M
-maps = apply(5, i-> koszul(i,Y))
+maps = apply(3, i-> 
+     map( S^{binomial(3,i):{-i,-i}}, 
+	  S^{binomial(3,i+1):{-i-1,-i-1}}, 
+	  koszul(i+1,Y)))
+netList (maps/degrees)
 F = chainComplex maps -- the Koszul complex to push forward
-directImage F
+betti (F, Weights=>{1,0})
+EN = directImageComplex F
+betti EN
+EN.dd
+--and it's dual:
+betti directImageComplex(F**S^{{1,0}})
 
+--Eagon Northcott family of Complexex for a p x q matrix
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+loadPackage("BGG", Reload =>true)
+(p,q) = (3,6)
+A=kk[a_(0,0)..a_(p-1,q-1)]
+S = A [x_0..x_(p-1)]
+M = sub(map(A^p, A^{q:-1},transpose genericMatrix(A,a_(0,0),q,p)), S)
+Y = (vars S)*M;
+maps = apply(q, i-> 
+     map( S^{binomial(q,i):{-i,-i}}, 
+	  S^{binomial(q,i+1):{-i-1,-i-1}}, 
+	  koszul(i+1,Y)));
+F = chainComplex maps; -- the Koszul complex to push forward
+betti (F, Weights=>{1,0})
+time L= for i from 0 to q-p+1 list directImageComplex(F**S^{{i,0}})
+--50 seconds
+L/betti
