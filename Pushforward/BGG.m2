@@ -711,11 +711,24 @@ document {
      	  ///,
      SeeAlso => {symExt}
      }
+
+doc ///
+   Key
+     directImageComplex
+     [directImageComplex, Regularity]
+   Headline
+     direct image complex
+   Usage
+     directImageComplex F
+   Description
+    Text
+      Forms a minimal free complex representing the direct image complex of $F$ in the
+      derived category, where $F$ is a module, chain complex or map of modules.
+///
+
 doc ///
    Key 
-     directImageComplex
      (directImageComplex, Module)
-     [directImageComplex, Regularity]
    Headline
      Complex representing the direct image 
    Usage
@@ -875,6 +888,50 @@ doc ///
    SeeAlso
      directImageComplex
      universalExtension
+///
+
+doc ///
+   Key
+     (directImageComplex, ChainComplex)
+   Headline
+     direct image of a chain complex
+   Usage
+     piC = directImageComplex C
+   Inputs
+     C:ChainComplex
+       over a bigraded ring $S = A[y_0..y_n]$, where $A$ is singly graded
+   Outputs
+     piC:ChainComplex
+       a minimal free complex representing the direct image complex in the derived category
+   Description
+    Text
+     The method is an elaboration of the exterior algebra method for computing cohomology
+     discovered by Eisenbud, Floeystad, Schreyer: Sheaf cohomology and free resolutions over
+     exterior algebras. Trans. Amer. Math. Soc. (2003).
+
+     We give an application of this function to create generalized Eagon-Northcott complexes,
+     discovered by Buchsbaum, Eisenbud, and Kirby, and described in 
+     Eisenbud, Commutative Algebra, 1995, section A2.6.  This method can be generalized 
+     to produce pure resolutions of any degree sequence.
+
+     These are the complexes associated to a generic 2 by 6 matrix.          
+    Example
+      (p,q) = (2,6) -- number of rows and columns
+      A=ZZ/101[a_(0,0)..a_(p-1,q-1)];
+      S = A [x_0..x_(p-1)];
+      M = sub(map(A^p, A^{q:-1},transpose genericMatrix(A,a_(0,0),q,p)), S)
+      Y = map(S^1, S^{q:{-1,-1}}, (vars S)*M)
+      F = koszul Y
+      L = for i from -1 to q-p+1 list directImageComplex(F**S^{{i,0}});
+      L/betti
+   Caveat
+     This function is not yet functorial, i.e., there is no method to take a map of
+     chain complexes and produce the induced map on direct image complexes.
+     Additionally, the input ring must be a tower ring with exactly two gradings, and the
+     variables must have degree $\{0,1\}$ and $\{1,0\}$
+     A later version will remove these restrictions
+   SeeAlso
+     directImageComplex
 ///
 
 doc ///
