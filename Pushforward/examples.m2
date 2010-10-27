@@ -450,3 +450,125 @@ betti (F, Weights=>{1,0})
 time L= for i from -1 to q-p+1 list directImageComplex(F**S^{{i,0}});
 --4.5 sec for p,q = 2,6 but 50 seconds for p,q = 3,6
 L/betti
+
+
+-----------
+--Projection from multiple projective spaces?
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+path = prepend( "/Users/mike/colo2010/PushForward",path)
+loadPackage("BGG", Reload =>true)
+kk= ZZ/101
+
+A=kk[a,b]
+B = A[c,d]
+C = B[e,f]
+
+--useful snippets
+coefficientRing C === B
+ultimate(coefficientRing, C) === kk
+
+C1 = kk[gens (flattenRing coefficientRing C)_0][gens C]
+f1 = map(C1,C)
+f2 = map (coefficientRing C, coefficientRing C1)
+
+--can f1, f2 be applied to a ChainComplex and a ChainComplexMap??
+
+KK = koszul vars C
+
+f1 KK
+f2 
+
+
+
+-- want a version of directImageComplex that works on 
+-- just the last step of a multiple tower ring;
+
+directImageComplex1 = method(Options => {Regularity=>null})
+directImageComplex1 Thing := opts -> X -> (
+     C := ring X;
+     B := coefficientRing C;
+     kk := ultimate(coefficientRing, B);
+     if B === kk then 
+           return directImageComplex(X, Regularity => opts);
+
+     B1 := (flattenRing B)_0;
+     C1 := kk[gens (flattenRing B)_0][gens C];
+     f1 := map(C1,C);
+     f2 := map (coefficientRing C, coefficientRing C1);
+     
+     f2 directImageComplex(f1 X, Regularity => opts)
+     )
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+path = prepend( "/Users/mike/colo2010/PushForward",path)
+loadPackage("BGG", Reload =>true)
+
+(p,q) = (2,5)
+k = ZZ/101
+kk = k[s,t]
+A=kk[a_(0,0)..a_(p-1,q-1)]
+S = A [x_0..x_(p-1)]
+M = sub(map(A^p, A^{q:-1},transpose genericMatrix(A,a_(0,0),q,p)), S)
+
+Y = map(S^1, S^{q:{-1,-1}}, (vars S)*M)
+F = koszul Y
+betti (F, Weights=>{1,0})
+time L= for i from -1 to q-p+1 list directImageComplex(F**S^{{i,0}});
+--4.5 sec for p,q = 2,6 but 50 seconds for p,q = 3,6
+L/betti
+
+
+-- then one that recursively projects to the first component.
+
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+notify = true
+loadPackage("BGG", Reload =>true)
+path
+installPackage "BGG"
+viewHelp BGG
+viewHelp loadPackage
+
+KK=ZZ/101
+A = KK[x_1..x_4]
+B = A[a,b]
+C = B[s,t]
+D = C[u,v]
+pars(3,{2,2,3})
+
+
+analyzeProductOfProjectiveSpaces = method()
+analyzeProductOfProjectiveSpaces (Ring):= S -> (
+     -- given an iterated tower ring S = A[x_(0,0)..x_0,n1][...]
+     --representing a product of projective spaces over A, say
+     --P^(e_0) x P^(e_1) x ... x P^(e_m), this returns the list
+     --of e_i 
+     K := ultimate(coefficientRing, S);
+     T := S;
+     eList := {};
+     while T =!= K do (
+	  eList = append(eList, numgens T - 1);
+	  T = coefficientRing T);
+     reverse eList)
+
+numgens A
+analyzeProductOfProjectiveSpaces  D
+numgens D
+L = {}
+append(L, numgens D)
+
+     M := n-1+e_0+e_1; 
+     params := matrix{for k from 0 to M list(
+	  P := pars(k,{n-1,e_0,e_1});
+	  sum(P, p -> product(ell, i->sub(x_(i, p_i), T))
+	  ))};
+
+     )
+F = directImageComplex (M)
+F.dd
+ring F
+degrees ring F
+
+

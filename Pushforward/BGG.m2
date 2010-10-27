@@ -204,6 +204,7 @@ symmetricToExteriorOverA(Matrix,Matrix,Matrix):= (m,e,x) -> (
      phi:=map(M1,M0,transpose G)
      )
 
+
 symmetricToExteriorOverA(Module) := M -> (
      --M is a module over S = A[x0...].  must be gen in x-degree 0,
      --related in x-degree 1
@@ -218,6 +219,7 @@ symmetricToExteriorOverA(Module) := M -> (
      E := S.Exterior;
      symmetricToExteriorOverA(presentation M, vars E, vars S)
      )
+
 
 directImageComplex = method(Options => {Regularity=>null})
 directImageComplex Module := opts -> (M) -> (
