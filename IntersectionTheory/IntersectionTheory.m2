@@ -125,7 +125,7 @@ doc ///
       Here is Schubert code that will build the Grassmannian and its universal sub- and quotient
       bundles.
     Example
-      grass = (k,n) -> flagBundle({k,n-k}) --In Schubert, we build Grassmannians as special cases
+      grass = (k,n) -> flagBundle({k,n-k}) --In Schubert, we build Grassmannians as special cases of flag bundles
       G = grass(2,4) -- Our favorite GG(1,3)
       (S,Q) = G.Bundles -- S is the universal subbundle, Q is the universal quotient bundle
       S -- Schubert tells us that S is an abstract sheaf of rank 2
@@ -155,12 +155,14 @@ doc ///
       $H_{2,1} = \sigma_1$ @BR{}@ $H_{2,2} = \sigma_2$ @BR{}@ $H_{1,1} = -\sigma_1$ @BR{}@
       $H_{1,2} = \sigma_{1,1}$
       
-      The Schubert classes can also be accessed directly using the @TO schubertCycle'@
-      command -- see Section 4.3 for details.
+      Obviously this is less than ideal for our purposes.  Fortunately, we also have the
+      @TO schubertCycle@ command at our disposal.  Schubert cycles in General will be discussed
+      in ***LINK HERE *** Section 4.3.  For our purposes, it is sufficient to note that the
+      cycle $\sigma_{i,j}$ can be obtained as {\tt schubertCycle(\{i,j\},G)}.
       
       As an example, we can compute $(\sigma_1)^2$:
     Example
-      sigma_1 = H_(2,1)
+      sigma_1 = schubertCycle({1,0},G)
       c = (sigma_1)^2
     Text
       Oops!  This just gave us $H_{2,1}^2$ back!  Schubert2 actually uses $\sigma_1^2$ and
@@ -179,7 +181,7 @@ doc ///
       After phrasing the problem in terms of Schubert calculus, this is easy to calculate both by hand
       and in Schubert2:
     Example
-      sigma_1 = H_(2,1)
+      sigma_1 = schubertCycle({1,0},G)
       integral (sigma_1)^4
     Text
       The command {\tt integral} here returns the degree of the zero-cycle $(\sigma_1)^4$, which is
@@ -190,7 +192,7 @@ doc ///
       We can easily build a function which, given the degree $d$ of a space curve $C$, returns the
       cycle of lines in ${\mathbb P}^3$ meeting $C$:
     Example
-      sigma_1 = H_(2,1)
+      sigma_1 = schubertCycle({1,0},G)
       linesMeetingCurve = d -> d*sigma_1
     Text
       And now we can calculate, for example, how many lines meet four general conics:
@@ -202,9 +204,9 @@ doc ///
       parameters:
     Example
       S = base d --Our base variety, with one "auxiliary parameter" d
-      G' = flagBundle({2,2},S,VariableNames => K) --GG(1,3) with our extra parameter
+      G' = flagBundle({2,2},S) --GG(1,3) with our extra parameter
       intersectionRing G' --note the additional parameter d
-      sigma_1 = K_(2,1)
+      sigma_1 = schubertCycle({1,0},G')
       linesmeetingcurve = d*sigma_1
       integral linesmeetingcurve^4
     Text
@@ -216,9 +218,9 @@ doc ///
       to a general curve of degree d and genus g:  
     Example
       S = base(g,d') --We use d' to avoid the d from the last example
-      G'' = flagBundle({2,2},S,VariableNames => L)
-      sigma_2 = L_(2,2)
-      sigma_(1,1) = L_(1,2)
+      G'' = flagBundle({2,2},S)
+      sigma_2 = schubertCycle({2,0},G'')
+      sigma_(1,1) = schubertCycle({1,1},G'')
       cycleofchords = ((d'-1)*(d'-2)/2 - g)*sigma_2 + (d'*(d'-1)/2)*sigma_(1,1)
     Text
       The keynote question was: how many lines are secant to two general twisted cubics?  But
@@ -233,7 +235,7 @@ doc ///
       sub(chordstotwocurves, {d' => 3, g => 0/1})
     Text
       WARNING: because of some ugly M2 design decisions, if you don't make at least one of $d'$ or
-      $g$ a rational number, this subsitute will return the wrong answer!  Hopefully this design
+      $g$ a rational number, this {\tt sub} will return the wrong answer!  Hopefully this design
       will be changed in the future.
       
       Exercise 4.25 (a):
@@ -242,7 +244,7 @@ doc ///
       ${\mathbb P}^3$, how many chords to $C$ meet both $L$ and $M$?  Using our work above,
       we immediately compute:
     Example
-      sigma_1 = L_(2,1)
+      sigma_1 = schubertCycle({1,0},G'')
       integral (cycleofchords*(sigma_1)^2)
     Text
       
@@ -253,7 +255,7 @@ doc ///
       Using our Grassmannian {\tt G'} with an extra base parameter $d$, we build the cycle
       of tangent lines to a general surface of degree $d$:
     Example
-      sigma_1 = K_(2,1)
+      sigma_1 = schubertCycle({1,0},G')
       tangentcycle = d*(d-1)*sigma_1
     Text
       Now we can compute the number of lines tangent to four general surfaces of degree $d$:
@@ -274,13 +276,11 @@ doc ///
     Text
       Subsection 4.3.1
       
-      We build arbitrary Schubert cycles using the command @TO schubertCycle'@  (The ' is
-      there to indicate that we're using "Fulton-style" notation, not
-      "Grothendieck-style" notation).
+      We build arbitrary Schubert cycles using the command @TO schubertCycle@.
       For example, on ${\mathbb G}(2,4)$, we can build the cycle $\sigma_{2,1,1}$ as follows:
     Example
       G24 = flagBundle({3,2})
-      sigma_(2,1,1) = schubertCycle'({2,1,1},G24)
+      sigma_(2,1,1) = schubertCycle({2,1,1},G24)
     Text
       
       Subsection 4.3.2
@@ -294,7 +294,7 @@ doc ///
       $(\sigma_1)^6$:
     Example
       G14 = flagBundle({2,3})
-      sigma_1 = schubertCycle'({1,0},G14)
+      sigma_1 = schubertCycle({1,0},G14)
       integral (sigma_1)^6
     Text
       Note that this is the degree of ${\mathbb G}(1,4)$ in the Plucker embedding, since $\sigma_1$
@@ -311,7 +311,7 @@ doc ///
     Example
       numOfLines = k -> (
 	   G := flagBundle({2,2*k});
-	   sigma := schubertCycle'({k,0}, G);
+	   sigma := schubertCycle({k,0}, G);
 	   integral sigma^4)
     Text
       Now we can calculate to our hearts' content:
@@ -334,7 +334,7 @@ doc ///
     Example
       G37 = flagBundle({3,4})
       A37 = intersectionRing G37
-      sigma = 8*schubertCycle'({3,2,1},G37)
+      sigma = 8*schubertCycle({3,2,1},G37)
       integral sigma^2
     Text
       More generally, we can ask: given 2 general quadrics in ${\mathbb P}^{2k+2}$, how many
@@ -343,7 +343,7 @@ doc ///
       numOfPlanes = k -> (
 	   G:= flagBundle({k+1,k+2});
 	   schubertlist := apply(k+1,i-> k+1-i); --the list {k+1,k,...,1}
-	   sigma := (2^(k+1))*schubertCycle'(schubertlist, G);
+	   sigma := (2^(k+1))*schubertCycle(schubertlist, G);
 	   integral sigma^2)
       numOfPlanes(2) --This was Exercise 4.43
       for k from 2 to 4 do (
@@ -357,7 +357,7 @@ doc ///
       @TO "Intersection Theory Section 4.2"@:
     Example
       G36 = flagBundle({3,3})
-      c = schubertCycle'({2,1,0},G36)
+      c = schubertCycle({2,1,0},G36)
       toSchubertBasis(c^2)
     Text
       We see that $\sigma_{3,2,1}$ occurs with coefficient $2$ in $\sigma_{2,1}^2$.
@@ -792,7 +792,7 @@ installPackage("IntersectionTheory", RerunExamples=>true)
 installPackage("Schubert2", RerunExamples=>true)
 viewHelp IntersectionTheory
 X = flagBundle({2,2})
-s = schubertCycle'({1,0},X)
+s = schubertCycle({1,0},X)
 toSchubertBasis s
 peek X
 (S,f) = schubertRing X
@@ -826,8 +826,8 @@ time flagBundle({1,2,2,2,3})
 restart
 loadPackage "Schubert2"
 X = flagBundle({2,2})
-schubertCycle'((2,3),X)
+schubertCycle((2,3),X)
 Y = flagBundle({2,3})
-schubertCycle'((0,2),Y)
+schubertCycle((0,2),Y)
 
 viewHelp incidenceCorrespondence
