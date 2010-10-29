@@ -22,6 +22,7 @@ export {
      directImageComplex, universalExtension, Regularity, 
      Exterior,
      pureResolution
+--     pars
      }
 
 symExt = method()
@@ -355,7 +356,12 @@ directImageComplex ChainComplex := opts -> F -> (
 	       map(CE0_i, CE1_j, 0)));
      Dmat := matrix D;
      Eres := complete res(coker Dmat, LengthLimit => max(1,1+regF+len));
-     (EtoA degreeD(0,Eres))[regF+1-minF]
+     dirIm := (EtoA degreeD(0,Eres))[regF+1-minF];
+     --now truncate aware the parts below zero and above 
+     nonzero := positions(apply(min dirIm..max dirIm, i -> rank dirIm_i != 0), t -> t);
+     minDirIm := min nonzero + min dirIm;
+     maxDirIm := max nonzero + min dirIm;
+     chainComplex(apply(minDirIm..maxDirIm, i-> dirIm.dd_i))[-minDirIm+1]
      )
 
 
