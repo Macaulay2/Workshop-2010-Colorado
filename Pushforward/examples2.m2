@@ -70,48 +70,31 @@ productIndices {2,2,2}
 productIndices{0,2}
 productIndices{2,0}
 ///
-projectiveProduct = method(Options=>{Sparse => true})
-projectiveProduct(Ring, List) := opts -> (A,D) -> (
+projectiveProduct = method()
+projectiveProduct(Ring, List) := (A,D) -> (
      --Takes a list of dimensions List
      --and makes the appropriate product of 
      --projective spaces over the base A, as a tower ring.
      --Returns the tower ring
      --together with a system of multilinear parameters
      --(degree = {1,..,1})
-     --for the whole product
+     --for the whole product.
      --The length of the sop dim A - 1 + sum dimList, 1 more than 
      --the projective dimension of the whole product.
-     
-     --If the option Sparse == true, then the symmetric functions
-     --are used to make the s.o.p., while if Sparse == false
-     --we want to return a generic
+     --The sop is formed from the symmetric functions.
      S := A;
      x := local x;
      SList := apply (#D, i->S = S[x_(i,0)..x_(i,D_i)]);
      SList = prepend(A,SList);
      SS := last SList;
-
-     if opts.Sparse == true then (
-     	  dimList := prepend(numgens A-1, D);
-     	  params := matrix{for k from 0 to sum dimList list(
-	  P := partitions(k,dimList);
-	  sum(P, p -> product(#dimList, i->sub(SList_i_(p_i), SS))
-	  ))}
-     );
-
-     if opts.Sparse == false then (
-  	  DPlus := D + splice{#D:1};
-	  if numgens A < product DPlus then 
-	       error("A doesn't have enough variables");
-	  ind := J -> sum(#J,j->
-	               J_j*product(apply(#DPlus-j-1,
-			 i->DPlus_(j+1+i))
-		              )
-			 );
-	  JJ := productIndices DPlus;
-	  params = matrix{apply(JJ, J-> A_(ind J)*product(
-		        apply(#J, j->SList_(j+1)_(J_j))))}
-     );
+     dimList := prepend(numgens A-1, D);
+     params := matrix{
+	  for k from 0 to sum dimList list(
+     P := partitions(k,dimList);
+     sum(P, p -> product(#dimList, i->sub(SList_i_(p_i), SS))
+	  )
+                                           ) 
+                     };
      (SS,params)
      )
 ///
@@ -260,21 +243,22 @@ pureResolution(Matrix, List) := opts -> (M, degListOrig) -> (
      A^{-degListOrig_0} ** K
      )
 
+pureResolution(ZZ, List) := (p, degList) -> (
 --a version with the sparse system of parameters, giving
 --just the characteristic and letting the program supply the
 --ground ring.(Produces module of finite length with the given
 --pure resolution type.)
-pureResolution(ZZ, List) := opts -> (p, degList) -> (
      a := local a;
-     if opts.Sparse == true then 
      A := ZZ/p[a_0..a_(#degList-2)];
      pureResolution(A, degList, Sparse => opts.Sparse)
      )
 
---A version with a generic system of q parameters.
+
 pureResolution(ZZ,ZZ,List):= opts -> (p, q, degList) -> (
+     --A version with a generic system of q parameters.     
      --p will be the characteristic, q the number of parameters
-     --(the codimension of support, at least when q is large enough.)
+     --(the codimension of support, 
+     --at least when q is large enough.)
      
      --first compute the number of variables needed:
      dimList1 := apply(#degList-1, i->degList_(i+1)-degList_i-1);
@@ -311,7 +295,7 @@ prune (homology F)_1
 
 transpose (projectiveProduct(kk[a,b], {1,1}))_1
 transpose (projectiveProduct(kk[a,b,c,d], {1,1}))_1
-transpose (projectiveProduct(kk[a,b,c,d], {1,1}, Sparse=>false))_1
+transpose (projectiveProduct(kk[a,b,c,d], {1,1}))_1
 
 A = kk[a,b,c,d]
 betti (F= pureResolution(A, {0,2,3}))

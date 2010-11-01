@@ -21,9 +21,7 @@ export {
      beilinson, cohomologyTable, 
      directImageComplex, universalExtension, Regularity, 
      Exterior,
-     pureResolution,
-     Sparse,
-     TargetRing
+     pureResolution
      }
 
 symExt = method()
@@ -475,7 +473,7 @@ pars = (k, mm) -> (
     select(P,p->#p == #mm))
 
 
-pureResolution = method(Options =>{Sparse => true})
+pureResolution = method()
 pureResolution(Ring,List,List) := opts->(A,p,e) -> (
      --n = number of variables = length of resolution
      --p = {p0,p1} where to make the two non linear steps
