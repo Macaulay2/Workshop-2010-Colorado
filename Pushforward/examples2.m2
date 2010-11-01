@@ -25,26 +25,7 @@ partitions(ZZ, List) := (k, mm) -> (
 		       );
     select(P,p->#p == #mm))
 
-{*
---The following code throws away the gradings too soon!!
-
-directImageComplex1 = method(Options => {Regularity=>null})
-directImageComplex1 Thing := opts -> X -> (
-     C := ring X;
-     B := coefficientRing C;
-     kk := ultimate(coefficientRing, B);
-     if B === kk then 
-           return directImageComplex(X, Regularity => opts);
-
-     B1 := (flattenRing B)_0;
-     C1 := kk[gens (flattenRing B)_0][gens C];
-     f1 := map(C1,C);
-     f2 := map (coefficientRing C, coefficientRing C1);
-     
-     f2 directImageComplex(f1 X, Regularity => opts)
-     )
-*}
-
+--the following code is not actually used
 analyzeProductOfProjectiveSpaces = method()
 analyzeProductOfProjectiveSpaces (Ring):= S -> (
      -- given an iterated tower ring S = A[x_(0,0)..x_0,n1][...]
@@ -151,9 +132,46 @@ dimList = {2}
 dimList = {0,1}
 A = kk[a,b]
 L = projectiveProduct (A,dimList)
+///
 
+projectiveProduct(Matrix, List) := opts -> (M,D) -> (
+     --Takes a list of dimensions, List,
+     --and makes the appropriate product of 
+     --projective spaces over a base ring A = ring M, as a tower ring.
+     --Returns the tower ring
+     --together with a system of q linear combinations of
+     --the 1...1 forms specified by M, which must
+     --have product(D_0+1, .. ,D_r+1) rows (and q columns),
+     A := ring M;
+     S := A;
+     x := local x;
+     SList := apply (#D, i->S = S[x_(i,0)..x_(i,D_i)]);
+     SList = prepend(A,SList);
+     SS := last SList;
+   --now make the parameters
+     if numcols M != product(D, d->1+d) then
+	       error("M has the wrong number of rows");
+     N := gens trim product apply(#D, ideal vars SList_(i+1));
+     params := N*M;
+     (SS,params)
+     )
+///
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+notify=true
+loadPackage("BGG", Reload =>true)
+load "examples2.m2"
+dL = {1,1}
+q = 3
+
+t = product(dL, i->1+i)
+A = kk[vars(0..q*t-1)]
+M = genericMatrix(A,A_0,t,q)
+L = projectiveProduct (A,dL)
 
 ///
+
+
 
 --Now given a degree list degList, form the corresponding
 --product of projective spaces and the Koszul complex over
@@ -187,11 +205,7 @@ pureResolution(Ring, List) := opts -> (A, degListOrig) -> (
      --Note that degList1 already begins with a zero corresponding
      --to the normalized degreeList_0.
 
---Note that at the moment we're only dealing with the default
---opts.Sparse == true
---     if opts.Sparse == true then
      (S,params) := projectiveProduct(A, dimList, Sparse=>opts.Sparse);
-print transpose params;
      K := S^{reverse twists}**koszul(params);
      while ring K =!= A do (
 	  K = directImageComplex K;
@@ -201,13 +215,75 @@ print transpose params;
      A^{-degListOrig_0} ** K
      )
 
+pureResolution(Matrix, List) := opts -> (M, degListOrig) -> (
+     A := ring M;
+     n := #degListOrig - 1;
+     --normalize the degList to make the first entry zero:
+     degList := apply(n+1, i-> degListOrig_i - degListOrig_0);
+          
+     --check for input errors
+     if numcols M != product(D, d->1+d) then
+	       error("M has the wrong number of rows");
+     
+     for i from 1 to n do (
+	  if degList_i <= degList_(i-1) then 
+	      error("list must be strictly increasing")
+	      );
+
+     --get ready to form the product of projective spaces
+     dimList1 := apply(#degList-1, i->degList_(i+1)-degList_i-1);
+     --dimList1 = {m_1..m_n} in the notation of our paper.
+     degList1 := degList_{0..n-1};
+     --degList1 = {0,d_1,..,d_(n-1)} in the notation of our paper.
+     
+     --Now drop the terms where m_i = 0
+     jumpList := positions(dimList1, i-> i>0);
+     dimList := dimList1_jumpList;
+     
+     twists := {0}|degList1_jumpList;
+     --the leading zero corresponds to the base ring A.
+     --Note that degList1 already begins with a zero corresponding
+     --to the normalized degreeList_0.
+
+     --now set up the direct image computation
+     (S,params) := projectiveProduct(M, dimList);
+     K := S^{reverse twists}**koszul(params);
+     while ring K =!= A do (
+	  K = directImageComplex K;
+	  S = ring K);
+     
+     --now restore the zero-th twist of degListOrig
+     A^{-degListOrig_0} ** K
+     )
+
+--a version with the sparse system of parameters, giving
+--just the characteristic and letting the program supply the
+--ground ring.(Produces module of finite length with the given
+--pure resolution type.)
 pureResolution(ZZ, List) := opts -> (p, degList) -> (
      a := local a;
      if opts.Sparse == true then 
      A := ZZ/p[a_0..a_(#degList-2)];
      pureResolution(A, degList, Sparse => opts.Sparse)
      )
+
+--A version with a generic system of q parameters.
+pureResolution(ZZ,ZZ,List):= opts -> (p, q, degList) -> (
+     --p will be the characteristic, q the number of parameters
+     --(the codimension of support, at least when q is large enough.)
      
+     --first compute the number of variables needed:
+     dimList1 := apply(#degList-1, i->degList_(i+1)-degList_i-1);
+     --dimList1 = {m_1..m_n} in the notation of our paper.
+     --Now drop the terms where m_i = 0
+     jumpList := positions(dimList1, i-> i>0);
+     dL := dimList1_jumpList;
+     t = product(dL, i->1+i)
+     a := local a;
+     A = ZZ/p[a_0..a_(q*t-1))];
+     M = genericMatrix(A,A_0,t,q);
+     pureResolution(M, degList)
+     )
 end
 
 restart
