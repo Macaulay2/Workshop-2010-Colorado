@@ -132,6 +132,7 @@ dimList = {2}
 dimList = {0,1}
 A = kk[a,b]
 L = projectiveProduct (A,dimList)
+betti L_1
 ///
 
 projectiveProduct(Matrix, List) := opts -> (M,D) -> (
@@ -149,10 +150,11 @@ projectiveProduct(Matrix, List) := opts -> (M,D) -> (
      SList = prepend(A,SList);
      SS := last SList;
    --now make the parameters
-     if numcols M != product(D, d->1+d) then
+     if numrows M != product(D, d->1+d) then
 	       error("M has the wrong number of rows");
-     N := gens trim product apply(#D, ideal vars SList_(i+1));
-     params := N*M;
+     N := gens trim product apply(#D, i->
+	  promote(ideal vars SList_(i+1), SS));
+     params := map(SS^1, SS^{numcols M:{-1,-1,-1}}, N*M);
      (SS,params)
      )
 ///
@@ -166,9 +168,11 @@ q = 3
 
 t = product(dL, i->1+i)
 A = kk[vars(0..q*t-1)]
-M = genericMatrix(A,A_0,t,q)
-L = projectiveProduct (A,dL)
 
+M = genericMatrix(A,A_0,t,q)
+L = projectiveProduct (M,dL)
+betti L_1
+numcols M
 ///
 
 
@@ -207,6 +211,7 @@ pureResolution(Ring, List) := opts -> (A, degListOrig) -> (
 
      (S,params) := projectiveProduct(A, dimList, Sparse=>opts.Sparse);
      K := S^{reverse twists}**koszul(params);
+--error();
      while ring K =!= A do (
 	  K = directImageComplex K;
 	  S = ring K);
@@ -221,10 +226,6 @@ pureResolution(Matrix, List) := opts -> (M, degListOrig) -> (
      --normalize the degList to make the first entry zero:
      degList := apply(n+1, i-> degListOrig_i - degListOrig_0);
           
-     --check for input errors
-     if numcols M != product(D, d->1+d) then
-	       error("M has the wrong number of rows");
-     
      for i from 1 to n do (
 	  if degList_i <= degList_(i-1) then 
 	      error("list must be strictly increasing")
@@ -239,6 +240,9 @@ pureResolution(Matrix, List) := opts -> (M, degListOrig) -> (
      --Now drop the terms where m_i = 0
      jumpList := positions(dimList1, i-> i>0);
      dimList := dimList1_jumpList;
+     --check for input errors
+     if numrows M != product(dimList, d->d+1) then
+     	  error("M has the wrong number of rows");
      
      twists := {0}|degList1_jumpList;
      --the leading zero corresponds to the base ring A.
@@ -278,10 +282,10 @@ pureResolution(ZZ,ZZ,List):= opts -> (p, q, degList) -> (
      --Now drop the terms where m_i = 0
      jumpList := positions(dimList1, i-> i>0);
      dL := dimList1_jumpList;
-     t = product(dL, i->1+i)
+     t = product(dL, i->1+i);
      a := local a;
-     A = ZZ/p[a_0..a_(q*t-1))];
-     M = genericMatrix(A,A_0,t,q);
+     A := ZZ/p[a_0..a_(q*t-1)];
+     M := genericMatrix(A,A_0,t,q);
      pureResolution(M, degList)
      )
 end
@@ -291,8 +295,14 @@ path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
 loadPackage("BGG", Reload =>true)
 debug BGG
 load "examples2.m2"
-betti(F = pureResolution(kk[a,b,c,d], {0,2,4}, Sparse=>false))
---the complex returned is NOT a resolution!!
+
+B = kk[A_0..A_15]
+MM = genericMatrix(B,B_0, 4,4)
+betti(F = pureResolution(11, {0,2,4}))
+betti(F = pureResolution(MM, {0,2,4}))
+betti res coker F.dd_1
+betti(F = pureResolution(11,5, {0,2,4}))
+
 
 betti (G = res coker F.dd_1)
 F.dd_1
