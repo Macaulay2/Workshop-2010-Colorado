@@ -1,12 +1,6 @@
--- want a version of directImageComplex that works on 
--- just the last step of a multiple tower ring;
--- then one that recursively projects to the first component.
-
---Ultimately, we want a method that takes a product of projective spaces
---and an array defined over the bottom one, and a degree
---sequence. Also versions that do the generic array and
---the Macaulay array automatically.
-
+--files to produce pure resolutions as direct images of 
+--twised Koszul complexes. Both the sparse sop and arbitrary
+--multilinear sop's are implemented.
 
 
 partitions(ZZ, List) := (k, mm) -> (
@@ -25,69 +19,30 @@ partitions(ZZ, List) := (k, mm) -> (
 		       );
     select(P,p->#p == #mm))
 
---the following code is not actually used
-analyzeProductOfProjectiveSpaces = method()
-analyzeProductOfProjectiveSpaces (Ring):= S -> (
-     -- given an iterated tower ring S = A[x_(0,0)..x_0,n1][...]
-     --representing a product of projective spaces over A, say
-     --P^(e_0) x P^(e_1) x ... x P^(e_m), this returns the list
-     --of e_i 
-     K := ultimate(coefficientRing, S);
-     T := S;
-     eList := {};
-     while T =!= K do (
-	  eList = append(eList, numgens T - 1);
-	  T = coefficientRing T);
-     reverse eList)
-///
-KK=ZZ/101
-A = KK[x_1..x_4]
-B = A[a,b]
-C = B[s,t]
-D = C[u,v]
-eList = analyzeProductOfProjectiveSpaces  D
-///
-
-productIndices = method()
-productIndices List := D ->(
-     if D == {} then return {};
-     if D_0 == 0 then return {};
-     if #D == 1 then return apply(D_0, i->{i});
-     prod1 := productIndices drop(D,1);
-     flatten apply(D_0, i-> apply(prod1, I->prepend(i,I)))
-     )
-///
-restart
-path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
-notify=true
-loadPackage("BGG", Reload =>true)
-load "examples2.m2"
-productIndices {}
-productIndices {0}
-productIndices {2}
-productIndices {2,2}
-productIndices {2,2,2}
-productIndices{0,2}
-productIndices{2,0}
-///
 projectiveProduct = method()
 projectiveProduct(Ring, List) := (A,D) -> (
-     --Takes a list of dimensions List
-     --and makes the appropriate product of 
-     --projective spaces over the base A, as a tower ring.
+     --Takes a list of dimensions D = d_1..d_r
+     --and makes the  product 
+     --P_A^{d_1}x..xP_A^{d_r} 
+     --of projective spaces over the base A, as a tower ring.
      --Returns the tower ring
      --together with a system of multilinear parameters
      --(degree = {1,..,1})
      --for the whole product.
-     --The length of the sop dim A - 1 + sum dimList, 1 more than 
+     --The length of the sop is 
+     --numgens A + sum D, 1 more than 
      --the projective dimension of the whole product.
-     --The sop is formed from the symmetric functions.
+     --The sop is formed from the symmetric functions
+     --using the functions "partitions" above. (It could
+     --also be done putting an appropriate matrix
+     --in the next routine.)
      S := A;
      x := local x;
      SList := apply (#D, i->S = S[x_(i,0)..x_(i,D_i)]);
      SList = prepend(A,SList);
      SS := last SList;
      dimList := prepend(numgens A-1, D);
+        --now make the parameters
      params := matrix{
 	  for k from 0 to sum dimList list(
      P := partitions(k,dimList);
@@ -119,7 +74,7 @@ betti L_1
 ///
 
 projectiveProduct(Matrix, List) := opts -> (M,D) -> (
-     --Takes a list of dimensions, List,
+     --Takes a list D of dimensions
      --and makes the appropriate product of 
      --projective spaces over a base ring A = ring M, as a tower ring.
      --Returns the tower ring
@@ -157,8 +112,6 @@ L = projectiveProduct (M,dL)
 betti L_1
 numcols M
 ///
-
-
 
 --Now given a degree list degList, form the corresponding
 --product of projective spaces and the Koszul complex over
@@ -309,3 +262,52 @@ time betti (F = pureResolution(11, D)) -- 6.6 sec
 
 
 
+
+
+
+
+--the following code is not actually used
+analyzeProductOfProjectiveSpaces = method()
+analyzeProductOfProjectiveSpaces (Ring):= S -> (
+     -- given an iterated tower ring S = A[x_(0,0)..x_0,n1][...]
+     --representing a product of projective spaces over A, say
+     --P^(e_0) x P^(e_1) x ... x P^(e_m), this returns the list
+     --of e_i 
+     K := ultimate(coefficientRing, S);
+     T := S;
+     eList := {};
+     while T =!= K do (
+	  eList = append(eList, numgens T - 1);
+	  T = coefficientRing T);
+     reverse eList)
+///
+KK=ZZ/101
+A = KK[x_1..x_4]
+B = A[a,b]
+C = B[s,t]
+D = C[u,v]
+eList = analyzeProductOfProjectiveSpaces  D
+///
+
+productIndices = method()
+productIndices List := D ->(
+     if D == {} then return {};
+     if D_0 == 0 then return {};
+     if #D == 1 then return apply(D_0, i->{i});
+     prod1 := productIndices drop(D,1);
+     flatten apply(D_0, i-> apply(prod1, I->prepend(i,I)))
+     )
+///
+restart
+path = prepend( "/Users/david/src/Colorado-2010/PushForward",path)
+notify=true
+loadPackage("BGG", Reload =>true)
+load "examples2.m2"
+productIndices {}
+productIndices {0}
+productIndices {2}
+productIndices {2,2}
+productIndices {2,2,2}
+productIndices{0,2}
+productIndices{2,0}
+///
