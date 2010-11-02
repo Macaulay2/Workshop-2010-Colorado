@@ -1196,7 +1196,7 @@ doc ///
      we are projecting.)
     Example
      A = kk[a,b]
-     M = random(A^4, A^{3:-1})
+     M = random(A^4, A^{4:-1})
      time betti (F = pureResolution(M,{0,2,4}))
     Text
      With the form {\tt pureResolution(p,q,D)}
@@ -1207,9 +1207,8 @@ doc ///
      variables of characteristic p, created by the script. For a given number of
      variables in A this runs much faster than taking a random matrix M.
     Example
-     A = kk[a,b]
-     M = random(A^4, A^{3:-1})
-     time betti (F = pureResolution(11,3,{0,2,4}))
+     time betti (F = pureResolution(11,4,{0,2,4}))
+     ring F
    SeeAlso
      directImageComplex
      universalExtension
