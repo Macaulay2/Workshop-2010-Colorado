@@ -636,7 +636,7 @@ pureResolution(ZZ, List) := (p, degList) -> (
 --ground ring.(Produces module of finite length with the given
 --pure resolution type.)
      a := local a;
-     if p == 0 then kk:=QQ else kk:=ZZ/p;
+     kk := if p == 0 then QQ else ZZ/p;
      A := kk[a_0..a_(#degList-2)];
      pureResolution(A, degList)
      )
@@ -656,7 +656,7 @@ pureResolution(ZZ,ZZ,List):= (p, q, degList) -> (
      dL := dimList1_jumpList;
      t := product(dL, i->1+i);
      a := local a;
-     if p == 0 then kk:=QQ else kk:=ZZ/p;
+     kk := if p == 0 then QQ else ZZ/p;
      A := kk[a_0..a_(q*t-1)];
      M := genericMatrix(A,A_0,t,q);
      pureResolution(M, degList)
@@ -1153,7 +1153,7 @@ doc ///
      
      Here is a simple example, where we produce
      one of the complexes in the family that included the
-     Eagon-Northcott complex (see for example the appenix in
+     Eagon-Northcott complex (see for example the appendix in
      "Commutative Algebra with a View toward Algebraic Geometry"
      by D. Eisenbud.) This way of producing the Eagon-Northcott 
      complex was certainly known to George Kempf, who may have invented it.
@@ -1170,7 +1170,7 @@ doc ///
      the Buchsbaum-Rim complex (see Eisenbud, loc. cit.)
     Example
      for d from -1 to 3 do 
-     (print betti directImageComplex (T^{{d,0}}**kn);print())
+       (print betti directImageComplex (T^{{d,0}}**kn);print())
     Text
      For more complex examples, we use the function 
      {\tt pureResolution}, which creates a Koszul complex over a product of
@@ -1205,12 +1205,11 @@ doc ///
      product(m_i+1) x #D-1+sum(m_i) 
      matrix of linear forms defined over a ring with product(m_i+1) * #D-1+sum(m_i) 
      variables of characteristic p, created by the script. For a given number of
-     variables in A thisß runs much faster than taking a random matrix M.
+     variables in A this runs much faster than taking a random matrix M.
     Example
      A = kk[a,b]
      M = random(A^4, A^{3:-1})
      time betti (F = pureResolution(11,3,{0,2,4}))
-     
    SeeAlso
      directImageComplex
      universalExtension
