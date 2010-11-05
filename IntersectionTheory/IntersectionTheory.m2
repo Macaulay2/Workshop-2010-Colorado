@@ -47,7 +47,8 @@ doc ///
     "Intersection Theory Section 5.4.3"
     "Intersection Theory Section 5.4.4"
     :Chapter 7
-    "Intersection Theory Chapter 7"
+    "Intersection Theory Chapter 7.1-3"
+    "Intersection Theory Chapter 7.4"
 ///
 
 doc ///
@@ -689,7 +690,7 @@ doc ///
 
 doc ///
   Key
-    "Intersection Theory Chapter 7"
+    "Intersection Theory Chapter 7.1-3"
   Headline
     Lines on Hypersurfaces
   Description
@@ -782,6 +783,52 @@ doc ///
       two quadrics in ${\mathbb P}^4$ becomes:
     Example
       integral linesOnCI({2,2},4)
+///
+
+doc ///
+  Key
+    "Intersection Theory Chapter 7.4"
+  Headline
+    The Universal Fano Scheme
+  Description
+    Text
+      The construction of the universal Fano scheme:
+      
+      There are several different ways to construct the universal Fano scheme of lines on cubic
+      surfaces, but we will follow the construction given in the book.  We start by building
+      the product of $\mathbb{P}^{19}$ with $\mathbb{G}(1,3)$, then we construct the bundle
+      $$E = O_P(1) \otimes Sym_D(S^*).$$
+      
+    Example
+      P = flagBundle({1,19}, VariableNames=>{z,q}) -- PP^19
+      PxG = flagBundle({2,2},P) -- PP^19 x GG(1,3)
+      APxG = intersectionRing PxG
+      f = PxG / P -- structure map from PxG to G
+      S = first bundles PxG -- pullback of universal subbundle on G to PxG
+      O1 = f^* dual first bundles P -- pullback of O_P(1) to PxG
+      E = O1 ** symmetricPower(3,dual S)
+    Text
+      So, as in Theorem 7.23, we calculate the class of the Fano scheme of lines on cubic surfaces
+      to be:
+    Example
+      chern(4,E)
+    Text
+      This output doesn't look very nice, but we can clean it up:
+    Example
+      toSchubertBasis chern(4,E)
+    Text
+      How to read this output: {\tt s_{\{i,j\}}} is $\sigma_{i,j}$, and {\tt q_i} is the $i$-th power
+      of the hyperplane class of $\mathbb{P}^{19}$ (i.e. this is what the text calls $\zeta^i$).
+      
+      From here it is easy to do the computations of Exercise 7.25.  For example, we compute:
+      
+      Exercise 7.25(b) -- How many lines on a general net of cubic surfaces lie in a given hyperplane?
+      
+      This is just asking for the degree of $[X]*\zeta^{17}* \sigma_{1,1}$:
+    Example
+      integral (chern(4,E)*((chern(1,O1))^17)*schubertCycle({1,1},PxG))
+    Text
+      Of course, we could also have just read this off from the formula for $[X]$.
 ///
 
 end
