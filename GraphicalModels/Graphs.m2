@@ -820,15 +820,15 @@ adjacencyMatrix(Digraph) := G -> (
 	  AM))
 
 degreeMatrix = method()
-degreeMatrix(Graph) := G -> matrix apply(#keys(G),i->apply(#keys(G),j->if i==j then #(G#((keys G)_i)) else 0))
+degreeMatrix(Graph) := G -> matrix apply(#vertices G,i->apply(#vertices G,j->if i==j then #neighbors(G,(vertices G)_i) else 0))
 
 laplacianMatrix = method()
-laplacianMatrix(Graph) := G -> degreeMatrix G - adjacencyMatrix
+laplacianMatrix(Graph) := G -> degreeMatrix G - adjacencyMatrix G
 
 incidenceMatrix = method()
      -- Input: A graph
      -- Output: A matrix M, such that M_(i,j)=1 iff vertex i is incident to edge j     
-incidenceMatrix(Graph) := G -> matrix apply(keys(G),i->(apply(edges G,j->(if j#?i then 1 else 0))))
+incidenceMatrix(Graph) := G -> matrix apply(vertices G,i->(apply(edges G,j->(if j#?i then 1 else 0))))
 
 reachable = method()
     -- Input: A directed graph G and subset A of vertices.
