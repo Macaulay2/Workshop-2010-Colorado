@@ -442,10 +442,11 @@ findMaxIdeal(Ideal) := (I) -> (
 	       );
 	  m = m + ideal(f);
 	  h = codim m;
-	  print h;
+	  -- print h;
      );
      m
 )
+
 
 -- Changes variables according with Noether's theorem (Lemma 2.3.1, Fabianska)
 -- Outputs: (1) new unimodular row with leading term of first entry a pure power
