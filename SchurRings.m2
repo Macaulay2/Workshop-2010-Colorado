@@ -10,7 +10,8 @@ newPackage(
 	     {Name => "Hal Schenck"}
 	     },
     	Headline => "representation rings of general linear groups and of symmetric groups",
-    	DebuggingMode => true
+    	DebuggingMode => true,
+	AuxiliaryFiles => true
     	)
 
 export {schurRing, SchurRing, symmRing, toS, toE, toP, toH, 
