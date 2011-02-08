@@ -17,7 +17,7 @@ newPackage(
 export {schurRing, SchurRing, symmRing, toS, toE, toP, toH, 
      plethysm, jacobiTrudi, Partitions, 
      zee, symToChar, charToSym, scalarProd, intProd, 
-     cauchy, wedge,
+     cauchy, wedge, preBott, bott, doBott, weyman,
      Stillman, Stembridge, Schur, Memoize, EorH,
      SchurRingIndexedVariableTable}
 -- Improve the names/interface of the following:
@@ -297,7 +297,7 @@ jT = (lambda) ->
      else
      (
      ll := #lambda;
-     if ll == 0 then rez = 1_auxR else
+     if ll == 0 or lambda#0 == 0 then rez = 1_auxR else
      if ll == 1 then rez = auxR_(2*auxEH*auxn-1+lambda#0) else
      (
 	  l1 := drop(lambda,-1);
@@ -367,6 +367,7 @@ plethysm(RingElement,RingElement) := (f,g) -> (
 	  SB := R;
 	  dg = degSchurPol(g);
 	  d := df*dg;
+	  if d == 0 then d = 1;
 	  R = symmRing d;
 	  g = toP(g,R);
 	  )
@@ -941,6 +942,88 @@ wedge(ZZ,List) := (r,L) -> (
 --V_i\tensor W_i where V_i, W_i are GL(V) and GL(W) (virtual) modules
 --corresponding to pairs of (virtual) characters (f_i,g_i)
 
+preBott = method()
+preBott(ZZ,List) := (i,L) -> (
+     R1 := ring L#0#0;
+     R2 := ring L#0#1;
+     dimQ := numgens R1; -- for general bundles we will need to know the ranks concerned
+     dimR := numgens R2;
+     x := flatten wedge(i,L);
+--     x = apply(x, x0 -> (toS x0#0, toS x0#1)); --x is already an S-function
+     B := new MutableHashTable;
+     for uv from 0 to #x-1 do
+     (
+	       (u,v) := x#uv;
+     	       (uPar,uCoe) := coefficients u;
+	       uPar = apply(flatten entries uPar,j->last j);
+	       uCoe = apply(flatten entries uCoe,j->lift(j,coefficientRing R1));
+     	       (vPar,vCoe) := coefficients v;
+	       vPar = apply(flatten entries vPar,j->last j);
+	       vCoe = apply(flatten entries vCoe,j->lift(j,coefficientRing R2));
+     	       lu := #uPar-1;lv := #vPar-1;
+	       for j from 0 to lu do
+	       	    for k from 0 to lv do
+		    (
+     	       	    	 pQ := value toString uPar#j; --partitions
+			 pR := value toString vPar#k; --partitions			 
+  		       	 if #pQ < dimQ then
+			    pQ = join(pQ,toList((dimQ-#pQ):0));
+			 if #pR < dimR then
+			    pR = join(pR,toList((dimR-#pR):0));
+			 b := join(pQ,pR);
+			 c := uCoe#j * vCoe#k; --coefficients
+			 if B#?b then B#b = B#b + c else B#b = c;
+			 );
+	  );
+     B)
+
+bott = method()
+bott (List) := (QRreps) -> (
+     -- returns a list of either: null, or (l(w), w.((Qrep,Rrep)+rho) - rho)
+     s := QRreps; -- join(Qrep,Rrep);
+     rho := reverse toList(0..#s-1);
+     s = s + rho;
+     len := 0;
+     s = new MutableList from s;
+     n := #s;
+     for i from 0 to n-2 do
+     	  for j from 0 to n-i-2 do (
+	       if s#j === s#(j+1) then return null;
+	       if s#j < s#(j+1) then (
+		    tmp := s#(j+1);
+		    s#(j+1) = s#j;
+		    s#j = tmp;
+		    len = len+1;
+		    )
+	       );
+     (len, toList s - rho)
+     )
+
+doBott = method()
+doBott(ZZ,HashTable) := (nwedges,B) -> (
+     -- B is the output of preBott
+     kB := keys B;
+     if kB == {} then {}
+     else
+     (
+     s := symbol s;
+     S := schurRing(s,(#(first kB)));
+     apply(keys B, x -> (
+	       b := bott x;
+	       if b === null then null
+	       else (
+		    glb := b#1;
+		    d := B#x * dim s_(b#1);
+		    (b#0, nwedges - b#0, b#1, B#x, d))))))
+
+--b#0 -> which cohomology is nonzero
+--nwedges -> which wedge power we're taking
+--b#1 -> partition corresponding to the Schur functor representing the global sections of the pushed forward bundle
+--d -> dimension 
+weyman = method()
+weyman (ZZ,List) := (i,L) -> (
+     B := preBott(i,L);
+     doBott(i,B))
 
 ---------------------------------------------------------------
 --------End old stuff----------------------------------------------
@@ -2293,6 +2376,15 @@ B = schurRing(b,2)
 L = {(a_{2},b_{1}),(a_{1,1},b_{1,1})}
 assert(#(set(wedge(2,L)) - (set cauchy(2,a_{2},b_{1}) + set{(a_{2}*a_{1,1},b_{1}*b_{1,1})})) == 0)
 ///
+
+TEST ///
+A = schurRing(a,1)
+B = schurRing(b,2)
+c = (cauchy(3,1_A,b_{2}))#0
+assert (first c == 1_A)
+assert (dim last c == 1)
+assert (cauchy(2,1_A,1_B) == {})
+///
 -------------------------------
 -- end test of cauchy, wedge --
 -------------------------------
@@ -2421,14 +2513,14 @@ preBott = (i,L,ranks) -> (
 	       (u,v) := uv;
 	       scan(u, u0 -> (
 			 scan(v, v0 -> (
-			       pQ := u0#0;
-			       pR := v0#0;
+			       pQ := u0#0;--partitions
+			       pR := v0#0;--partitions
 			       if #pQ < dimQ then
 			         pQ = join(pQ,toList((dimQ-#pQ):0));
 			       if #pR < dimR then
 			         pR = join(pR,toList((dimR-#pR):0));
 			       b := join(pQ,pR);
-			       c := u0#1 * v0#1;
+			       c := u0#1 * v0#1;--coefficients
 			       if B#?b then B#b = B#b + c
 			       else B#b = c))))));
      B)
@@ -2449,8 +2541,6 @@ doBott = (nwedges,B) -> (
 weyman = (i,L,ranks) -> (
      B := preBott(i,L,ranks);
      doBott(i,B))
-
-end
 
 -----------------------------------------------------------------------------
 -- some tests that can be incorporated into the documentation later
@@ -2594,6 +2684,16 @@ viewHelp SchurRings
 --print docTemplate
 end
 
+restart
+loadPackage"SchurRings"
+A = schurRing(a,2)
+B = schurRing(b,2)
+L = {(1_A,b_{3,2})}
+L = {(a_{3,2},b_{6,1})}
+i = 1
+
+select(weyman(i,L),x->x =!= null)
+end
 
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
