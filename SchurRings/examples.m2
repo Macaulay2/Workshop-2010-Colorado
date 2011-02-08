@@ -39,3 +39,16 @@ time plethysm(s_{1,1,1,1,1},s_{1,1,1,1,1,1}); --takes a long time, see plethysm(
 R = symmRing 30
 time jacobiTrudi({3,3,3,3,3,3,2,2,2,2,2,2},R,Memoize=>true);
 time jacobiTrudi({3,3,3,3,3,3,2,2,2,2,2,2},R,Memoize=>false);
+
+-------- maple code here
+/Library/Frameworks/Maple.framework/Versions/Current/bin/maple
+
+with(linalg);
+with(SF);
+f := plethysm(h5,h6);
+fh := toh(f);
+fe := toe(fh);
+fh2 := toh(fe);
+fs := tos(fh);
+fs2 := tos(fe);
+-------------------------
