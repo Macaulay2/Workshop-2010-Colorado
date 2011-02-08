@@ -186,6 +186,18 @@ schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
      S.use S;
      S)
 
+
+{*
+schurRing(Ring,Symbol,ZZ) := SchurRing => opts -> (A,s,n) -> (
+     -- will create a SchurRing SR.
+     B = if instance(A, SchurRing) then A.symmRing else A;
+     e := opts.symmNames.e;
+     h := opts.symmNames.h;
+     p := opts.symmNames.p;
+     SR.symmRing = symmRing(B, e,h,p, n);
+     )
+*}
+
 -- BUG in M2: R_0 .. R_n does not always give elements in the ring R!!
 -- workaround:
 varlist = (i,j,R) -> apply(i..j, p -> R_p)

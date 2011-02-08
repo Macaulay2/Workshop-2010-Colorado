@@ -14,7 +14,8 @@ plH = time plethysm(h_5,h_6);
 time toS plH;
 plE = time plethysm(e_5,e_6);
 time toS plE;
-time toS(plE,Strategy=>Stillman)--this is also slow
+time toS(plE,Strategy=>Stillman)--this is also slow (239.93 seconds on my MBP)
+  -- used 3.5 GB, result is only 493 monomials...!
 
 
 -----
