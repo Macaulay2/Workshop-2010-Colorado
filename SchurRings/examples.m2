@@ -17,6 +17,13 @@ time toS plE;
 time toS(plE,Strategy=>Stillman)--this is also slow
 
 
+-----
+time R = symmRing 30
+plP = time plethysm(h_5,h_6);--0.26
+plH = time toH plP;--2.94
+plE = time toE plH;--3.4
+time toH plE;--13.72
+
 ------
 S = schurRing(s,30)
 time plethysm(s_{5},s_{6});
