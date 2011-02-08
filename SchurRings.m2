@@ -19,6 +19,7 @@ export {schurRing, SchurRing, symmRing, toS, toE, toP, toH,
      zee, symToChar, charToSym, scalarProd, intProd, 
      cauchy, wedge, preBott, bott, doBott, weyman,
      Stillman, Stembridge, Schur, Memoize, EorH,
+     eVariable, pVariable, hVariable, 
      SchurRingIndexedVariableTable}
 -- Improve the names/interface of the following:
 --, symmRing, plethysmMap, jacobiTrudi, plethysm, cauchy, bott}
@@ -45,7 +46,9 @@ protect symbol mapSymToH
 protect symbol plethysmMaps
 protect symbol mapFromE
 protect symbol sFunction
-
+--protect symbol eVariable
+--protect symbol pVariable
+--protect symbol hVariable
 
 SchurRing = new Type of EngineRing
 SchurRing.synonym = "Schur ring"
@@ -197,6 +200,9 @@ symmRing = (n) -> (
      	  p := getSymbol "p";
      	  R := QQ[e_1..e_n,p_1..p_n,h_1..h_n,
 	    Degrees => toList(1..n,1..n,1..n)];
+       	  R.eVariable = (i) -> R_(i-1);
+	  R.pVariable = (i) -> R_(n+i-1);
+	  R.hVariable = (i) -> R_(2*n+i-1);
 	  s := getSymbol "s";
      	  S := schurRing(s, n, CoefficientRing => QQ);
      	  R.Schur = S;
@@ -217,15 +223,15 @@ symmRing = (n) -> (
      	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex];
      	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
      	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
-     	  PtoE(n,R);
-     	  HtoE(n,R);
-     	  EtoH(n,R);
-     	  PtoH(n,R);
-     	  EtoP(n,R);
-     	  HtoP(n,R);
-     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
-     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
-     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
+time     	  PtoE(n,R);
+time     	  HtoE(n,R);
+time     	  EtoH(n,R);
+time     	  PtoH(n,R);
+time     	  EtoP(n,R);
+time     	  HtoP(n,R);
+time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
+time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
+time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
      	  collectGarbage();
      	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
      	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
@@ -254,9 +260,7 @@ jacobiTrudi(BasicList,Ring) := opts -> (lambda,R) ->
      lam := new Partition from lambda;
      rez := local rez;
      local u;
-     h := getSymbol "h";
-     e := getSymbol "e";
-     if opts.EorH == "H" then u = h else (u = e;lam = conjugate lam;);
+     if opts.EorH == "H" then u = R.hVariable else (u = R.eVariable;lam = conjugate lam;);
      if opts.Memoize then
      (
 	  if not R.?sFunction then R.sFunction = new MutableHashTable;
@@ -275,16 +279,18 @@ jacobiTrudi(BasicList,Ring) := opts -> (lambda,R) ->
      	  auxR = R;
      	  auxn = R.dim;
      	  rez = jT(lam);
+	  << "numbers of memoized " << #(keys R.sFunction#1) << endl;
 	  )
      else
      (
      	  n := #lam;
-     	  rez = det map(R^n, n, (i,j) -> 
+     	  rez = det(map(R^n, n, (i,j) -> 
 	       (
 	       	    aux := lam#i-i+j;
 	       	    if aux < 0 then 0_R
-	       	    else if aux == 0 then 1_R else u_aux)
-	       )
+	       	    else if aux == 0 then 1_R else u aux)
+	       ),
+	  Strategy => Cofactor);
 	  );
      rez
      )
@@ -487,8 +493,8 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
      )
      else if opts.Strategy == Stillman then
      (
-	  hf = toH(f);
-	  ef := toE(f);
+time	  hf = toH(f);
+{*	  ef := toE(f);
 	  le := #terms(ef);
 	  lh := #terms(hf);
 	  if le<lh then 
@@ -497,12 +503,13 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
      	       rez = mtos(ef);
 	       )
 	  else 	  
-	  (
-	       mtos = map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then value(toString s_{i}) else 0)));
+*}
+--	  (
+	       mtos := map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then value(toString s_{i}) else 0)));
      	       rez = mtos(hf);
-	       );
-	  )
-     else error"Invalid strategy";
+--	       );
+	  );
+--     else error"Invalid strategy";
      rez
      )
 toS(RingElement) := opts -> (f) -> (toS(f,(ring f).Schur,opts))
