@@ -26,15 +26,24 @@ newPackage(
 
 --plethysm should work for tensor products of schurRings, or symmRings
 
---say H is default in jacobiTrudi, give examples in the documentation
-
 --longer names for
 --toE => 
 --toH =>
 --toP =>
 --toS =>
 
-export {schurRing, SchurRing, schurRing2, SchurRing2, symmRing, toS, toE, toP, toH, 
+
+--any schurRing should have a symmetric ring attached to it
+--toSymm(RingElement,Ring) should be replaced by toSymm(schurRing)
+--the output should live in the symmetric ring of the schurRing
+
+--the coefficient ring of a schurRing should represent the scalars
+--if we want tensor products of representation rings, we should
+--create them at once: schurRing(Ring,{list of symbols},{list of dimensions})
+
+export {schurRing, SchurRing, schurRing2, SchurRing2,
+     symmRing, symmRing2, symmetricRing,
+     toS, toE, toP, toH, 
      plethysm, jacobiTrudi, 
      centralizerSize, classFunction, symmetricFunction, scalarProduct, internalProduct, 
      cauchy, wedge, preBott, bott, doBott, weyman,
@@ -129,6 +138,13 @@ net SchurRing2 := R -> (
 undocumented (net, SchurRing2)
 
 SchurRing2 _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
+coefficientRing SchurRing2 := Ring => R -> last R.baseRings
+
+symmetricRing = method()
+symmetricRing (Ring) := R -> (
+     	  if class R === SchurRing2 then R.symmRing2 else
+	  R     
+     )
 
 newSchur2 = method()
 newSchur2(Ring,Symbol) := (A,p) -> newSchur2(A,p,-1)
@@ -162,6 +178,7 @@ newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      	  n := numgens SR;
      	  (cc,mm) := rawPairs(raw A, raw f);
      	  toList apply(cc, mm, (c,m) -> (rawmonom2partition m, new A from c)));
+     SR.symmRing2 = symmRing2(symmetricRing A,n);
      SR
      )
 
@@ -338,11 +355,12 @@ symmRing = (n) -> (
      	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
      	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
      	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
+time     	  EtoP(n,R);
 time     	  PtoE(n,R);
 time     	  HtoE(n,R);
 time     	  EtoH(n,R);
 time     	  PtoH(n,R);
-time     	  EtoP(n,R);
+--time     	  EtoP(n,R);
 time     	  HtoP(n,R);
 time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
 time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
@@ -359,6 +377,52 @@ time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-
 	  );
      symmRings#n)
 
+symmRing2 = method()
+symmRing2 (Ring,ZZ) := (A,n) -> (
+     	  e := getSymbol "e";
+     	  h := getSymbol "h";
+     	  p := getSymbol "p";
+     	  R := A[e_1..e_n,p_1..p_n,h_1..h_n,
+	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
+       	  R.eVariable = (i) -> R_(i-1);
+	  R.pVariable = (i) -> R_(n+i-1);
+	  R.hVariable = (i) -> R_(2*n+i-1);
+     	  R.dim = n;
+	  
+	  degsEHP := toList(1..n);
+     	  blocks := {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
+--     	  locVarsE := apply(blocks#0,i->R_i);
+--     	  locVarsP := apply(blocks#1,i->R_i);
+--     	  locVarsH := apply(blocks#2,i->R_i);
+     	  vrs := symbol vrs;
+     	  locVarsE := apply(blocks#0,i->vrs_i);
+     	  locVarsP := apply(blocks#1,i->vrs_i);
+     	  locVarsH := apply(blocks#2,i->vrs_i);
+          R.symRingForE = A[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
+     	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
+     	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
+     	  R.symRingForP = A[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
+     	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
+     	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
+time     	  EtoP(n,R);
+time     	  PtoE(n,R);
+time     	  HtoE(n,R);
+time     	  EtoH(n,R);
+time     	  PtoH(n,R);
+--time     	  EtoP(n,R);
+time     	  HtoP(n,R);
+time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
+time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
+time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
+     	  collectGarbage();
+     	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
+     	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
+     	  R.mapSymToH = (f) -> f%R.grbH;
+--	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
+--     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
+--     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
+     	  R.plethysmMaps = new MutableHashTable;
+     R)
 ---------------------------------------------------------------
 --------------Jacobi-Trudi-------------------------------------
 ---------------------------------------------------------------
@@ -551,10 +615,29 @@ toSymm(RingElement,Ring) := (ps,R) ->
 	       lift(a,coefficientRing S)))
 )
 
+toSymm(RingElement) := (ps) ->
+(
+     S := ring ps;
+     if class S =!= SchurRing2 then ps else
+     (
+     R := S.symmRing2;
+     tms := listForm ps;
+     sum apply(tms,(p,a)->(
+	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
+	       toSymm(lift(a,coefficientRing S))))
+     )
+)
+
+toSymm(Thing) := (ps) -> ps
+
 toE = method()
 --writes a symmetric function in terms of
 --elementary symmetric polynomials
-toE (RingElement) := (f) -> (ring f).mapSymToE f
+--toE (RingElement) := (f) -> (ring f).mapSymToE f
+toE (RingElement) := (f) -> (
+     if class ring f === SchurRing2 then toE toSymm f
+     else (ring f).mapSymToE f
+     )
 --f should be an element of a symmRing
 toE (RingElement,Ring) := (ps,R) ->
 --ps should be an element of a schurRing, R a symmRing
@@ -2917,10 +3000,10 @@ end
 restart
 loadPackage"SchurRings"
 
-n = 20
+n = 30
 m = 30
 time R = symmRing(n)
-time ple = plethysm(h_4,h_5);
+time ple = plethysm(e_5,e_6);
 S = schurRing(s,m)
 
 time toS(ple,Strategy=>Pieri);
@@ -3026,7 +3109,7 @@ a*f-(a^2+1)  -- displays wrong
 
 
 S = schurRing(s,10)
-s_{17,7,7,7,3,3,1} * s_{10,5,1};
+time s_{17,7,7,7,3,3,1} * s_{10,5,1};
 (s_{5})^15
 F = s_{5}
 for i from 1 to 14 do (F = F * s_{5}; << "size F at " << i << " is " << size F << endl;)
@@ -3149,8 +3232,36 @@ EtoP (ZZ) := (n) ->
      lis
 )
 
-time EtoP 40;
+time EtoP 30;
 oo/size
+
+restart
+loadPackage"SchurRings"
+
+S = schurRing2(QQ,s,5)
+T = schurRing2(S,t,6)
+
+symmetricRing T
+
+debug SchurRings
+toSymm s_{2,1}
+toSymm t_{2,1}
+oo-ooo
+toE s_{2,1}
+toE t_{2,1}
+toE h_3
+toE s_{3}
+
+rep = s_{1}*t_{2}+s_{2,1}*t_{1,1}
+
+exteriorPower (SchurRing2) := (rep) ->
+(
+     lis := listForm rep/((a,b)->(T_a,b));
+     wedge(2,lis)
+     cauchy(3,s_{2},t_{1,1})
+     
+     
+     )
 
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"

@@ -1,8 +1,21 @@
 restart
+loadPackage "SchurRings"
+
+S = schurRing2(QQ,s,3)
+S1 = schurRing2(S,t,6)
+
+f = s_{5}*t_{3}
+f^3 + f * f * f --this shouldn't be 0
+f^3
+
+g = s_{1}*t_{1}
+g^3+g*g*g -- this shouldn't be 0
+
+(s_{1}+t_{2})^2 --this isn't right
+
+restart
 loadPackage"SchurRings"
 viewHelp "SchurRings"
-
-
 ----creation of EtoH tables etc. are slow
 time R = symmRing 30
 
@@ -13,8 +26,8 @@ time R = symmRing 30
 plH = time plethysm(h_5,h_6);
 time toS plH;
 plE = time plethysm(e_5,e_6);
-time toS plE;
-time toS(plE,Strategy=>Stillman)--this is also slow (239.93 seconds on my MBP)
+time toS plE,Strategy=>Stillman);
+time toS(plE,Strategy=>Stembridge)--this is also slow (239.93 seconds on my MBP)
   -- used 3.5 GB, result is only 493 monomials...!
 
 
