@@ -14,13 +14,33 @@ newPackage(
 	AuxiliaryFiles => true
     	)
 
+--schurRing(coefficientRing)
+--schurRing(coefficientRing,ZZ)
+--symmRing(coefficientRing,ZZ)
+--symmRing(coefficientRing) -- options -> names of e,h,p variables
+--     	    	      	    -- maybe coefficientRing is an option
+
+--cauchy,wedge becomes exteriorPower(r,element in a schurRing or symmRing)
+--this implements the Cauchy formula for tensor products of two Schur rings
+--symmetricPower(r,element in a schurRing or symmRing)
+
+--plethysm should work for tensor products of schurRings, or symmRings
+
+--say H is default in jacobiTrudi, give examples in the documentation
+
+--longer names for
+--toE => 
+--toH =>
+--toP =>
+--toS =>
+
 export {schurRing, SchurRing, symmRing, toS, toE, toP, toH, 
-     plethysm, jacobiTrudi, Partitions, 
-     zee, symToChar, charToSym, scalarProd, intProd, 
+     plethysm, jacobiTrudi, 
+     centralizerSize, classFunction, symmetricFunction, scalarProduct, internalProduct, 
      cauchy, wedge, preBott, bott, doBott, weyman,
-     Stillman, Stembridge, Schur, Memoize, EorH,
-     eVariable, pVariable, hVariable, 
-     SchurRingIndexedVariableTable}
+     Stillman, Stembridge, Pieri, Schur, Memoize, EorH,
+     eVariable, pVariable, hVariable, getSchur,
+     SchurRingIndexedVariableTable, ClassFunction}
 -- Improve the names/interface of the following:
 --, symmRing, plethysmMap, jacobiTrudi, plethysm, cauchy, bott}
 
@@ -46,9 +66,6 @@ protect symbol mapSymToH
 protect symbol plethysmMaps
 protect symbol mapFromE
 protect symbol sFunction
---protect symbol eVariable
---protect symbol pVariable
---protect symbol hVariable
 
 SchurRing = new Type of EngineRing
 SchurRing.synonym = "Schur ring"
@@ -184,6 +201,7 @@ schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
      t#symbol _ = a -> ( m := schur2monom(a,Mgens,M); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
      S.use = S -> (globalAssign(p,t); S);
      S.use S;
+     S.getSchur = par -> (t_par);
      S)
 
 
@@ -211,7 +229,7 @@ symmRing = (n) -> (
      	  h := getSymbol "h";
      	  p := getSymbol "p";
      	  R := QQ[e_1..e_n,p_1..p_n,h_1..h_n,
-	    Degrees => toList(1..n,1..n,1..n)];
+	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
        	  R.eVariable = (i) -> R_(i-1);
 	  R.pVariable = (i) -> R_(n+i-1);
 	  R.hVariable = (i) -> R_(2*n+i-1);
@@ -229,10 +247,10 @@ symmRing = (n) -> (
      	  locVarsE := apply(blocks#0,i->vrs_i);
      	  locVarsP := apply(blocks#1,i->vrs_i);
      	  locVarsH := apply(blocks#2,i->vrs_i);
-          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex];
+          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
      	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
      	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
-     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex];
+     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
      	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
      	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
 time     	  PtoE(n,R);
@@ -291,7 +309,7 @@ jacobiTrudi(BasicList,Ring) := opts -> (lambda,R) ->
      	  auxR = R;
      	  auxn = R.dim;
      	  rez = jT(lam);
-	  << "numbers of memoized " << #(keys R.sFunction#1) << endl;
+--	  << "numbers of memoized " << #(keys R.sFunction#1) << endl;
 	  )
      else
      (
@@ -399,7 +417,7 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      if n<df*dg then error"Need symmetric ring of higher dimension";
 
      N := Rf.dim;
-     phi := map(R,Rf,flatten splice {N:0_R,apply(1..N, j -> (plethysmMap(j,R)) g),N:0_R});
+     phi := map(R,Rf,flatten splice {N:0_R,apply(1..N, j -> (if j<=df then (plethysmMap(j,R))g else 0)),N:0_R});
      if issy then phi f
      else toS(phi f,SB))
 
@@ -412,9 +430,8 @@ plethysm(BasicList,RingElement) := (lambda,g) -> (
 --degree of a polynomial in a SchurRing
 degSchurPol = method()
 degSchurPol(RingElement) := ps -> (
-     (mon,coe) := coefficients ps;
-     parmon := apply(flatten entries mon,i -> value toString last i);
-     max apply(parmon,i->sum i)
+     tms := listForm ps;
+     tms/first/sum//max
      )
 ---------------------------------------------------------------
 -----------End plethysm----------------------------------------
@@ -428,7 +445,7 @@ degSchurPol(RingElement) := ps -> (
 toSymm = method()
 --ps should be an element of a schurRing, R a symmRing
 --toSymm returns the symmetric function corresponding to ps
-toSymm(RingElement,Ring) := (ps,R) ->
+{*toSymm(RingElement,Ring) := (ps,R) ->
 (
      S := ring ps;
      (mon,coe) := coefficients ps;
@@ -438,6 +455,15 @@ toSymm(RingElement,Ring) := (ps,R) ->
      liftcoe := apply(flatten entries coe,i->lift(i,coefficientRing S));
      symmon := apply(parmon,i->(try a:=jacobiTrudi(i,R) then a else error"Need symmetric ring of higher dimension"));
      sum for i from 0 to #liftcoe-1 list liftcoe#i*symmon#i
+)
+*}
+toSymm(RingElement,Ring) := (ps,R) ->
+(
+     S := ring ps;
+     tms := listForm ps;
+     sum apply(tms,(p,a)->(
+	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
+	       lift(a,coefficientRing S)))
 )
 
 toE = method()
@@ -473,6 +499,10 @@ toH (RingElement,Ring) := (ps,R) ->
      toH toSymm(ps,R)
      )
 
+leadTermFcn := local leadTermFcn;
+retFcn := local retFcn;
+mappingFcn := local mappingFcn;
+
 toS = method(Options => {Strategy => Stembridge, Memoize => true})
 toS(RingElement,SchurRing) := opts -> (f,S) -> (
      -- f is a polynomial in 'symmRing n', of degree d<=n
@@ -500,12 +530,12 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
 	       par = reverse par;
 	       hf = hf - coe_0_0*(jacobiTrudi(par,R,Memoize => opts.Memoize));
 	       if #par <= ngS then
-	          rez = rez + lift(coe_0_0,coefficientRing S)*value(toString s_par);--value toString is kind of stupid..
+	          rez = rez + lift(coe_0_0,coefficientRing S)*S.getSchur(par);--value toString is kind of stupid..
      	       );
      )
      else if opts.Strategy == Stillman then
      (
-time	  hf = toH(f);
+	  hf = toH(f);
 {*	  ef := toE(f);
 	  le := #terms(ef);
 	  lh := #terms(hf);
@@ -517,14 +547,52 @@ time	  hf = toH(f);
 	  else 	  
 *}
 --	  (
-	       mtos := map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then value(toString s_{i}) else 0)));
+	       mtos := map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then S.getSchur({i}) else 0)));
      	       rez = mtos(hf);
 --	       );
-	  );
---     else error"Invalid strategy";
+	  )
+     else if opts.Strategy == Pieri then
+     (
+          mappingFcn = map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then S.getSchur({i}) else 0)));
+	  leadTermFcn = (pl) -> (if support pl == {} then null else last support pl);
+	  retFcn = (pl) -> lift(pl,(coefficientRing ring pl));
+     	  rez = recTrans(toH(f));
+	  )
+     else error"Invalid strategy";
      rez
      )
 toS(RingElement) := opts -> (f) -> (toS(f,(ring f).Schur,opts))
+
+recTrans = method()
+recTrans (RingElement) := (pl) ->
+(
+     lead := leadTermFcn pl;
+     if lead === null then retFcn pl else
+     (
+	  (ex,coe) := coefficients(pl,Variables=>{lead});
+	  ex = flatten entries ex;
+	  coe = flatten entries coe;
+     	  rez := 0;
+	  cdeg := degree(lead,ex#0)+1;
+	  for i from 0 to #ex-1 do
+	  (
+	       fdeg := degree(lead,ex#i);
+	       while (cdeg>fdeg+1) do
+	       (
+		    cdeg = cdeg - 1;
+		    rez = rez*mappingFcn(lead);
+		    );
+	       rez = rez*mappingFcn(lead)+recTrans(coe#i);
+	       cdeg = cdeg - 1;
+	       );
+	  while cdeg>0 do 
+	       (
+		    cdeg = cdeg - 1;
+		    rez = rez*mappingFcn(lead);
+		    );
+	  rez
+     	  )
+     )
 
 PtoE = (m,R) -> (
      -- R is a symmring n
@@ -541,7 +609,7 @@ PtoE = (m,R) -> (
      for i from s+1 to m do (
 	  f := if i > n then 0 else -i*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
 	  for r from max(1,i-n) to i-1 do 
-	       f = f + (-1)^(r-1) * (R.symRingForE)_(2*n+i-r-1) * PE#r; -- R_(i-r-1) IS e_(i-r)
+	       f = f + ((-1)^(r-1) * (R.symRingForE)_(2*n+i-r-1)) * PE#r; -- R_(i-r-1) IS e_(i-r)
 	  PE#i = if i%2 == 0 then f else -f;
 	  );
 --     initSymR(R);
@@ -566,7 +634,7 @@ HtoE = (m,R) -> (
      for i from s+1 to m do (
 	  f := if i > n then 0 else (-1)^(i-1)*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
 	  for r from 1 to min(i-1,n-1) do 
-	       f = f + (-1)^(r-1) * (R.symRingForE)_(2*n+r-1) * HE#(i-r); -- R_(r-1) IS e_r
+	       f = f + ((-1)^(r-1) * (R.symRingForE)_(2*n+r-1)) * HE#(i-r); -- R_(r-1) IS e_r
 	  HE#i = f;
 	  );
 --     initSymR(R);
@@ -592,7 +660,7 @@ EtoH = (m,R) -> (
      for i from s+1 to m do (
 	  f := R_(2*n-1+i); -- R_(2*n-1+i) IS h_i
 	  for r from 1 to i-1 do 
-	       f = f + (-1)^r * EH#r * R_(2*n-1+i-r); -- R_(2*n-1+i-r) IS h_(i-r)
+	       f = f + ((-1)^r * R_(2*n-1+i-r)) * EH#r; -- R_(2*n-1+i-r) IS h_(i-r)
 	  EH#i = if i%2 == 1 then f else -f;
 	  );
 --     initSymR(R);
@@ -620,7 +688,7 @@ EtoP = (m,R) -> (
      for i from s to m do (
 	  f := 0;
 	  for r from 1 to i do 
-	       f = f + (-1)^(r-1) * EP#(i-r) * (R.symRingForP)_(2*n-1+r); -- R_(n-1+r) IS p_r
+	       f = f + ((-1)^(r-1) * (R.symRingForP)_(2*n-1+r)) * EP#(i-r); -- R_(n-1+r) IS p_r
 	  EP#i = (1/i) * f;
 	  );
 --     initSymR(R);
@@ -648,7 +716,7 @@ HtoP = (m,R) -> (
      for i from s to m do (
 	  f := 0;
 	  for r from 1 to i do 
-	       f = f + HP#(i-r) * (R.symRingForP)_(2*n-1+r); -- R_(n-1+r) IS p_r
+	       f = f + (R.symRingForP)_(2*n-1+r) * HP#(i-r); -- R_(n-1+r) IS p_r
 	  HP#i = (1/i) * f;
 	  );
 --     initSymR(R);
@@ -676,7 +744,7 @@ PtoH = (m,R) -> (
      for i from s to m do (
 	  f := i*R_(2*n-1+i);  -- R_(2*n-1+i) IS h_i
 	  for r from 1 to i-1 do 
-	       f = f - PH#r * R_(2*n-1+i-r); -- R_(2*n-1+i-r) IS h_(i-r)
+	       f = f - R_(2*n-1+i-r) * PH#r; -- R_(2*n-1+i-r) IS h_(i-r)
 	  PH#i = f;
 	  );
 --     initSymR(R);
@@ -717,14 +785,16 @@ multsToSeq(List) := (mults) ->
      reverse par
      )
 
-zee = method()
-zee(List) := lambda ->
+centralizerSize = method()
+centralizerSize(List) := lambda ->
 (
      product for i from 0 to #lambda-1 list((i+1)^(lambda#i)*(lambda#i)!)
      )
 
-symToChar = method()
-symToChar(RingElement) := (f)->
+ClassFunction = new Type of HashTable
+
+classFunction = method()
+classFunction(RingElement) := (f)->
 (
      R := local R;
      pf := local pf;
@@ -747,40 +817,80 @@ symToChar(RingElement) := (f)->
      (
      	  degs := (flatten exponents mon#j)_{(n)..(2*n-1)};
      	  par := multsToSeq(degs);
-	  ch#par = lift(coe#j,coefficientRing R) * zee(degs);
+	  ch#par = lift(coe#j,coefficientRing R) * centralizerSize(degs);
 	  );
-     new HashTable from ch
+     new ClassFunction from ch
      )
 
-charToSym = method()
-charToSym(HashTable,Ring) := (ch,R)->
+ClassFunction + ClassFunction := (ch1,ch2)->
+(
+     clSum := new MutableHashTable;
+     l1 := sum((keys ch1)#0);
+     l2 := sum((keys ch2)#0);
+     if l1 != l2 then error("The symmetric functions/characters must have the same degree");
+     for i in unique(keys(ch1)|keys(ch2)) do
+     	  (
+	       a := b := 0;
+	       if ch1#?i then a = ch1#i;
+	       if ch2#?i then b = ch2#i;
+	       if (a+b != 0) then clSum#i = a + b;
+	       );
+     new ClassFunction from clSum
+     )
+
+ZZ * ClassFunction := (n,ch) ->
+(
+     clProd := new MutableHashTable;
+     for i in keys ch do clProd#i = n*ch#i;
+     new ClassFunction from clProd     
+     )
+
+ClassFunction * ZZ := (ch,n) -> n*ch;
+
+ClassFunction - ClassFunction := (ch1,ch2)-> ch1 + (-1)*ch2;
+
+ClassFunction == ClassFunction := (ch1,ch2) ->
+(
+     equ := true;
+     for i in unique(keys ch1 | keys ch2) do
+     	  if not ((not ch1#?i and not ch2#?i) or (ch1#?i and ch2#?i and ch1#i == ch2#i)) then 
+     	  (
+	       equ = false;
+	       break;
+	       );
+     equ
+     )
+
+symmetricFunction = method()
+symmetricFunction(ClassFunction,Ring) := (ch,R)->
 (
      rez := 0_R;
      n := R.dim;
      for lam in keys ch do
-     	  rez = rez + ch#lam * (product for i from 0 to #lam-1 list R_(n-1+lam#i)) / zee(seqToMults lam);
+     	  rez = rez + ch#lam * (product for i from 0 to #lam-1 list R_(n-1+lam#i)) / centralizerSize(seqToMults lam);
      rez
      )
 
-scalarProd = method()
-scalarProd(HashTable,HashTable) := (ch1,ch2)->
+scalarProduct = method()
+scalarProduct(ClassFunction,ClassFunction) := (ch1,ch2)->
 (
      scProd := 0;
-     chProd := intProd(ch1,ch2);
+     chProd := internalProduct(ch1,ch2);
      for i in keys(chProd) do
-     	  scProd = scProd + chProd#i / zee(seqToMults i);
+     	  scProd = scProd + chProd#i / centralizerSize(seqToMults i);
      scProd
      )
 
-scalarProd(RingElement,RingElement) := (f1,f2)->
+scalarProduct(RingElement,RingElement) := (f1,f2)->
 (
-     ch1 := symToChar f1;
-     ch2 := symToChar f2;
-     scalarProd(ch1,ch2)
+     ch1 := classFunction f1;
+     ch2 := classFunction f2;
+     scalarProduct(ch1,ch2)
      )
 
-intProd = method()
-intProd(HashTable,HashTable) := (ch1,ch2)->
+internalProduct = method()
+ClassFunction * ClassFunction := 
+internalProduct(ClassFunction,ClassFunction) := (ch1,ch2)->
 (
      iProd := new MutableHashTable;
      l1 := sum((keys ch1)#0);
@@ -788,19 +898,19 @@ intProd(HashTable,HashTable) := (ch1,ch2)->
      if l1 != l2 then error("The symmetric functions/characters must have the same degree");
      for i in keys(ch1) do
      	  if ch2#?i then iProd#i = ch1#i * ch2#i;
-     new HashTable from iProd
+     new ClassFunction from iProd
      )
 
-intProd(RingElement,RingElement) := (f1,f2)->
+internalProduct(RingElement,RingElement) := (f1,f2)->
 (
      R2 := ring f2;
      R := local R;
      issy := false;
      if (class R2 =!= SchurRing) then (R = R2; issy = true;)
      else R = symmRing degSchurPol(f2);
-     ch1 := symToChar f1;
-     ch2 := symToChar f2;
-     rez := charToSym(intProd(ch1,ch2),R);
+     ch1 := classFunction f1;
+     ch2 := classFunction f2;
+     rez := symmetricFunction(internalProduct(ch1,ch2),R);
      if issy then rez else
      toS(rez,R2)
      )
@@ -816,7 +926,7 @@ chi(BasicList,BasicList) := (lambda, rho) ->
      sl := jacobiTrudi(la,R);
      pr := 1_R;
      for i from 0 to #rh-1 do pr = pr * R_(ll-1+rh#i);
-     scalarProd(sl,pr)
+     scalarProduct(sl,pr)
      )
 
 ---------------------------------------------------------------
@@ -858,8 +968,7 @@ genPartitions(ZZ) := (k)->
      )
 );
 
-Partitions = method()
-Partitions(Set,BasicList) := (S,L)->
+partitions(Set,BasicList) := (S,L)->
 (
      locS = toList S;
      locL = L;
@@ -896,6 +1005,7 @@ L = {(a_{1},b_{1}), (a_{3}+a_{2,1},b_{2,2})}
 
 ----end wedge powers
 *}
+
 
 cauchy = (i,f,g) -> (
      -- f and g are elements of Schur rings (possibly different)
@@ -1608,7 +1718,8 @@ Description
     the method evaluates the Jacobi-Trudi determinant corresponding
     to the partition {\tt lambda}, yielding a representation of
     the Schur function {\tt s_{lambda}} as a symmetric function
-    in {\tt R}.
+    in {\tt R}. The default option is to represent this symmetric
+    function in terms of {\tt h-}polynomials.
   
   Example
     R = symmRing 10;
@@ -1727,12 +1838,11 @@ Description
 
 doc ///
   Key
-    Partitions
-    (Partitions,Set,BasicList)
+    (partitions,Set,BasicList)
   Headline
     Partitions of a set
   Usage
-    par = Partitions(S,L)
+    par = partitions(S,L)
   Inputs
     S:Set
     L:BasicList
@@ -1748,8 +1858,8 @@ doc ///
       the {\tt S_i}'s are disjoint subsets of {\tt S} having {\tt t_i} elements.
 
     Example
-      Partitions(set{1,2,3,4},{2,1,1})
-      Partitions(set{a,b,c,d,e},new Partition from {3,2})
+      partitions(set{1,2,3,4},{2,1,1})
+      partitions(set{a,b,c,d,e},new Partition from {3,2})
 ///  
 
 
@@ -1789,20 +1899,20 @@ Description
   Example
     chi({1,1,1,1},{4})
 SeeAlso
-   charToSym
-   symToChar
+   symmetricFunction
+   classFunction
 ///
 
 doc ///
 Key
-  charToSym
-  (charToSym,HashTable,Ring)
+  symmetricFunction
+  (symmetricFunction,ClassFunction,Ring)
 Headline
   Converts virtual character to symmetric function
 Usage
-  f = charToSym(ch,R)
+  f = symmetricFunction(ch,R)
 Inputs
-  ch:HashTable
+  ch:ClassFunction
   R:Ring
     a Symmetric ring
 Outputs
@@ -1817,25 +1927,25 @@ Description
     
   Example
     R = symmRing 4;
-    charToSym(new HashTable from {{1,1,1,1}=>2},R)
+    symmetricFunction(new ClassFunction from {{1,1,1,1}=>2},R)
 SeeAlso
-  symToChar
+  classFunction
   chi
 ///
 
 doc ///
 Key
-  symToChar
-  (symToChar,RingElement)
+  classFunction
+  (classFunction,RingElement)
 Headline
   Converts symmetric function to virtual character
 Usage
-  ch = symToChar(f)
+  ch = classFunction(f)
 Inputs
   f:RingElement
     element of a Symmetric ring
 Outputs
-  ch:HashTable
+  ch:ClassFunction
 Description
   Text
     Given a symmetric function {\tt f}, homogeneous of degree {\tt N}, 
@@ -1846,22 +1956,22 @@ Description
     
   Example
     R = symmRing 5;
-    symToChar(jacobiTrudi({4,1},R))
+    classFunction(jacobiTrudi({4,1},R))
   Text
 
     The character of the second exterior power of the standard representation of {\tt S_5} is
     
   Example
     R = symmRing 5;
-    symToChar(jacobiTrudi({3,1,1},R))
+    classFunction(jacobiTrudi({3,1,1},R))
 SeeAlso
-  charToSym
+  symmetricFunction
   chi
 ///
 
 doc ///
 Key
-  scalarProd
+  scalarProduct
 Headline
   Standard pairing on symmetric functions/class functions
 Description
@@ -1881,14 +1991,14 @@ Description
   Example
     R = symmRing 10;
     S = schurRing(s,4);
-    scalarProd(h_1^10,s_{4,3,2,1})
+    scalarProduct(h_1^10,s_{4,3,2,1})
 SeeAlso
-  intProd
+  internalProduct
 ///
 
 doc ///
 Key
-  (scalarProd,RingElement,RingElement)
+  (scalarProduct,RingElement,RingElement)
 Headline
   Standard scalar product of symmetric functions
 Usage
@@ -1908,8 +2018,8 @@ Description
     
   Example
     R = symmRing 5;
-    scalarProd(h_5,p_5)
-    scalarProd(s_{4,1},p_5)
+    scalarProduct(h_5,p_5)
+    scalarProduct(s_{4,1},p_5)
   
   Text
   
@@ -1923,14 +2033,14 @@ Description
 
 doc ///
 Key
-  (scalarProd,HashTable,HashTable)
+  (scalarProduct,ClassFunction,ClassFunction)
 Headline
   Standard scalar product of class functions
 Usage
   sp = scalarProduct(ch1,ch2)
 Inputs
-  ch1:HashTable
-  ch2:HashTable
+  ch1:ClassFunction
+  ch2:ClassFunction
 Outputs
   sp:QQ
 Description
@@ -1940,14 +2050,14 @@ Description
     computes the standard pairing between {\tt ch1} and {\tt ch2}.
     
   Example
-    ch1 = new HashTable from {{3,2} => 2, {2,2,1} => -2, {3,1,1} => 2, {5} => 1};
-    ch2 = new HashTable from {{2,2,1} => -2, {5} => 1, {1,1,1,1,1} => 5, {3,2} => 3, {4,1} => -2};
-    scalarProd(ch1,ch2)
+    ch1 = new ClassFunction from {{3,2} => 2, {2,2,1} => -2, {3,1,1} => 2, {5} => 1};
+    ch2 = new ClassFunction from {{2,2,1} => -2, {5} => 1, {1,1,1,1,1} => 5, {3,2} => 3, {4,1} => -2};
+    scalarProduct(ch1,ch2)
 ///
 
 doc ///
 Key
-  intProd
+  internalProduct
 Headline
   Internal product of symmetric functions/class functions
 Description
@@ -1966,25 +2076,25 @@ Description
   Example
     R = symmRing 5;
     S = schurRing(s,3);
-    intProd(h_3,s_{2,1})
+    internalProduct(h_3,s_{2,1})
   Text
   
     The square of the sign representation is the trivial representation:
     
   Example
     R = symmRing 5;
-    toH intProd(e_3,e_3)
+    toH internalProduct(e_3,e_3)
 SeeAlso
-  scalarProd
+  scalarProduct
 ///
 
 doc ///
 Key
-  (intProd,RingElement,RingElement)
+  (internalProduct,RingElement,RingElement)
 Headline
   Kronecker product of symmetric functions
 Usage
-  ip = intProd(f1,f2)
+  ip = internalProduct(f1,f2)
 Inputs
   f1:RingElement
      element of a Symmetric ring or a Schur ring
@@ -2003,9 +2113,9 @@ Description
   Example
      R = symmRing 6;
      S = schurRing(s,3);
-     intProd(s_{3},e_3)
+     internalProduct(s_{3},e_3)
      Q = schurRing(q,4);
-     intProd(s_{3,3},q_{4,2})   
+     internalProduct(s_{3,3},q_{4,2})   
   Text
    
     An error is returned if {\tt f1} and {\tt f2} don't have the
@@ -2014,16 +2124,16 @@ Description
 
 doc ///
 Key
-  (intProd,HashTable,HashTable)
+  (internalProduct,ClassFunction,ClassFunction)
 Headline
   Tensor product of virtual representations
 Usage
-  ip = intProd(ch1,ch2)
+  ip = internalProduct(ch1,ch2)
 Inputs
-  ch1:HashTable
-  ch2:HashTable
+  ch1:ClassFunction
+  ch2:ClassFunction
 Outputs
-  ip:HashTable
+  ip:ClassFunction
 Description
   Text
     
@@ -2032,19 +2142,20 @@ Description
     virtual representations of the symmetric group.
     
   Example
-    ch1 = new HashTable from {{4,4} => 2, {8} => -1, {5,2,1} => 2, {3,2,2,1} => 1};
-    ch2 = new HashTable from {{2,2,2,2} => -4, {5,2,1} => 1, {3,2,2,1} => 3};
-    intProd(ch1,ch2)
+    ch1 = new ClassFunction from {{4,4} => 2, {8} => -1, {5,2,1} => 2, {3,2,2,1} => 1};
+    ch2 = new ClassFunction from {{2,2,2,2} => -4, {5,2,1} => 1, {3,2,2,1} => 3};
+    internalProduct(ch1,ch2)
+    ch1 * ch2
 ///
 
 doc ///
 Key
-  zee
-  (zee,List)
+  centralizerSize
+  (centralizerSize,List)
 Headline 
   Size of the centralizer of a permutation
 Usage 
-  n = zee(rho)
+  n = centralizerSize(rho)
 Inputs 
   rho:List
 Outputs 
@@ -2053,14 +2164,14 @@ Description
   Text
 
     {\tt rho} is a list representing the cycle type of some permutation: the i-th entry in {\tt rho} is the number of cycles of length i of the permutation.
-    The output of the function {\tt zee} is the size of the centralizer in the symmetric group of any permutation of cycle type {\tt rho}. The cycle type {\tt rho}
-    corresponds to a partition {\tt lambda}, in which case {\tt zee(rho)} is also the value of the square norm of the symmetric function {\tt p_{lambda}}.
+    The output of the function {\tt centralizerSize} is the size of the centralizer in the symmetric group of any permutation of cycle type {\tt rho}. The cycle type {\tt rho}
+    corresponds to a partition {\tt lambda}, in which case {\tt centralizerSize(rho)} is also the value of the square norm of the symmetric function {\tt p_{lambda}}.
 
   Example
-    zee{1,1,1}
+    centralizerSize{1,1,1}
     R = symmRing 6;
     u = p_1 * p_2 * p_3;
-    scalarProd(u,u)
+    scalarProduct(u,u)
 ///
 
 doc ///
@@ -2302,35 +2413,36 @@ assert(chi({3,1,1},{2,2,1}) == -2)
 TEST ///
 R = symmRing 20
 S = schurRing(o,6)
-assert(scalarProd(o_{6,4,3,2,1},jacobiTrudi({3,3,3},R)*toP(o_{4,2,1},R)) == 2)
-assert(scalarProd(jacobiTrudi({6,4,3,2,1},R),jacobiTrudi({4,3,3,3,2,1},R)) == 0)
-assert(scalarProd(jacobiTrudi({6,4,3,2,1},R),o_{4,3,3,3,2,1}) == 0)
+assert(scalarProduct(o_{6,4,3,2,1},jacobiTrudi({3,3,3},R)*toP(o_{4,2,1},R)) == 2)
+assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),jacobiTrudi({4,3,3,3,2,1},R)) == 0)
+assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),o_{4,3,3,3,2,1}) == 0)
 ///
 
 TEST ///
 R = symmRing 5
 A = schurRing(a,2)
-assert(intProd(e_2+h_2,a_{2}) == a_{2}+a_{1,1})
-assert(toE intProd(a_{2},e_2+h_2) == toE p_1^2)
-assert(dim intProd(a_{2,1}*a_{1},a_{2,2}) == 9)
+assert(internalProduct(e_2+h_2,a_{2}) == a_{2}+a_{1,1})
+assert(toE internalProduct(a_{2},e_2+h_2) == toE p_1^2)
+assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)
 ///
 
 
 TEST ///
 R = symmRing 10
-ch1 = new HashTable from {{4,4} => 2, {8} => -1, {5,2,1} => 2, {3,2,2,1} => 1};
-ch2 = new HashTable from {{2,2,2,2} => -4, {5,2,1} => 1, {3,2,2,1} => 3};
-assert(toP charToSym(intProd(ch1,ch2),R) == 1/8*p_1*p_2^2*p_3+1/5*p_1*p_2*p_5)
+ch1 = new ClassFunction from {{4,4} => 2, {8} => -1, {5,2,1} => 2, {3,2,2,1} => 1};
+ch2 = new ClassFunction from {{2,2,2,2} => -4, {5,2,1} => 1, {3,2,2,1} => 3};
+assert(toP symmetricFunction(internalProduct(ch1,ch2),R) == 1/8*p_1*p_2^2*p_3+1/5*p_1*p_2*p_5)
+assert(toP symmetricFunction(ch1*ch2,R) == 1/8*p_1*p_2^2*p_3+1/5*p_1*p_2*p_5)
 ///
 
 TEST ///
 R = symmRing 4
 f = p_2^2
 g = (e_2+h_2)^2
-ch1 = symToChar(f)
-ch2 = symToChar(g)
-charToSym(intProd(ch1,ch2),R) == 0
-intProd(f,g) == 0
+ch1 = classFunction(f)
+ch2 = classFunction(g)
+symmetricFunction(internalProduct(ch1,ch2),R) == 0
+internalProduct(f,g) == 0
 ///
 ----------------------------------------------------------------
 --- end test characters of symmetric groups, scalarProd, intProd
@@ -2703,6 +2815,7 @@ viewHelp SchurRings
 --print docTemplate
 end
 
+-------
 restart
 loadPackage"SchurRings"
 A = schurRing(a,2)
@@ -2713,7 +2826,137 @@ i = 1
 
 select(weyman(i,L),x->x =!= null)
 end
+-------
+
+-------
+restart
+loadPackage"SchurRings"
+
+n = 20
+m = 30
+time R = symmRing(n)
+time ple = plethysm(h_4,h_5);
+S = schurRing(s,m)
+
+time toS(ple,Strategy=>Pieri);
+time toS(ple,Strategy=>Stembridge);
+time toS(ple,Strategy=>Stillman);
+----
+
+--lead term function
+--return function in case no lead term
+--mapping function (maToS)
+
+leadTermFcn = (pl) -> (
+     spl := support pl;
+     splE := select(spl,i->(index i)<n);
+     splP := select(spl,i->((index i)>=n and (index i)<2*n));
+     if #splE > 0 then last splE else
+     if #splP > 0 then last splP else
+     	  null
+     );
+retFcn = pl -> pl;
+
+etoh = apply(splice{1..n},i->
+     (-1)*(sum for j in 1..(i-1) list (-1)^(i-j)*e_j*h_(i-j))+(-1)^(i-1)*h_i
+     )
+mappingFcn = map(R,R,etoh | apply(splice{0..(n-1)},i->R_(2*n+i)) | splice{n:0})
+
+--ptoh = apply(splice{1..n},
+
+recTrans = method()
+recTrans (RingElement) := (pl) ->
+(
+     lead := leadTermFcn pl;
+     if lead === null then retFcn pl else
+     (
+	  (ex,coe) := coefficients(pl,Variables=>{lead});
+	  ex = flatten entries ex;
+	  coe = flatten entries coe;
+     	  rez := 0;
+	  cdeg := degree(lead,ex#0)+1;
+	  for i from 0 to #ex-1 do
+	  (
+	       fdeg := degree(lead,ex#i);
+	       while (cdeg>fdeg+1) do
+	       (
+		    cdeg = cdeg - 1;
+		    rez = rez*mappingFcn(lead);
+		    );
+	       rez = rez*mappingFcn(lead)+recTrans(coe#i);
+	       cdeg = cdeg - 1;
+	       );
+	  while cdeg>0 do 
+	       (
+		    cdeg = cdeg - 1;
+		    rez = rez*mappingFcn(lead);
+		    );
+	  rez
+     	  )
+     )
+
+recTrans(h_3+e_4*h_2)
+toH(h_3+e_4*h_2)
+recTrans(e_4)
+toH e_4
+
+pol = e_20
+time pl = toH pol;
+while leadTermFcn(pol) =!= null do time pol = recTrans pol;
+pl == pol
+
+ple = toE ple
+time recTrans ple;
+time toH ple;
+
+time recTrans e_10;
+time toH e_10;
 
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
 -- End:
+restart
+n = 35
+RE = QQ[e_1..e_n,MonomialSize=>8]
+RH = QQ[h_1..h_n,MonomialSize=>8]
+RP = QQ[p_1..p_n,MonomialSize=>8]
+
+EtoH = method()
+EtoH (ZZ) := (n) ->
+(
+    lis := {1};
+    for i from 1 to n do
+    (
+     	 newE := RH_(i-1);
+     	 for j from 1 to i-1 do
+	     newE = newE + ((-1)^j * RH_(i-j-1)) * lis#j;
+     	 if i%2 == 0 then newE = -newE;
+     	 lis = lis | {newE};
+     	 );
+     lis
+)
+
+--time EtoH 30;
+
+restart
+n = 40
+RP = QQ[p_1..p_n,MonomialSize=>8]
+i=1
+
+EtoP = method()
+EtoP (ZZ) := (n) ->
+(
+    lis := {1_RP};
+    for i from 1 to n do
+    (
+     	 newE := 0;
+     	 for j from 1 to i do
+	     newE = newE + RP_(j-1) * lis#(i-j);
+     	 newE = (1/i) * newE;
+     	 lis = lis | {newE};
+     	 );
+     lis
+)
+
+time EtoP 40;
+oo/size
