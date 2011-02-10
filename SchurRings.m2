@@ -34,7 +34,7 @@ newPackage(
 --toP =>
 --toS =>
 
-export {schurRing, SchurRing, symmRing, toS, toE, toP, toH, 
+export {schurRing, SchurRing, schurRing2, SchurRing2, symmRing, toS, toE, toP, toH, 
      plethysm, jacobiTrudi, 
      centralizerSize, classFunction, symmetricFunction, scalarProduct, internalProduct, 
      cauchy, wedge, preBott, bott, doBott, weyman,
@@ -103,6 +103,91 @@ rawmonom2schur = (m) -> (
      apply(rawSparseListFormMonomial m, (x,e) -> scan(0 .. x, i -> if t#?i then t#i = t#i + e else t#i = e)); 
      values t
      )
+
+rawmonom2partition = (m) -> (
+     reverse splice apply(rawSparseListFormMonomial m, (x,e) -> e:x)
+     )
+---------
+SchurRing2 = new Type of EngineRing
+SchurRing2.synonym = "Schur2 ring"
+
+
+expression SchurRing2 := S -> new FunctionApplication from { schurRing, (expression last S.baseRings, S.Symbol, S.numgens ) }
+undocumented (expression, SchurRing2)
+
+toExternalString SchurRing2 := R -> toString expression R
+undocumented (toExternalString, SchurRing2),
+
+toString SchurRing2 := R -> (
+     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
+     else toString expression R)
+undocumented (toString, SchurRing2)
+
+net SchurRing2 := R -> (
+     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
+     else net expression R)
+undocumented (net, SchurRing2)
+
+SchurRing2 _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
+
+newSchur2 = method()
+newSchur2(Ring,Symbol) := (A,p) -> newSchur2(A,p,-1)
+newSchur2(Ring,Symbol,InfiniteNumber) := (A,p,inf) -> (
+     if inf == infinity 
+       then newSchur2(A,p,-1)
+       else error "expected positive integer or infinity")
+  
+newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
+     if not (A.?Engine and A.Engine) 
+     then error "expected coefficient ring handled by the engine";
+     SR := new SchurRing2 from rawSchurRing1(raw A,n);
+     SR.Symbol = p;
+     SR.baseRings = append(A.baseRings,A);
+     SR.generators = {};
+     SR.numgens = if n < 0 then infinity else n;
+     commonEngineRingInitializations SR;
+     ONE := SR#1;
+     if A.?char then SR.char = A.char;
+     toExternalString SR := r -> toString expression r;
+     expression SR := f -> (
+	  (coeffs,monoms) -> sum(
+	       coeffs,monoms,
+	       (a,m) -> expression (if a == 1 then 1 else new A from a) *
+	          new Subscript from {p, (
+		    t1 := toSequence rawmonom2partition m;
+		    if #t1 === 1 then t1#0 else t1
+		    )})
+	  ) rawPairs(raw A, raw f);
+     listForm SR := (f) -> (
+     	  n := numgens SR;
+     	  (cc,mm) := rawPairs(raw A, raw f);
+     	  toList apply(cc, mm, (c,m) -> (rawmonom2partition m, new A from c)));
+     SR
+     )
+
+schurRing2 = method ()
+schurRing2(Ring,Thing,ZZ) := SchurRing2 => (A,p,n) -> (
+     try p = baseName p else error "schurRing2: can't use provided thing as variable";
+     if class p === Symbol then schurRing2(A,p,n)
+     else error "schurRing2: can't use provided thing as variable"
+     );
+schurRing2(Ring,Thing) := SchurRing2 => (A,p) -> (
+     try p = baseName p else error "schurRing2: can't use provided thing as variable";
+     if class p === Symbol then schurRing2(A,p)
+     else error "schurRing2: can't use provided thing as variable"
+     );
+
+schurRing2(Ring,Symbol) := (R,p) -> schurRing2(R,p,infinity)
+schurRing2(Ring,Symbol,InfiniteNumber) := 
+schurRing2(Ring,Symbol,ZZ) := SchurRing => (R,p,n) -> (
+     S := newSchur2(R,p,n);
+     dim S := s -> rawSchurDimension raw s;
+     t := new SchurRingIndexedVariableTable from p;
+     t.SchurRing = S;
+     t#symbol _ = a -> ( S _ a);
+     S.use = S -> (globalAssign(p,t); S);
+     S.use S;
+     S)
 
 newSchur := (R,M,p) -> (
      if not (M.?Engine and M.Engine) 
@@ -2912,9 +2997,115 @@ time toH ple;
 time recTrans e_10;
 time toH e_10;
 
--- Local Variables:
--- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
--- End:
+
+--------------------------
+-- Test of newSchur2
+restart
+path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
+debug loadPackage "SchurRings"
+A = ZZ[a]
+R = newSchur2(A, symbol p, 5)
+R = newSchur2(A, symbol p, -1)
+R_{2,2,2,2,2,2,1}
+
+
+path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
+loadPackage "SchurRings"
+A = ZZ[a]
+R = newSchur2(A, symbol p, 5)
+f = R_{2,1}
+g = R_{1,1}
+f+g+f
+-f
+oo + f
+a*f
+f*g
+(f+g)^10
+f+1
+a*f-(a^2+1)  -- displays wrong
+
+
+S = schurRing(s,10)
+s_{17,7,7,7,3,3,1} * s_{10,5,1};
+(s_{5})^15
+F = s_{5}
+for i from 1 to 14 do (F = F * s_{5}; << "size F at " << i << " is " << size F << endl;)
+
+
+path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
+debug loadPackage "SchurRings"
+S = newSchur2(QQ, symbol p, 5)
+S = schurRing2(QQ, symbol p, 5)
+describe S
+F = S_{2,1}*S_{2,1}
+listForm F
+debug Core
+rawPairs(raw QQ, raw F)
+assert(S_{1} * S_{1} == S_{2} + S_{1,1})
+S_{2,1} * S_{1}
+S_{2,1} * S_{2,1}
+F = S_{2,1}
+G = S_{1}
+F*G
+G
+G*G
+F*F
+S_{2,1}*S_{2,1}
+
+T = schurRing(s,5)
+assert(s_{1} * s_{1} == s_{2} + s_{1,1})
+s_{2,1} * s_{1} -- s_(3,1)+s_(2,2)+s_(2,1,1)
+G = s_{2,1} * s_{2,1}
+
+S = newSchur2(QQ, symbol p, 3)
+U = newSchur2(S, symbol q, 4)
+F = (S_{2} + S_{1,1}) * U_{2,1}
+G = F * S_{2}
+
+S_{5}
+oo^10
+
+S = schurRing2(QQ, symbol t)
+S.numgens
+t_{2,1} * t_{2,1}
+t_{2,1,1,1,1} * t_{2,1,1,1,1,1,1}
+(listForm oo)/first/length
+
+S = schurRing(s,12)
+time F = s_{17,7,7,7,3,3,1} * s_{10,5,1};
+size F
+T = schurRing2(ZZ,t,12)
+T = schurRing2(ZZ,t)
+time G = t_{17,7,7,7,3,3,1} * t_{10,5,1};
+lisF = hashTable listForm F;
+lisG = hashTable listForm G;
+assert(lisF === lisG)
+
+restart
+loadPackage "SchurRings"
+S = schurRing(s,12)
+time F = s_{20,20,17,7,7,7,3,3,1} * s_{10,5,1};
+size F
+T = schurRing2(ZZ,t,20)
+time G = t_{20,20,17,7,7,7,3,3,1} * t_{10,5,1};
+time G2 = t_{10,5,1} * t_{20,20,17,7,7,7,3,3,1};
+lisF = hashTable listForm F;
+lisG = hashTable listForm G;
+lisG2 = hashTable listForm G2;
+assert(lisF === lisG)
+assert(lisF === lisG2)
+U = schurRing2(ZZ,u)
+time H = u_{20,20,17,7,7,7,3,3,1} * u_{10,5,1};
+time H3 = u_{20,20,17,7,7,7,3,3,1} * u_{10,5,1};
+time H2 = u_{10,5,1} * u_{20,20,17,7,7,7,3,3,1};
+lisH = hashTable listForm H;
+lisH2 = hashTable listForm H2;
+assert(lisF === lisH)
+assert(lisF === lisH2)
+
+S = schurRing(symbol s, 10)
+F = s_{12,3} * s_{12,4};
+--------------------------------------------------------------
 restart
 n = 35
 RE = QQ[e_1..e_n,MonomialSize=>8]
@@ -2960,3 +3151,7 @@ EtoP (ZZ) := (n) ->
 
 time EtoP 40;
 oo/size
+
+-- Local Variables:
+-- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
+-- End:
