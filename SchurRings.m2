@@ -47,7 +47,7 @@ export {schurRing2, SchurRing2, symmRing2,
      jacobiTrudi, plethysm2,
      centralizerSize, classFunction, symmetricFunction, 
      scalarProduct, internalProduct,
-     SchurRingIndexedVariableTable, 
+     SchurRingIndexedVariableTable, EHPSVariables,
      ClassFunction, schurLevel,
      
      Stillman, Stembridge, Pieri, Schur, Memoize, EorH,
@@ -119,7 +119,7 @@ symmetricRingOf (Ring) := R -> (
      	       R.symmRing2.Schur = R;
 	       R.symmRing2
 	       )
-	  else R     
+	  else error"R does not have a Symmetric Ring"
      )
 
 schurRingOf = method()
@@ -130,13 +130,12 @@ schurRingOf (Ring) := R -> (
 	       if class R === SchurRing2 then R else
 	       (
 		    s := getSymbol "s";
---     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
-     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,infinity);
+     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
      	       	    R.Schur.symmRing2 = R;
 	       	    R.Schur
 		    )
 	       )
-	  else R     
+	  else error"R does not have a Schur Ring"
      )
 
 schurLevel = method()
@@ -144,10 +143,6 @@ schurLevel (Ring) := R -> if R.?schurLevel then R.schurLevel else 0
 
 newSchur2 = method()
 newSchur2(Ring,Symbol) := (A,p) -> newSchur2(A,p,-1)
-newSchur2(Ring,Symbol,InfiniteNumber) := (A,p,inf) -> (
-     if inf == infinity 
-       then newSchur2(A,p,-1)
-       else error "expected positive integer or infinity")
        
 newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      if not (A.?Engine and A.Engine) 
@@ -180,210 +175,41 @@ newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      SR
      )
 
-schurRing2 = method ()
-schurRing2(Ring,Thing,ZZ) := SchurRing2 => (A,p,n) -> (
+schurRing2 = method(Options => {EHPSVariables => (getSymbol"e",getSymbol"h",getSymbol"p",getSymbol"s")})
+schurRing2(Ring,Thing,ZZ) := SchurRing2 => opts -> (A,p,n) -> (
      try p = baseName p else error "schurRing2: can't use provided thing as variable";
-     if class p === Symbol then schurRing2(A,p,n)
+     if class p === Symbol then schurRing2(A,p,n,opts)
      else error "schurRing2: can't use provided thing as variable"
      );
-schurRing2(Ring,Thing) := SchurRing2 => (A,p) -> (
+schurRing2(Ring,Thing) := SchurRing2 => opts -> (A,p) -> (
      try p = baseName p else error "schurRing2: can't use provided thing as variable";
-     if class p === Symbol then schurRing2(A,p)
+     if class p === Symbol then schurRing2(A,p,opts)
      else error "schurRing2: can't use provided thing as variable"
      );
 
-schurRing2(Ring,Symbol) := (R,p) -> schurRing2(R,p,infinity)
+schurRing2(Ring,Symbol) := opts -> (R,p) -> schurRing2(R,p,infinity,opts)
 schurRing2(Ring,Symbol,InfiniteNumber) := 
-schurRing2(Ring,Symbol,ZZ) := SchurRing => (R,p,n) -> (
+schurRing2(Ring,Symbol,ZZ) := SchurRing => opts -> (R,p,n) -> (
      S := newSchur2(R,p,n);
      dim S := s -> dimSchur(s);
      dim(Thing,S) := (n,s) -> dimSchur(n, s);
      t := new SchurRingIndexedVariableTable from p;
      t.SchurRing = S;
      t#symbol _ = a -> ( S _ a);
-     S.getSchur = par -> (t_par); --this should go away
      S.use = S -> (globalAssign(p,t); S);
      S.use S;
      S)
 
-newSchur := (R,M,p) -> (
-     if not (M.?Engine and M.Engine) 
-     then error "expected ordered monoid handled by the engine";
-     if not (R.?Engine and R.Engine) 
-     then error "expected coefficient ring handled by the engine";
-     RM := R M;
-     SR := new SchurRing from rawSchurRing(RM.RawRing);
-     SR.Symbol = p;
-     SR.baseRings = append(R.baseRings,R);
-     commonEngineRingInitializations SR;
-     ONE := SR#1;
-     if degreeLength M != 0 then (
-	  -- there must be something smarter to do, but if we
-	  -- do not do this, then we get into an infinite loop
-	  -- because each monoid ring ZZ[a,b,c] needs its degrees ring
-	  -- ZZ[t], which in turn needs to make its degrees ring 
-	  -- ZZ[], which in turn needs one.
-	  SR.degreesRing = degreesRing degreeLength M;
-	  )
-     else (
-	  SR.degreesRing = ZZ;
-	  );
-     if R.?char then SR.char = R.char;
-     SR.monoid = M;
-     -- SR ? SR := (f,g) -> ( if f == g then symbol == else leadMonomial f ? leadMonomial g ); -- the engine should handle it.
-     R * M := (r,m) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
-     M * R := (m,r) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
-     SR * M := (p,m) -> p * (R#1 * m);
-     M * SR := (m,p) -> (R#1 * m) * p;
-     R + M := (r,m) -> r * M#1 + R#1 * m;
-     M + R := (m,r) -> r * M#1 + R#1 * m;
-     SR + M := (p,m) -> p + R#1 * m;
-     M + SR := (m,p) -> p + R#1 * m;
-     R - M := (r,m) -> r * M#1 - R#1 * m;
-     M - R := (m,r) -> R#1 * m - r * M#1;
-     SR - M := (p,m) -> p - R#1 * m;
-     M - SR := (m,p) -> R#1 * m - p;
-     toExternalString SR := r -> toString expression r;
-     expression SR := f -> (
-	  (coeffs,monoms) -> sum(
-	       coeffs,monoms,
-	       (a,m) -> expression (if a == 1 then 1 else new R from a) *
-	          new Subscript from {p, (
-		    t1 := toSequence rawmonom2schur m;
-		    if #t1 === 1 then t1#0 else t1
-		    )})
-	  ) rawPairs(raw R, raw f);
-     listForm SR := (f) -> (
-     	  n := numgens SR;
-     	  (cc,mm) := rawPairs(raw R, raw f);
-     	  toList apply(cc, mm, (c,m) -> (rawmonom2schur m, new R from c)));
-     SR.generators = apply(M.generators, m -> SR#(toString m) = SR#0 + m);
-     SR.use = x -> (
-	  M + M := (m,n) -> R#1 * m + R#1 * n;
-	  M - M := (m,n) -> R#1 * m - R#1 * n;
-	  - M := (m,n) -> - R#1 * n;
-	  scan(SR.baseRings, A -> (
-	       if A =!= R then (
-		    A * M := (i,m) -> (i * R#1) * m;
-		    M * A := (m,i) -> m * (i * R#1);
-		    );
-	       A + M := (i,m) -> i * R#1 + m;
-	       M + A := (m,i) -> m + i * R#1;
-	       A - M := (i,m) -> i * R#1 - m;
-	       M - A := (m,i) -> m - i * R#1;
-	       M / A := (m,r) -> (m * ONE) / (r * ONE);
-	       M % A := (m,r) -> (m * ONE) % (r * ONE);
-	       ));
-	  SR);
-     -- leadMonomial R := f -> new M from rawLeadMonomial(n, f.RawRingElement); -- fix this?
-     SR
-     )
 
 SchurRingIndexedVariableTable = new Type of IndexedVariableTable
 SchurRingIndexedVariableTable _ Thing := (x,i) -> x#symbol _ i
 
-schurRing = method (Options => {CoefficientRing => ZZ})
-schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
-     try p = baseName p else error "schurRing: can't use provided thing as variable";
-     if class p === Symbol then schurRing(p,n,opts)
-     else error "schurRing: can't use provided thing as variable"
-     );
-schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
---     R := ZZ;
-     R := opts.CoefficientRing;
-     x := local x;
-     prune := v -> drop(v, - # select(v,i -> i === 0));
-     M := monoid[x_1 .. x_n];
-     vec := apply(n, i -> apply(n, j -> if j<=i then 1 else 0));
-     S := newSchur(R,M,p);
-     dim S := s -> rawSchurDimension raw s;
-     Mgens := M.generators;
-     t := new SchurRingIndexedVariableTable from p;
-     t.SchurRing = S;
-     t#symbol _ = a -> ( m := schur2monom(a,Mgens,M); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
-     S.use = S -> (globalAssign(p,t); S);
-     S.use S;
-     S.getSchur = par -> (t_par);
-     S)
-
-
-{*
-schurRing(Ring,Symbol,ZZ) := SchurRing => opts -> (A,s,n) -> (
-     -- will create a SchurRing SR.
-     B = if instance(A, SchurRing) then A.symmRing else A;
-     e := opts.symmNames.e;
-     h := opts.symmNames.h;
-     p := opts.symmNames.p;
-     SR.symmRing = symmRing(B, e,h,p, n);
-     )
-*}
-
--- BUG in M2: R_0 .. R_n does not always give elements in the ring R!!
--- workaround:
-varlist = (i,j,R) -> apply(i..j, p -> R_p)
-
---want SymmRing = new Type of PolynomialRing...
-
-symmRings := new MutableHashTable;
-symmRing = (n) -> (
-     if not symmRings#?n then (
-     	  e := getSymbol "e";
-     	  h := getSymbol "h";
-     	  p := getSymbol "p";
-     	  R := QQ[e_1..e_n,p_1..p_n,h_1..h_n,
-	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
-       	  R.eVariable = (i) -> R_(i-1);
-	  R.pVariable = (i) -> R_(n+i-1);
-	  R.hVariable = (i) -> R_(2*n+i-1);
-	  s := getSymbol "s";
-     	  S := schurRing(s, n, CoefficientRing => QQ);
-     	  R.Schur = S;
-     	  R.dim = n;
-	  
-	  degsEHP := toList(1..n);
-     	  blocks := {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
---     	  locVarsE := apply(blocks#0,i->R_i);
---     	  locVarsP := apply(blocks#1,i->R_i);
---     	  locVarsH := apply(blocks#2,i->R_i);
-     	  vrs := symbol vrs;
-     	  locVarsE := apply(blocks#0,i->vrs_i);
-     	  locVarsP := apply(blocks#1,i->vrs_i);
-     	  locVarsH := apply(blocks#2,i->vrs_i);
-          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
-     	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
-     	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
-     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
-     	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
-     	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
-time     	  EtoP(n,R);
-time     	  PtoE(n,R);
-time     	  HtoE(n,R);
-time     	  EtoH(n,R);
-time     	  PtoH(n,R);
---time     	  EtoP(n,R);
-time     	  HtoP(n,R);
-time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
-time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
-time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
-     	  collectGarbage();
-     	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
-     	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
-     	  R.mapSymToH = (f) -> f%R.grbH;
---	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
---     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
---     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
-     	  R.plethysmMaps = new MutableHashTable;
-	  symmRings#n = R;
-	  );
-     symmRings#n)
-
-symmRing2 = method()
-symmRing2 (Ring,ZZ) := (A,n) -> (
-     	  e := getSymbol "e";
-     	  h := getSymbol "h";
-     	  p := getSymbol "p";
+symmRing2 = method(Options => options schurRing2)
+symmRing2 (Ring,ZZ) := opts -> (A,n) -> (
+     	  (e,h,p,s) := opts.EHPSVariables;
      	  R := A[e_1..e_n,p_1..p_n,h_1..h_n,
 	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
+     	  R.EHPSVariables = opts.EHPSVariables;
        	  R.eVariable = (i) -> R_(i-1);
 	  R.pVariable = (i) -> R_(n+i-1);
 	  R.hVariable = (i) -> R_(2*n+i-1);
@@ -391,9 +217,6 @@ symmRing2 (Ring,ZZ) := (A,n) -> (
 	  
 	  degsEHP := toList(1..n);
      	  blocks := {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
---     	  locVarsE := apply(blocks#0,i->R_i);
---     	  locVarsP := apply(blocks#1,i->R_i);
---     	  locVarsH := apply(blocks#2,i->R_i);
      	  vrs := symbol vrs;
      	  locVarsE := apply(blocks#0,i->vrs_i);
      	  locVarsP := apply(blocks#1,i->vrs_i);
@@ -417,14 +240,10 @@ symmRing2 (Ring,ZZ) := (A,n) -> (
      	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
      	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
      	  R.mapSymToH = (f) -> f%R.grbH;
---	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
---     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
---     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
      	  R.plethysmMaps = new MutableHashTable;
-
-     if (A.?schurLevel) then R.schurLevel = A.schurLevel + 1
-     else R.schurLevel = 1;
-     R)
+	  if (A.?schurLevel) then R.schurLevel = A.schurLevel + 1
+     	  else R.schurLevel = 1;
+     	  R)
 ---------------------------------------------------------------
 --------------Jacobi-Trudi-------------------------------------
 ---------------------------------------------------------------
@@ -460,7 +279,6 @@ jacobiTrudi(BasicList,Ring) := opts -> (lambda,R) ->
      	  auxR = R;
      	  auxn = R.dim;
      	  rez = jT(lam);
---	  << "numbers of memoized " << #(keys R.sFunction#1) << endl;
 	  )
      else
      (
@@ -624,26 +442,6 @@ degSchurPol(RingElement) := ps -> (
 toSymm = method()
 --ps should be an element of a schurRing, R a symmRing
 --toSymm returns the symmetric function corresponding to ps
-{*toSymm(RingElement,Ring) := (ps,R) ->
-(
-     S := ring ps;
-     (mon,coe) := coefficients ps;
-     parmon := apply(flatten entries mon,i -> value toString last i);
-     --deg = max apply(parmon,i->sum i);
-     --R = symmRing deg;
-     liftcoe := apply(flatten entries coe,i->lift(i,coefficientRing S));
-     symmon := apply(parmon,i->(try a:=jacobiTrudi(i,R) then a else error"Need symmetric ring of higher dimension"));
-     sum for i from 0 to #liftcoe-1 list liftcoe#i*symmon#i
-)
-*}
-toSymm(RingElement,Ring) := (ps,R) ->
-(
-     S := ring ps;
-     tms := listForm ps;
-     sum apply(tms,(p,a)->(
-	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
-	       lift(a,coefficientRing S)))
-)
 
 toSymm(RingElement) := (ps) ->
 (
@@ -744,8 +542,7 @@ retFcn := local retFcn;
 mappingFcn := local mappingFcn;
 
 toS = method(Options => {Strategy => Pieri, Memoize => true})
-toS(RingElement,SchurRing2) :=
-toS(RingElement,SchurRing) := opts -> (f,S) -> (
+toS(RingElement,SchurRing2) := opts -> (f,S) -> (
      -- f is a polynomial in 'symmRing n', of degree d<=n
      -- S is a SchurRing
      local hf;
@@ -774,7 +571,7 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
 --		  while class SS === SchurRing2 do SS = coefficientRing SS;
 --	          rez = rez + lift(coe_0_0,SS)*S.getSchur(par);--value toString is kind of stupid..
      	       	  SS := coefficientRing symmetricRingOf S;
-	          rez = rez + toS(lift(coe_0_0,SS))*S.getSchur(par);--value toString is kind of stupid..
+	          rez = rez + toS(lift(coe_0_0,SS))*S_par;--value toString is kind of stupid..
 		  );
      	       );
      )
@@ -3698,3 +3495,180 @@ rawmonom2schur = (m) -> (
      apply(rawSparseListFormMonomial m, (x,e) -> scan(0 .. x, i -> if t#?i then t#i = t#i + e else t#i = e)); 
      values t
      )
+
+newSchur := (R,M,p) -> (
+     if not (M.?Engine and M.Engine) 
+     then error "expected ordered monoid handled by the engine";
+     if not (R.?Engine and R.Engine) 
+     then error "expected coefficient ring handled by the engine";
+     RM := R M;
+     SR := new SchurRing from rawSchurRing(RM.RawRing);
+     SR.Symbol = p;
+     SR.baseRings = append(R.baseRings,R);
+     commonEngineRingInitializations SR;
+     ONE := SR#1;
+     if degreeLength M != 0 then (
+	  -- there must be something smarter to do, but if we
+	  -- do not do this, then we get into an infinite loop
+	  -- because each monoid ring ZZ[a,b,c] needs its degrees ring
+	  -- ZZ[t], which in turn needs to make its degrees ring 
+	  -- ZZ[], which in turn needs one.
+	  SR.degreesRing = degreesRing degreeLength M;
+	  )
+     else (
+	  SR.degreesRing = ZZ;
+	  );
+     if R.?char then SR.char = R.char;
+     SR.monoid = M;
+     -- SR ? SR := (f,g) -> ( if f == g then symbol == else leadMonomial f ? leadMonomial g ); -- the engine should handle it.
+     R * M := (r,m) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
+     M * R := (m,r) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
+     SR * M := (p,m) -> p * (R#1 * m);
+     M * SR := (m,p) -> (R#1 * m) * p;
+     R + M := (r,m) -> r * M#1 + R#1 * m;
+     M + R := (m,r) -> r * M#1 + R#1 * m;
+     SR + M := (p,m) -> p + R#1 * m;
+     M + SR := (m,p) -> p + R#1 * m;
+     R - M := (r,m) -> r * M#1 - R#1 * m;
+     M - R := (m,r) -> R#1 * m - r * M#1;
+     SR - M := (p,m) -> p - R#1 * m;
+     M - SR := (m,p) -> R#1 * m - p;
+     toExternalString SR := r -> toString expression r;
+     expression SR := f -> (
+	  (coeffs,monoms) -> sum(
+	       coeffs,monoms,
+	       (a,m) -> expression (if a == 1 then 1 else new R from a) *
+	          new Subscript from {p, (
+		    t1 := toSequence rawmonom2schur m;
+		    if #t1 === 1 then t1#0 else t1
+		    )})
+	  ) rawPairs(raw R, raw f);
+     listForm SR := (f) -> (
+     	  n := numgens SR;
+     	  (cc,mm) := rawPairs(raw R, raw f);
+     	  toList apply(cc, mm, (c,m) -> (rawmonom2schur m, new R from c)));
+     SR.generators = apply(M.generators, m -> SR#(toString m) = SR#0 + m);
+     SR.use = x -> (
+	  M + M := (m,n) -> R#1 * m + R#1 * n;
+	  M - M := (m,n) -> R#1 * m - R#1 * n;
+	  - M := (m,n) -> - R#1 * n;
+	  scan(SR.baseRings, A -> (
+	       if A =!= R then (
+		    A * M := (i,m) -> (i * R#1) * m;
+		    M * A := (m,i) -> m * (i * R#1);
+		    );
+	       A + M := (i,m) -> i * R#1 + m;
+	       M + A := (m,i) -> m + i * R#1;
+	       A - M := (i,m) -> i * R#1 - m;
+	       M - A := (m,i) -> m - i * R#1;
+	       M / A := (m,r) -> (m * ONE) / (r * ONE);
+	       M % A := (m,r) -> (m * ONE) % (r * ONE);
+	       ));
+	  SR);
+     -- leadMonomial R := f -> new M from rawLeadMonomial(n, f.RawRingElement); -- fix this?
+     SR
+     )
+
+schurRing = method (Options => {CoefficientRing => ZZ})
+schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
+     try p = baseName p else error "schurRing: can't use provided thing as variable";
+     if class p === Symbol then schurRing(p,n,opts)
+     else error "schurRing: can't use provided thing as variable"
+     );
+schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
+--     R := ZZ;
+     R := opts.CoefficientRing;
+     x := local x;
+     prune := v -> drop(v, - # select(v,i -> i === 0));
+     M := monoid[x_1 .. x_n];
+     vec := apply(n, i -> apply(n, j -> if j<=i then 1 else 0));
+     S := newSchur(R,M,p);
+     dim S := s -> rawSchurDimension raw s;
+     Mgens := M.generators;
+     t := new SchurRingIndexedVariableTable from p;
+     t.SchurRing = S;
+     t#symbol _ = a -> ( m := schur2monom(a,Mgens,M); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
+     S.use = S -> (globalAssign(p,t); S);
+     S.use S;
+     S.getSchur = par -> (t_par);
+     S)
+
+
+{*
+schurRing(Ring,Symbol,ZZ) := SchurRing => opts -> (A,s,n) -> (
+     -- will create a SchurRing SR.
+     B = if instance(A, SchurRing) then A.symmRing else A;
+     e := opts.symmNames.e;
+     h := opts.symmNames.h;
+     p := opts.symmNames.p;
+     SR.symmRing = symmRing(B, e,h,p, n);
+     )
+*}
+
+-- BUG in M2: R_0 .. R_n does not always give elements in the ring R!!
+-- workaround:
+varlist = (i,j,R) -> apply(i..j, p -> R_p)
+
+--want SymmRing = new Type of PolynomialRing...
+
+symmRings := new MutableHashTable;
+symmRing = (n) -> (
+     if not symmRings#?n then (
+     	  e := getSymbol "e";
+     	  h := getSymbol "h";
+     	  p := getSymbol "p";
+     	  R := QQ[e_1..e_n,p_1..p_n,h_1..h_n,
+	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
+       	  R.eVariable = (i) -> R_(i-1);
+	  R.pVariable = (i) -> R_(n+i-1);
+	  R.hVariable = (i) -> R_(2*n+i-1);
+	  s := getSymbol "s";
+     	  S := schurRing(s, n, CoefficientRing => QQ);
+     	  R.Schur = S;
+     	  R.dim = n;
+	  
+	  degsEHP := toList(1..n);
+     	  blocks := {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
+--     	  locVarsE := apply(blocks#0,i->R_i);
+--     	  locVarsP := apply(blocks#1,i->R_i);
+--     	  locVarsH := apply(blocks#2,i->R_i);
+     	  vrs := symbol vrs;
+     	  locVarsE := apply(blocks#0,i->vrs_i);
+     	  locVarsP := apply(blocks#1,i->vrs_i);
+     	  locVarsH := apply(blocks#2,i->vrs_i);
+          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
+     	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
+     	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
+     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
+     	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
+     	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
+time     	  EtoP(n,R);
+time     	  PtoE(n,R);
+time     	  HtoE(n,R);
+time     	  EtoH(n,R);
+time     	  PtoH(n,R);
+--time     	  EtoP(n,R);
+time     	  HtoP(n,R);
+time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
+time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
+time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
+     	  collectGarbage();
+     	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
+     	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
+     	  R.mapSymToH = (f) -> f%R.grbH;
+--	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
+--     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
+--     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
+     	  R.plethysmMaps = new MutableHashTable;
+	  symmRings#n = R;
+	  );
+     symmRings#n)
+
+toSymm(RingElement,Ring) := (ps,R) ->
+(
+     S := ring ps;
+     tms := listForm ps;
+     sum apply(tms,(p,a)->(
+	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
+	       lift(a,coefficientRing S)))
+)
