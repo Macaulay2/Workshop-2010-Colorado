@@ -130,7 +130,7 @@ schurRingOf (Ring) := R -> (
 	       if instance(R, SchurRing2) then R else
 	       (
 		    s := getSymbol "s";
-     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
+     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,R.dim);
      	       	    R.Schur.symmRing2 = R;
 	       	    R.Schur
 		    )
@@ -488,7 +488,6 @@ toE (RingElement) := (f) -> (
 	  else mapSymToE f
 	  )
      )
---f should be an element of a symmRing
 
 toP = method()
 --writes a symmetric function in terms of
@@ -504,7 +503,6 @@ toP (RingElement) := (f) -> (
 	  else mapSymToP f
 	  )
      )
---f should be an element of a symmRing
 
 toH = method()
 --writes a symmetric function in terms of
@@ -520,7 +518,6 @@ toH (RingElement) := (f) -> (
 	  else mapSymToH f
 	  )
      )
---f should be an element of a symmRing
 
 leadTermFcn := local leadTermFcn;
 retFcn := local retFcn;
@@ -611,7 +608,6 @@ convolve(List,ZZ) := (L,conv) -> (
      toList drop(apply(rawConvolve(L/raw//toSequence, conv), f -> new A from f),1)
      )
 
-
 PtoE = (m,R) -> (
      n := R.dim;
      A := R.symRingForE;
@@ -655,167 +651,6 @@ EtoH = (m,R) -> (
      )
 
 
-{*
-PtoE = (m,R) -> (
-     -- R is a symmring n
-     -- R should have a field named PtoETable, which is
-     --  a mutable hash table with i => p_i values for i = 1,...,??
-     -- this computes the values up through m.
-     n := R.dim;
-     if not R.?PtoETable then
-     	  R.PtoETable = new MutableHashTable;
-     PE := R.PtoETable;
-     s := #(keys PE);
---     if (s<m) then
---     (
-     for i from s+1 to m do (
-	  f := if i > n then 0 else -i*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
-	  for r from max(1,i-n) to i-1 do 
-	       f = f + ((-1)^(r-1) * (R.symRingForE)_(2*n+i-r-1)) * PE#r; -- R_(i-r-1) IS e_(i-r)
-	  PE#i = if i%2 == 0 then f else -f;
-	  );
---     initSymR(R);
---     R.grbPE = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToE(R_(n-1+i)-R.PtoETable#i)})};
---     collectGarbage();
---     );
-     PE#m
-     )
-
-HtoE = (m,R) -> (
-     -- R is a symmring n
-     -- R should have a field named HtoETable, which is
-     --  a mutable hash table with i => e_i values for i = 1,...,??
-     -- this computes the values up through m.
-     n := R.dim;
-     if not R.?HtoETable then
-     	  R.HtoETable = new MutableHashTable;
-     HE := R.HtoETable;
-     s := #(keys HE);
---     if (s<m) then
---     (
-     for i from s+1 to m do (
-	  f := if i > n then 0 else (-1)^(i-1)*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
-	  for r from 1 to min(i-1,n-1) do 
-	       f = f + ((-1)^(r-1) * (R.symRingForE)_(2*n+r-1)) * HE#(i-r); -- R_(r-1) IS e_r
-	  HE#i = f;
-	  );
---     initSymR(R);
---     R.grbHE = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToE(R_(2*n-1+i)-R.HtoETable#i)})};
---     collectGarbage();
---     );
-     HE#m
-     )
-
-EtoH = (m,R) -> (
-     -- R is a symmring n
-     -- R should have a field named EtoHTable, which is
-     --  a mutable hash table with i => h_i values for i = 1,...,??
-     -- this computes the values up through m.
-     n := R.dim;
-     if not R.?EtoHTable then
-     	  R.EtoHTable = new MutableHashTable;
-     EH := R.EtoHTable;
-     s := #(keys EH);
-     if m > n then return 0_R;
---     if (s<m) then
---     (
-     for i from s+1 to m do (
-	  f := R_(2*n-1+i); -- R_(2*n-1+i) IS h_i
-	  for r from 1 to i-1 do 
-	       f = f + ((-1)^r * R_(2*n-1+i-r)) * EH#r; -- R_(2*n-1+i-r) IS h_(i-r)
-	  EH#i = if i%2 == 1 then f else -f;
-	  );
---     initSymR(R);
---     R.grbEH = forceGB matrix{flatten apply(splice{1..m},i->{R_(-1+i)-R.EtoHTable#i})};
---     collectGarbage();
---     );
-     EH#m
-     )
-
-EtoP = (m,R) -> (
-     -- R is a symmring n
-     -- R should have a field named EtoPTable, which is
-     --  a mutable hash table with i => p_i for i = 1,...,??
-     -- this computes the values up through m.
-     n := R.dim;
-     if not R.?EtoPTable then (
-     	  R.EtoPTable = new MutableHashTable;
-	  R.EtoPTable#0 = 1;
-	  );
-     EP := R.EtoPTable;
-     s := #(keys EP); -- keys includes 0,1,2,...
-     if m > n then return 0_R;
---     if (s<=m) then
---     (
-     for i from s to m do (
-	  f := 0;
-	  for r from 1 to i do 
-	       f = f + ((-1)^(r-1) * (R.symRingForP)_(2*n-1+r)) * EP#(i-r); -- R_(n-1+r) IS p_r
-	  EP#i = (1/i) * f;
-	  );
---     initSymR(R);
---     R.grbEP = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToP(R_(-1+i)-R.EtoPTable#i)})};
---     collectGarbage();
---     );
-     EP#m
-     )
-
-HtoP = (m,R) -> (
-     -- R is a symmring n
-     -- R should have a field named HtoPTable, which is
-     --  a mutable hash table with i => h_i for i = 1,...,??
-     -- this computes the values up through m.
-     n := R.dim;
-     if not R.?HtoPTable then (
-     	  R.HtoPTable = new MutableHashTable;
-	  R.HtoPTable#0 = 1;
-	  );
-     HP := R.HtoPTable;
-     s := #(keys HP); -- keys includes 0,1,2,...
-     if m>n then error("need symmetric ring of higher dimension");
---     if (s<=m) then
---     (
-     for i from s to m do (
-	  f := 0;
-	  for r from 1 to i do 
-	       f = f + (R.symRingForP)_(2*n-1+r) * HP#(i-r); -- R_(n-1+r) IS p_r
-	  HP#i = (1/i) * f;
-	  );
---     initSymR(R);
---     R.grbHP = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToP(R_(2*n-1+i)-R.HtoPTable#i)})};
---     collectGarbage();
---     );
-     HP#m
-     )
-
-PtoH = (m,R) -> (
-     -- R is a symmring n
-     -- R should have a field named PtoHTable, which is
-     --  a mutable hash table with i => p_i for i = 1,...,??
-     -- this computes the values up through m.
-     n := R.dim;
-     if not R.?PtoHTable then (
-     	  R.PtoHTable = new MutableHashTable;
-	  R.PtoHTable#0 = 1;
-	  );
-     PH := R.PtoHTable;
-     s := #(keys PH); -- keys includes 0,1,2,...
-     if m>n then error("need symmetric ring of higher dimension");
---     if (s<=m) then
---     (
-     for i from s to m do (
-	  f := i*R_(2*n-1+i);  -- R_(2*n-1+i) IS h_i
-	  for r from 1 to i-1 do 
-	       f = f - R_(2*n-1+i-r) * PH#r; -- R_(2*n-1+i-r) IS h_(i-r)
-	  PH#i = f;
-	  );
---     initSymR(R);
---     R.grbPH = forceGB matrix{flatten apply(splice{1..m},i->{R_(n-1+i)-R.PtoHTable#i})};
---     collectGarbage();
---     );
-     PH#m
-     )
-*}
 ---------------------------------------------------------------
 --------------End transition-----------------------------------
 ---------------------------------------------------------------
@@ -2583,7 +2418,7 @@ assert(chi({3,1,1},{2,2,1}) == -2)
 TEST ///
 R = symmRing2(QQ,20)
 S = schurRing2(QQ,o,20)
-assert(scalarProduct(o_{6,4,3,2,1},jacobiTrudi({3,3,3},R)*toP(o_{4,2,1},R)) == 2)
+assert(scalarProduct(o_{6,4,3,2,1},jacobiTrudi({3,3,3},symmetricRingOf S)*toP(o_{4,2,1})) == 2)
 assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),jacobiTrudi({4,3,3,3,2,1},R)) == 0)
 assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),o_{4,3,3,3,2,1}) == 0)
 ///
@@ -2593,7 +2428,7 @@ R = symmRing2(QQ,5)
 A = schurRing2(QQ,a,4)
 assert(internalProduct(e_2+h_2,a_{2}) == a_{2}+a_{1,1})
 assert(toE internalProduct(a_{2},e_2+h_2) == toE p_1^2)
---assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)
+assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)--?
 ///
 
 
@@ -2623,32 +2458,31 @@ assert(internalProduct(f,g) == 0)
 ---------------------------
 TEST ///
 R = symmRing2(QQ,6)
-assert(toE(toS(e_1*e_2*e_3),R) == e_1*e_2*e_3)
+assert(toE(toS(e_1*e_2*e_3)) == e_1*e_2*e_3)
 ///
 
 TEST ///
 R = symmRing2(QQ,5)
 S = schurRing2(QQ,q,3)
-assert(toE(q_{2},R) + e_2 == e_1^2)
+assert(toE(q_{2}) + e_2 == e_1^2)
 ///
 
 TEST///
 R = symmRing2(QQ, 4)
 assert(toP toE toH toE toH toP toE toE toP toH (p_1+p_2+p_3) == p_1+p_2+p_3)
 ///
-{*
+
 TEST ///
 R = symmRing2(QQ,6)
-S = schurRing2(QQ,o,2)
-toSf = map(S, R, apply(gens R, x -> toS(x,S)))
-assert(toSf(e_1*e_2*e_3) == 0)
-assert(toSf(h_1*h_2*h_3) == o_{1}*o_{2}*o_{3})
+S = schurRingOf R
+toSf = map(S, R, apply(gens R, x -> toS(x)))
+assert(toSf(e_1*e_2*e_3) == S_(3,2,1)+S_(3,1,1,1)+S_(2,2,2)+2*S_(2,2,1,1)+2*S_(2,1,1,1,1)+S_(1,1,1,1,1,1))
+assert(toSf(h_1*h_2*h_3) == S_{1}*S_{2}*S_{3})
 ///
-*}
 
 TEST ///
 R = symmRing2(QQ,7)
-assert(toH toP toE (toS (jacobiTrudi({2,1},R))^2,R) == (h_1*h_2-h_3)^2)
+assert(toH toP toE (toS (jacobiTrudi({2,1},R))^2) == (h_1*h_2-h_3)^2)
 ///
 -------------------------------
 --- end test toS, toP, toE, toH
@@ -2691,6 +2525,588 @@ assert (cauchy(2,1_A,1_B) == {})
 -- end test of cauchy, wedge --
 -------------------------------
 end
+
+restart
+uninstallPackage "SchurRings"
+installPackage "SchurRings"
+check SchurRings
+viewHelp SchurRings
+--print docTemplate
+end
+
+-------
+restart
+loadPackage"SchurRings"
+A = schurRing(a,2)
+B = schurRing(b,2)
+L = {(1_A,b_{3,2})}
+L = {(a_{3,2},b_{6,1})}
+i = 1
+
+select(weyman(i,L),x->x =!= null)
+end
+-------
+
+S = schurRing(s,12)
+time F = s_{17,7,7,7,3,3,1} * s_{10,5,1};
+size F
+T = schurRing2(ZZ,t,12)
+T = schurRing2(ZZ,t)
+time G = t_{17,7,7,7,3,3,1} * t_{10,5,1};
+lisF = hashTable listForm F;
+lisG = hashTable listForm G;
+assert(lisF === lisG)
+
+restart
+loadPackage "SchurRings"
+S = schurRing(s,12)
+time F = s_{20,20,17,7,7,7,3,3,1} * s_{10,5,1};
+size F
+T = schurRing2(ZZ,t,20)
+time G = t_{20,20,17,7,7,7,3,3,1} * t_{10,5,1};
+time G2 = t_{10,5,1} * t_{20,20,17,7,7,7,3,3,1};
+lisF = hashTable listForm F;
+lisG = hashTable listForm G;
+lisG2 = hashTable listForm G2;
+assert(lisF === lisG)
+assert(lisF === lisG2)
+U = schurRing2(ZZ,u)
+time H = u_{20,20,17,7,7,7,3,3,1} * u_{10,5,1};
+time H3 = u_{20,20,17,7,7,7,3,3,1} * u_{10,5,1};
+time H2 = u_{10,5,1} * u_{20,20,17,7,7,7,3,3,1};
+lisH = hashTable listForm H;
+lisH2 = hashTable listForm H2;
+assert(lisF === lisH)
+assert(lisF === lisH2)
+
+S = schurRing(symbol s, 10)
+F = s_{12,3} * s_{12,4};
+
+restart
+n = 30
+time A = symmRing2(QQ, n)
+
+--A = QQ[h_1..h_n,e_1..e_n,p_1..p_n,MonomialSize=>8]
+h2p = prepend(1_A, for i from 1 to n list p_i)
+time H2P = convolve(h2p,1);
+
+p2h = prepend(1_A, for i from 1 to n list -h_i)
+time P2H = convolve(p2h,2);
+
+e2p = prepend(1_A, for i from 1 to n list ((-1)^(i+1) * p_i))
+time E2P = convolve(e2p,1);
+
+p2e = prepend(1_A, for i from 1 to n list ((-1)^(i+1) * e_i))
+time P2E = - convolve(p2e,2);
+
+h2e = prepend(1_A, for i from 1 to n list (-1)^(i+1)*e_i)
+time H2E = convolve(h2e,0);
+
+e2h = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
+time E2H = convolve(e2h,0);
+
+H2P - for i from 1 to n list toP h_i
+P2H - for i from 1 to n list toH p_i
+E2P - for i from 1 to n list toP e_i
+P2E + for i from 1 to n list toE p_i
+H2E - for i from 1 to n list toE h_i
+E2H - for i from 1 to n list toH e_i
+--------------------------------------------------------------
+
+restart
+loadPackage"SchurRings"
+
+S = schurRing2(QQ,s,10)
+T = schurRing2(S,t,10)
+
+symmetricRingOf T
+
+debug SchurRings
+f = toSymm S_{2,1}
+g = toSymm T_{2,1}
+f - g
+toS oo
+
+toE s_{2,1}
+toE t_{2,1}
+toE h_3
+toE s_{3}
+toH oo
+toH s_{3}
+
+plethysm(t_{2},t_{3})
+plethysm(t_{2},s_{2})
+
+toE plethysm(t_{2},h_3)
+toE plethysm(h_2,t_{2,1})
+toS oo
+plethysm(t_{2},t_{2,1})
+plethysm(s_{2},t_{2,1})
+
+
+rep = S_{1}*T_{2}+S_{2,1}*T_{1,1}
+toSymm rep
+toE oo
+toP oo
+toH oo
+toP oo
+toS oo
+toE oo
+toS oo
+toH oo
+
+rep = s_{2}*t_{2}
+
+toP S_{2}
+toE oo
+toH oo
+toS oo
+
+plethysm(h_2,S_{3,1})
+toH oo
+plethysm(S_{2},oo)
+
+R = symmRing2(QQ,10)
+e_5
+toS oo
+
+exteriorPower (ZZ,RingElement) := opts -> (r,rep) ->
+(
+     lis := listForm rep/((a,b)->(T_a,b));
+     wedge(r,lis)/((a,b)->a*b)//sum
+     )
+
+
+exteriorPower(2,S_{2}*T_{2}+T_{1})
+toE oo
+toS oo
+
+exteriorPower(2,T_{2})
+plethysm(S_{1,1},T_{2})
+
+
+restart
+loadPackage"SchurRings"
+
+R = schurRing2(QQ,a,10)
+S = schurRing2(R,b,10)
+T = schurRing2(S,c,10)
+g = a_{1}*b_{1}*c_{1}
+plethysm2({2},g)
+
+plethysm2({1,1},a_{1}*c_{1})
+
+restart
+loadPackage"SchurRings"
+
+n = 20
+m = 20
+time R = symmRing2(QQ,n)
+time ple = plethysm(h_4,h_5);
+
+time toS(ple,Strategy=>Pieri);
+time toS(ple,Strategy=>Stembridge);
+oo==ooo
+
+-- Local Variables:
+-- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
+-- End:
+
+
+------------------------------------
+----------Old Stuff
+------------------------------------
+SchurRing = new Type of EngineRing
+SchurRing.synonym = "Schur ring"
+monoid SchurRing := o -> R -> R.monoid
+expression SchurRing := S -> new FunctionApplication from { schurRing, (S.Symbol, numgens monoid S) }
+undocumented (expression, SchurRing)
+
+toExternalString SchurRing := R -> toString expression R
+undocumented (toExternalString, SchurRing),
+
+toString SchurRing := R -> (
+     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
+     else toString expression R)
+undocumented (toString, SchurRing)
+
+net SchurRing := R -> (
+     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
+     else net expression R)
+undocumented (net, SchurRing)
+
+degreeLength SchurRing := (RM) -> degreeLength monoid RM
+coefficientRing SchurRing := Ring => R -> last R.baseRings
+
+ck := i -> if i < 0 then error "expected decreasing row lengths" else i
+
+schur2monom = (a,Mgens,M) -> (
+     if # a === 0 then 1_M
+     else product(# a, i -> (Mgens#i) ^ (
+	       ck if i+1 < # a 
+	       then a#i - a#(i+1)
+	       else a#i)))
+
+rawmonom2schur = (m) -> (
+     t := new MutableHashTable;
+     apply(rawSparseListFormMonomial m, (x,e) -> scan(0 .. x, i -> if t#?i then t#i = t#i + e else t#i = e)); 
+     values t
+     )
+
+newSchur := (R,M,p) -> (
+     if not (M.?Engine and M.Engine) 
+     then error "expected ordered monoid handled by the engine";
+     if not (R.?Engine and R.Engine) 
+     then error "expected coefficient ring handled by the engine";
+     RM := R M;
+     SR := new SchurRing from rawSchurRing(RM.RawRing);
+     SR.Symbol = p;
+     SR.baseRings = append(R.baseRings,R);
+     commonEngineRingInitializations SR;
+     ONE := SR#1;
+     if degreeLength M != 0 then (
+	  -- there must be something smarter to do, but if we
+	  -- do not do this, then we get into an infinite loop
+	  -- because each monoid ring ZZ[a,b,c] needs its degrees ring
+	  -- ZZ[t], which in turn needs to make its degrees ring 
+	  -- ZZ[], which in turn needs one.
+	  SR.degreesRing = degreesRing degreeLength M;
+	  )
+     else (
+	  SR.degreesRing = ZZ;
+	  );
+     if R.?char then SR.char = R.char;
+     SR.monoid = M;
+     -- SR ? SR := (f,g) -> ( if f == g then symbol == else leadMonomial f ? leadMonomial g ); -- the engine should handle it.
+     R * M := (r,m) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
+     M * R := (m,r) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
+     SR * M := (p,m) -> p * (R#1 * m);
+     M * SR := (m,p) -> (R#1 * m) * p;
+     R + M := (r,m) -> r * M#1 + R#1 * m;
+     M + R := (m,r) -> r * M#1 + R#1 * m;
+     SR + M := (p,m) -> p + R#1 * m;
+     M + SR := (m,p) -> p + R#1 * m;
+     R - M := (r,m) -> r * M#1 - R#1 * m;
+     M - R := (m,r) -> R#1 * m - r * M#1;
+     SR - M := (p,m) -> p - R#1 * m;
+     M - SR := (m,p) -> R#1 * m - p;
+     toExternalString SR := r -> toString expression r;
+     expression SR := f -> (
+	  (coeffs,monoms) -> sum(
+	       coeffs,monoms,
+	       (a,m) -> expression (if a == 1 then 1 else new R from a) *
+	          new Subscript from {p, (
+		    t1 := toSequence rawmonom2schur m;
+		    if #t1 === 1 then t1#0 else t1
+		    )})
+	  ) rawPairs(raw R, raw f);
+     listForm SR := (f) -> (
+     	  n := numgens SR;
+     	  (cc,mm) := rawPairs(raw R, raw f);
+     	  toList apply(cc, mm, (c,m) -> (rawmonom2schur m, new R from c)));
+     SR.generators = apply(M.generators, m -> SR#(toString m) = SR#0 + m);
+     SR.use = x -> (
+	  M + M := (m,n) -> R#1 * m + R#1 * n;
+	  M - M := (m,n) -> R#1 * m - R#1 * n;
+	  - M := (m,n) -> - R#1 * n;
+	  scan(SR.baseRings, A -> (
+	       if A =!= R then (
+		    A * M := (i,m) -> (i * R#1) * m;
+		    M * A := (m,i) -> m * (i * R#1);
+		    );
+	       A + M := (i,m) -> i * R#1 + m;
+	       M + A := (m,i) -> m + i * R#1;
+	       A - M := (i,m) -> i * R#1 - m;
+	       M - A := (m,i) -> m - i * R#1;
+	       M / A := (m,r) -> (m * ONE) / (r * ONE);
+	       M % A := (m,r) -> (m * ONE) % (r * ONE);
+	       ));
+	  SR);
+     -- leadMonomial R := f -> new M from rawLeadMonomial(n, f.RawRingElement); -- fix this?
+     SR
+     )
+
+schurRing = method (Options => {CoefficientRing => ZZ})
+schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
+     try p = baseName p else error "schurRing: can't use provided thing as variable";
+     if class p === Symbol then schurRing(p,n,opts)
+     else error "schurRing: can't use provided thing as variable"
+     );
+schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
+--     R := ZZ;
+     R := opts.CoefficientRing;
+     x := local x;
+     prune := v -> drop(v, - # select(v,i -> i === 0));
+     M := monoid[x_1 .. x_n];
+     vec := apply(n, i -> apply(n, j -> if j<=i then 1 else 0));
+     S := newSchur(R,M,p);
+     dim S := s -> rawSchurDimension raw s;
+     Mgens := M.generators;
+     t := new SchurRingIndexedVariableTable from p;
+     t.SchurRing = S;
+     t#symbol _ = a -> ( m := schur2monom(a,Mgens,M); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
+     S.use = S -> (globalAssign(p,t); S);
+     S.use S;
+     S.getSchur = par -> (t_par);
+     S)
+
+
+{*
+schurRing(Ring,Symbol,ZZ) := SchurRing => opts -> (A,s,n) -> (
+     -- will create a SchurRing SR.
+     B = if instance(A, SchurRing) then A.symmRing else A;
+     e := opts.symmNames.e;
+     h := opts.symmNames.h;
+     p := opts.symmNames.p;
+     SR.symmRing = symmRing(B, e,h,p, n);
+     )
+*}
+
+-- BUG in M2: R_0 .. R_n does not always give elements in the ring R!!
+-- workaround:
+varlist = (i,j,R) -> apply(i..j, p -> R_p)
+
+--want SymmRing = new Type of PolynomialRing...
+
+symmRings := new MutableHashTable;
+symmRing = (n) -> (
+     if not symmRings#?n then (
+     	  e := getSymbol "e";
+     	  h := getSymbol "h";
+     	  p := getSymbol "p";
+     	  R := QQ[e_1..e_n,p_1..p_n,h_1..h_n,
+	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
+       	  R.eVariable = (i) -> R_(i-1);
+	  R.pVariable = (i) -> R_(n+i-1);
+	  R.hVariable = (i) -> R_(2*n+i-1);
+	  s := getSymbol "s";
+     	  S := schurRing(s, n, CoefficientRing => QQ);
+     	  R.Schur = S;
+     	  R.dim = n;
+	  
+	  degsEHP := toList(1..n);
+     	  blocks := {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
+--     	  locVarsE := apply(blocks#0,i->R_i);
+--     	  locVarsP := apply(blocks#1,i->R_i);
+--     	  locVarsH := apply(blocks#2,i->R_i);
+     	  vrs := symbol vrs;
+     	  locVarsE := apply(blocks#0,i->vrs_i);
+     	  locVarsP := apply(blocks#1,i->vrs_i);
+     	  locVarsH := apply(blocks#2,i->vrs_i);
+          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
+     	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
+     	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
+     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
+     	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
+     	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
+time     	  EtoP(n,R);
+time     	  PtoE(n,R);
+time     	  HtoE(n,R);
+time     	  EtoH(n,R);
+time     	  PtoH(n,R);
+--time     	  EtoP(n,R);
+time     	  HtoP(n,R);
+time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
+time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
+time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
+     	  collectGarbage();
+     	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
+     	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
+     	  R.mapSymToH = (f) -> f%R.grbH;
+--	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
+--     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
+--     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
+     	  R.plethysmMaps = new MutableHashTable;
+	  symmRings#n = R;
+	  );
+     symmRings#n)
+
+toSymm(RingElement,Ring) := (ps,R) ->
+(
+     S := ring ps;
+     tms := listForm ps;
+     sum apply(tms,(p,a)->(
+	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
+	       lift(a,coefficientRing S)))
+)
+
+toP (RingElement,Ring) := (ps,R) ->
+--ps should be an element of a schurRing, R a symmRing
+(
+     toP toSymm(ps,R)
+     )
+toH (RingElement,Ring) := (ps,R) ->
+--ps should be an element of a schurRing, R a symmRing
+(
+     toH toSymm(ps,R)
+     )
+toE (RingElement,Ring) := (ps,R) ->
+--ps should be an element of a schurRing, R a symmRing
+(
+     toE toSymm(ps,R)
+     )
+
+{*
+PtoE = (m,R) -> (
+     -- R is a symmring n
+     -- R should have a field named PtoETable, which is
+     --  a mutable hash table with i => p_i values for i = 1,...,??
+     -- this computes the values up through m.
+     n := R.dim;
+     if not R.?PtoETable then
+     	  R.PtoETable = new MutableHashTable;
+     PE := R.PtoETable;
+     s := #(keys PE);
+--     if (s<m) then
+--     (
+     for i from s+1 to m do (
+	  f := if i > n then 0 else -i*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
+	  for r from max(1,i-n) to i-1 do 
+	       f = f + ((-1)^(r-1) * (R.symRingForE)_(2*n+i-r-1)) * PE#r; -- R_(i-r-1) IS e_(i-r)
+	  PE#i = if i%2 == 0 then f else -f;
+	  );
+--     initSymR(R);
+--     R.grbPE = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToE(R_(n-1+i)-R.PtoETable#i)})};
+--     collectGarbage();
+--     );
+     PE#m
+     )
+
+HtoE = (m,R) -> (
+     -- R is a symmring n
+     -- R should have a field named HtoETable, which is
+     --  a mutable hash table with i => e_i values for i = 1,...,??
+     -- this computes the values up through m.
+     n := R.dim;
+     if not R.?HtoETable then
+     	  R.HtoETable = new MutableHashTable;
+     HE := R.HtoETable;
+     s := #(keys HE);
+--     if (s<m) then
+--     (
+     for i from s+1 to m do (
+	  f := if i > n then 0 else (-1)^(i-1)*(R.symRingForE)_(2*n+i-1); -- R_(i-1) IS e_i
+	  for r from 1 to min(i-1,n-1) do 
+	       f = f + ((-1)^(r-1) * (R.symRingForE)_(2*n+r-1)) * HE#(i-r); -- R_(r-1) IS e_r
+	  HE#i = f;
+	  );
+--     initSymR(R);
+--     R.grbHE = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToE(R_(2*n-1+i)-R.HtoETable#i)})};
+--     collectGarbage();
+--     );
+     HE#m
+     )
+
+EtoH = (m,R) -> (
+     -- R is a symmring n
+     -- R should have a field named EtoHTable, which is
+     --  a mutable hash table with i => h_i values for i = 1,...,??
+     -- this computes the values up through m.
+     n := R.dim;
+     if not R.?EtoHTable then
+     	  R.EtoHTable = new MutableHashTable;
+     EH := R.EtoHTable;
+     s := #(keys EH);
+     if m > n then return 0_R;
+--     if (s<m) then
+--     (
+     for i from s+1 to m do (
+	  f := R_(2*n-1+i); -- R_(2*n-1+i) IS h_i
+	  for r from 1 to i-1 do 
+	       f = f + ((-1)^r * R_(2*n-1+i-r)) * EH#r; -- R_(2*n-1+i-r) IS h_(i-r)
+	  EH#i = if i%2 == 1 then f else -f;
+	  );
+--     initSymR(R);
+--     R.grbEH = forceGB matrix{flatten apply(splice{1..m},i->{R_(-1+i)-R.EtoHTable#i})};
+--     collectGarbage();
+--     );
+     EH#m
+     )
+
+EtoP = (m,R) -> (
+     -- R is a symmring n
+     -- R should have a field named EtoPTable, which is
+     --  a mutable hash table with i => p_i for i = 1,...,??
+     -- this computes the values up through m.
+     n := R.dim;
+     if not R.?EtoPTable then (
+     	  R.EtoPTable = new MutableHashTable;
+	  R.EtoPTable#0 = 1;
+	  );
+     EP := R.EtoPTable;
+     s := #(keys EP); -- keys includes 0,1,2,...
+     if m > n then return 0_R;
+--     if (s<=m) then
+--     (
+     for i from s to m do (
+	  f := 0;
+	  for r from 1 to i do 
+	       f = f + ((-1)^(r-1) * (R.symRingForP)_(2*n-1+r)) * EP#(i-r); -- R_(n-1+r) IS p_r
+	  EP#i = (1/i) * f;
+	  );
+--     initSymR(R);
+--     R.grbEP = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToP(R_(-1+i)-R.EtoPTable#i)})};
+--     collectGarbage();
+--     );
+     EP#m
+     )
+
+HtoP = (m,R) -> (
+     -- R is a symmring n
+     -- R should have a field named HtoPTable, which is
+     --  a mutable hash table with i => h_i for i = 1,...,??
+     -- this computes the values up through m.
+     n := R.dim;
+     if not R.?HtoPTable then (
+     	  R.HtoPTable = new MutableHashTable;
+	  R.HtoPTable#0 = 1;
+	  );
+     HP := R.HtoPTable;
+     s := #(keys HP); -- keys includes 0,1,2,...
+     if m>n then error("need symmetric ring of higher dimension");
+--     if (s<=m) then
+--     (
+     for i from s to m do (
+	  f := 0;
+	  for r from 1 to i do 
+	       f = f + (R.symRingForP)_(2*n-1+r) * HP#(i-r); -- R_(n-1+r) IS p_r
+	  HP#i = (1/i) * f;
+	  );
+--     initSymR(R);
+--     R.grbHP = forceGB matrix{flatten apply(splice{1..m},i->{R.mapToP(R_(2*n-1+i)-R.HtoPTable#i)})};
+--     collectGarbage();
+--     );
+     HP#m
+     )
+
+PtoH = (m,R) -> (
+     -- R is a symmring n
+     -- R should have a field named PtoHTable, which is
+     --  a mutable hash table with i => p_i for i = 1,...,??
+     -- this computes the values up through m.
+     n := R.dim;
+     if not R.?PtoHTable then (
+     	  R.PtoHTable = new MutableHashTable;
+	  R.PtoHTable#0 = 1;
+	  );
+     PH := R.PtoHTable;
+     s := #(keys PH); -- keys includes 0,1,2,...
+     if m>n then error("need symmetric ring of higher dimension");
+--     if (s<=m) then
+--     (
+     for i from s to m do (
+	  f := i*R_(2*n-1+i);  -- R_(2*n-1+i) IS h_i
+	  for r from 1 to i-1 do 
+	       f = f - R_(2*n-1+i-r) * PH#r; -- R_(2*n-1+i-r) IS h_(i-r)
+	  PH#i = f;
+	  );
+--     initSymR(R);
+--     R.grbPH = forceGB matrix{flatten apply(splice{1..m},i->{R_(n-1+i)-R.PtoHTable#i})};
+--     collectGarbage();
+--     );
+     PH#m
+     )
+*}
 
 -----------------------------------------------------------------------------
 -- the rest of this file used to be schur.m2
@@ -2976,674 +3392,3 @@ schur = (lambda) -> (
      det slambda(lambda) // det slambda p)
 
 end
-
-
-restart
-uninstallPackage "SchurRings"
-installPackage "SchurRings"
-check SchurRings
-viewHelp SchurRings
---print docTemplate
-end
-
--------
-restart
-loadPackage"SchurRings"
-A = schurRing(a,2)
-B = schurRing(b,2)
-L = {(1_A,b_{3,2})}
-L = {(a_{3,2},b_{6,1})}
-i = 1
-
-select(weyman(i,L),x->x =!= null)
-end
--------
-
--------
-restart
-loadPackage"SchurRings"
-
-n = 30
-m = 30
-time R = symmRing(n)
-time ple = plethysm(e_5,e_6);
-S = schurRing(s,m)
-
-time toS(ple,Strategy=>Pieri);
-time toS(ple,Strategy=>Stembridge);
-time toS(ple,Strategy=>Stillman);
-----
-
---lead term function
---return function in case no lead term
---mapping function (maToS)
-
-leadTermFcn = (pl) -> (
-     spl := support pl;
-     splE := select(spl,i->(index i)<n);
-     splP := select(spl,i->((index i)>=n and (index i)<2*n));
-     if #splE > 0 then last splE else
-     if #splP > 0 then last splP else
-     	  null
-     );
-retFcn = pl -> pl;
-
-etoh = apply(splice{1..n},i->
-     (-1)*(sum for j in 1..(i-1) list (-1)^(i-j)*e_j*h_(i-j))+(-1)^(i-1)*h_i
-     )
-mappingFcn = map(R,R,etoh | apply(splice{0..(n-1)},i->R_(2*n+i)) | splice{n:0})
-
---ptoh = apply(splice{1..n},
-
-recTrans = method()
-recTrans (RingElement) := (pl) ->
-(
-     lead := leadTermFcn pl;
-     if lead === null then retFcn pl else
-     (
-	  (ex,coe) := coefficients(pl,Variables=>{lead});
-	  ex = flatten entries ex;
-	  coe = flatten entries coe;
-     	  rez := 0;
-	  cdeg := degree(lead,ex#0)+1;
-	  for i from 0 to #ex-1 do
-	  (
-	       fdeg := degree(lead,ex#i);
-	       while (cdeg>fdeg+1) do
-	       (
-		    cdeg = cdeg - 1;
-		    rez = rez*mappingFcn(lead);
-		    );
-	       rez = rez*mappingFcn(lead)+recTrans(coe#i);
-	       cdeg = cdeg - 1;
-	       );
-	  while cdeg>0 do 
-	       (
-		    cdeg = cdeg - 1;
-		    rez = rez*mappingFcn(lead);
-		    );
-	  rez
-     	  )
-     )
-
-recTrans(h_3+e_4*h_2)
-toH(h_3+e_4*h_2)
-recTrans(e_4)
-toH e_4
-
-pol = e_20
-time pl = toH pol;
-while leadTermFcn(pol) =!= null do time pol = recTrans pol;
-pl == pol
-
-ple = toE ple
-time recTrans ple;
-time toH ple;
-
-time recTrans e_10;
-time toH e_10;
-
-
---------------------------
--- Test of newSchur2
-restart
-path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
-debug loadPackage "SchurRings"
-A = ZZ[a]
-R = newSchur2(A, symbol p, 5)
-R = newSchur2(A, symbol p, -1)
-R_{2,2,2,2,2,2,1}
-
-
-path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
-loadPackage "SchurRings"
-A = ZZ[a]
-R = newSchur2(A, symbol p, 5)
-f = R_{2,1}
-g = R_{1,1}
-f+g+f
--f
-oo + f
-a*f
-f*g
-(f+g)^10
-f+1
-a*f-(a^2+1)  -- displays wrong
-
-
-S = schurRing(s,10)
-time s_{17,7,7,7,3,3,1} * s_{10,5,1};
-(s_{5})^15
-F = s_{5}
-for i from 1 to 14 do (F = F * s_{5}; << "size F at " << i << " is " << size F << endl;)
-
-
-path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
-debug loadPackage "SchurRings"
-S = newSchur2(QQ, symbol p, 5)
-S = schurRing2(QQ, symbol p, 5)
-describe S
-F = S_{2,1}*S_{2,1}
-listForm F
-debug Core
-rawPairs(raw QQ, raw F)
-assert(S_{1} * S_{1} == S_{2} + S_{1,1})
-S_{2,1} * S_{1}
-S_{2,1} * S_{2,1}
-F = S_{2,1}
-G = S_{1}
-F*G
-G
-G*G
-F*F
-S_{2,1}*S_{2,1}
-
-T = schurRing(s,5)
-assert(s_{1} * s_{1} == s_{2} + s_{1,1})
-s_{2,1} * s_{1} -- s_(3,1)+s_(2,2)+s_(2,1,1)
-G = s_{2,1} * s_{2,1}
-
-S = newSchur2(QQ, symbol p, 3)
-U = newSchur2(S, symbol q, 4)
-F = (S_{2} + S_{1,1}) * U_{2,1}
-G = F * S_{2}
-
-S_{5}
-oo^10
-
-S = schurRing2(QQ, symbol t)
-S.numgens
-t_{2,1} * t_{2,1}
-t_{2,1,1,1,1} * t_{2,1,1,1,1,1,1}
-(listForm oo)/first/length
-
-S = schurRing(s,12)
-time F = s_{17,7,7,7,3,3,1} * s_{10,5,1};
-size F
-T = schurRing2(ZZ,t,12)
-T = schurRing2(ZZ,t)
-time G = t_{17,7,7,7,3,3,1} * t_{10,5,1};
-lisF = hashTable listForm F;
-lisG = hashTable listForm G;
-assert(lisF === lisG)
-
-restart
-loadPackage "SchurRings"
-S = schurRing(s,12)
-time F = s_{20,20,17,7,7,7,3,3,1} * s_{10,5,1};
-size F
-T = schurRing2(ZZ,t,20)
-time G = t_{20,20,17,7,7,7,3,3,1} * t_{10,5,1};
-time G2 = t_{10,5,1} * t_{20,20,17,7,7,7,3,3,1};
-lisF = hashTable listForm F;
-lisG = hashTable listForm G;
-lisG2 = hashTable listForm G2;
-assert(lisF === lisG)
-assert(lisF === lisG2)
-U = schurRing2(ZZ,u)
-time H = u_{20,20,17,7,7,7,3,3,1} * u_{10,5,1};
-time H3 = u_{20,20,17,7,7,7,3,3,1} * u_{10,5,1};
-time H2 = u_{10,5,1} * u_{20,20,17,7,7,7,3,3,1};
-lisH = hashTable listForm H;
-lisH2 = hashTable listForm H2;
-assert(lisF === lisH)
-assert(lisF === lisH2)
-
-S = schurRing(symbol s, 10)
-F = s_{12,3} * s_{12,4};
-
-R = QQ[h_1..h_5]
-debug Core
-rawConvolve((raw (1_R),raw (h_1),raw (-h_2),raw(h_3),raw(-h_4),raw(h_5)),0)
-oo/(f -> new R from f)
-
-
-n = 30
-A = symmRing n
-A = QQ[h_1..h_30,MonomialSize=>8]
-Hs = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
-ANS = for i from 1 to n list toH e_i;
-time L = toList drop(apply(rawConvolve(Hs/raw//toSequence, 0), f -> new A from f),1);
-L - ANS
-
-restart
-debug Core
-n = 50
-A = ZZ/32003[h_1..h_n,MonomialSize=>8]
-Hs = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
-time L = toList drop(apply(rawConvolve(Hs/raw//toSequence, 0), f -> new A from f),1);
-time M = matrix{L};
-B = QQ (monoid A)
-time sub(M,B);
-
-restart
-debug Core
-convolve = method()
-convolve(List,ZZ) := (L,conv) -> (
-     A := ring L_0;
-     toList drop(apply(rawConvolve(L/raw//toSequence, conv), f -> new A from f),1)
-     )
-path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
-debug loadPackage "SchurRings"
-
-n = 30
-time A = symmRing n
-
---A = QQ[h_1..h_n,e_1..e_n,p_1..p_n,MonomialSize=>8]
-h2p = prepend(1_A, for i from 1 to n list p_i)
-time H2P = convolve(h2p,1);
-
-p2h = prepend(1_A, for i from 1 to n list -h_i)
-time P2H = convolve(p2h,2);
-
-e2p = prepend(1_A, for i from 1 to n list ((-1)^(i+1) * p_i))
-time E2P = convolve(e2p,1);
-
-p2e = prepend(1_A, for i from 1 to n list ((-1)^(i+1) * e_i))
-time P2E = - convolve(p2e,2);
-
-h2e = prepend(1_A, for i from 1 to n list (-1)^(i+1)*e_i)
-time H2E = convolve(h2e,0);
-
-e2h = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
-time E2H = convolve(e2h,0);
-
-H2P - for i from 1 to n list toP h_i
-P2H - for i from 1 to n list toH p_i
-E2P - for i from 1 to n list toP e_i
-P2E + for i from 1 to n list toE p_i
-H2E - for i from 1 to n list toE h_i
-E2H - for i from 1 to n list toH e_i
---------------------------------------------------------------
-
-R = schurRing2(QQ,s,3)
-S = schurRing2(QQ,t,4)
-T = schurRing2(ZZ,u,4)
-F = 3*t_{3}*t_{2,1,1} + t_{3,2,1,1}
-F = 3*u_{3}*u_{2,1,1}
-promote(F,S)
-mypromote(F,R)
-mylift(oo,T)
-R = schurRing2(QQ,s,3)
-S = schurRing2(QQ,t,4)
-
---------------------------------------------------------------
-restart
-n = 35
-RE = QQ[e_1..e_n,MonomialSize=>8]
-RH = QQ[h_1..h_n,MonomialSize=>8]
-RP = QQ[p_1..p_n,MonomialSize=>8]
-
-EtoH = method()
-EtoH (ZZ) := (n) ->
-(
-    lis := {1};
-    for i from 1 to n do
-    (
-     	 newE := RH_(i-1);
-     	 for j from 1 to i-1 do
-	     newE = newE + ((-1)^j * RH_(i-j-1)) * lis#j;
-     	 if i%2 == 0 then newE = -newE;
-     	 lis = lis | {newE};
-     	 );
-     lis
-)
-
-time EtoH 30;
-
-restart
-n = 40
-RP = QQ[p_1..p_n,MonomialSize=>8]
-i=1
-
-EtoP = method()
-EtoP (ZZ) := (n) ->
-(
-    lis := {1_RP};
-    for i from 1 to n do
-    (
-     	 newE := 0;
-     	 for j from 1 to i do
-	     newE = newE + RP_(j-1) * lis#(i-j);
-     	 newE = (1/i) * newE;
-     	 lis = lis | {newE};
-     	 );
-     lis
-)
-
-time EtoP 30;
-oo/size
-
-restart
-loadPackage"SchurRings"
-
-S = schurRing2(QQ,s,10)
-T = schurRing2(S,t,10)
-
-symmetricRingOf T
-
-debug SchurRings
-f = toSymm S_{2,1}
-g = toSymm T_{2,1}
-f - g
-toS oo
-
-toE s_{2,1}
-toE t_{2,1}
-toE h_3
-toE s_{3}
-toH oo
-toH s_{3}
-
-plethysm(t_{2},t_{3})
-plethysm(t_{2},s_{2})
-
-toE plethysm(t_{2},h_3)
-toE plethysm(h_2,t_{2,1})
-toS oo
-plethysm(t_{2},t_{2,1})
-plethysm(s_{2},t_{2,1})
-
-
-rep = S_{1}*T_{2}+S_{2,1}*T_{1,1}
-toSymm rep
-toE oo
-toP oo
-toH oo
-toP oo
-toS oo
-toE oo
-toS oo
-toH oo
-
-rep = s_{2}*t_{2}
-
-toP S_{2}
-toE oo
-toH oo
-toS oo
-
-plethysm(h_2,S_{3,1})
-toH oo
-plethysm(S_{2},oo)
-
-R = symmRing2(QQ,10)
-e_5
-toS oo
-
-exteriorPower (ZZ,RingElement) := opts -> (r,rep) ->
-(
-     lis := listForm rep/((a,b)->(T_a,b));
-     wedge(r,lis)/((a,b)->a*b)//sum
-     )
-
-
-exteriorPower(2,S_{2}*T_{2}+T_{1})
-toE oo
-toS oo
-
-exteriorPower(2,T_{2})
-plethysm(S_{1,1},T_{2})
-
-
--- Local Variables:
--- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
--- End:
-
-restart
-loadPackage"SchurRings"
-
-R = schurRing2(QQ,a,10)
-S = schurRing2(R,b,10)
-T = schurRing2(S,c,10)
-g = a_{1}*b_{1}*c_{1}
-plethysm2({2},g)
-
-plethysm2({1,1},a_{1}*c_{1})
-
-restart
-loadPackage"SchurRings"
-
-n = 20
-m = 20
-time R = symmRing2(QQ,n)
-time ple = plethysm(h_4,h_5);
-
-time toS(ple,Strategy=>Pieri);
-time toS(ple,Strategy=>Stembridge);
-oo==ooo
-
-
-
-------------------------------------
-----------Old Stuff
-------------------------------------
-SchurRing = new Type of EngineRing
-SchurRing.synonym = "Schur ring"
-monoid SchurRing := o -> R -> R.monoid
-expression SchurRing := S -> new FunctionApplication from { schurRing, (S.Symbol, numgens monoid S) }
-undocumented (expression, SchurRing)
-
-toExternalString SchurRing := R -> toString expression R
-undocumented (toExternalString, SchurRing),
-
-toString SchurRing := R -> (
-     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
-     else toString expression R)
-undocumented (toString, SchurRing)
-
-net SchurRing := R -> (
-     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
-     else net expression R)
-undocumented (net, SchurRing)
-
-degreeLength SchurRing := (RM) -> degreeLength monoid RM
-coefficientRing SchurRing := Ring => R -> last R.baseRings
-
-ck := i -> if i < 0 then error "expected decreasing row lengths" else i
-
-schur2monom = (a,Mgens,M) -> (
-     if # a === 0 then 1_M
-     else product(# a, i -> (Mgens#i) ^ (
-	       ck if i+1 < # a 
-	       then a#i - a#(i+1)
-	       else a#i)))
-
-rawmonom2schur = (m) -> (
-     t := new MutableHashTable;
-     apply(rawSparseListFormMonomial m, (x,e) -> scan(0 .. x, i -> if t#?i then t#i = t#i + e else t#i = e)); 
-     values t
-     )
-
-newSchur := (R,M,p) -> (
-     if not (M.?Engine and M.Engine) 
-     then error "expected ordered monoid handled by the engine";
-     if not (R.?Engine and R.Engine) 
-     then error "expected coefficient ring handled by the engine";
-     RM := R M;
-     SR := new SchurRing from rawSchurRing(RM.RawRing);
-     SR.Symbol = p;
-     SR.baseRings = append(R.baseRings,R);
-     commonEngineRingInitializations SR;
-     ONE := SR#1;
-     if degreeLength M != 0 then (
-	  -- there must be something smarter to do, but if we
-	  -- do not do this, then we get into an infinite loop
-	  -- because each monoid ring ZZ[a,b,c] needs its degrees ring
-	  -- ZZ[t], which in turn needs to make its degrees ring 
-	  -- ZZ[], which in turn needs one.
-	  SR.degreesRing = degreesRing degreeLength M;
-	  )
-     else (
-	  SR.degreesRing = ZZ;
-	  );
-     if R.?char then SR.char = R.char;
-     SR.monoid = M;
-     -- SR ? SR := (f,g) -> ( if f == g then symbol == else leadMonomial f ? leadMonomial g ); -- the engine should handle it.
-     R * M := (r,m) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
-     M * R := (m,r) -> new SR from rawTerm(SR.RawRing,raw r,m.RawMonomial);
-     SR * M := (p,m) -> p * (R#1 * m);
-     M * SR := (m,p) -> (R#1 * m) * p;
-     R + M := (r,m) -> r * M#1 + R#1 * m;
-     M + R := (m,r) -> r * M#1 + R#1 * m;
-     SR + M := (p,m) -> p + R#1 * m;
-     M + SR := (m,p) -> p + R#1 * m;
-     R - M := (r,m) -> r * M#1 - R#1 * m;
-     M - R := (m,r) -> R#1 * m - r * M#1;
-     SR - M := (p,m) -> p - R#1 * m;
-     M - SR := (m,p) -> R#1 * m - p;
-     toExternalString SR := r -> toString expression r;
-     expression SR := f -> (
-	  (coeffs,monoms) -> sum(
-	       coeffs,monoms,
-	       (a,m) -> expression (if a == 1 then 1 else new R from a) *
-	          new Subscript from {p, (
-		    t1 := toSequence rawmonom2schur m;
-		    if #t1 === 1 then t1#0 else t1
-		    )})
-	  ) rawPairs(raw R, raw f);
-     listForm SR := (f) -> (
-     	  n := numgens SR;
-     	  (cc,mm) := rawPairs(raw R, raw f);
-     	  toList apply(cc, mm, (c,m) -> (rawmonom2schur m, new R from c)));
-     SR.generators = apply(M.generators, m -> SR#(toString m) = SR#0 + m);
-     SR.use = x -> (
-	  M + M := (m,n) -> R#1 * m + R#1 * n;
-	  M - M := (m,n) -> R#1 * m - R#1 * n;
-	  - M := (m,n) -> - R#1 * n;
-	  scan(SR.baseRings, A -> (
-	       if A =!= R then (
-		    A * M := (i,m) -> (i * R#1) * m;
-		    M * A := (m,i) -> m * (i * R#1);
-		    );
-	       A + M := (i,m) -> i * R#1 + m;
-	       M + A := (m,i) -> m + i * R#1;
-	       A - M := (i,m) -> i * R#1 - m;
-	       M - A := (m,i) -> m - i * R#1;
-	       M / A := (m,r) -> (m * ONE) / (r * ONE);
-	       M % A := (m,r) -> (m * ONE) % (r * ONE);
-	       ));
-	  SR);
-     -- leadMonomial R := f -> new M from rawLeadMonomial(n, f.RawRingElement); -- fix this?
-     SR
-     )
-
-schurRing = method (Options => {CoefficientRing => ZZ})
-schurRing(Thing,ZZ) := SchurRing => opts -> (p,n) -> (
-     try p = baseName p else error "schurRing: can't use provided thing as variable";
-     if class p === Symbol then schurRing(p,n,opts)
-     else error "schurRing: can't use provided thing as variable"
-     );
-schurRing(Symbol,ZZ) := SchurRing => opts -> (p,n) -> (
---     R := ZZ;
-     R := opts.CoefficientRing;
-     x := local x;
-     prune := v -> drop(v, - # select(v,i -> i === 0));
-     M := monoid[x_1 .. x_n];
-     vec := apply(n, i -> apply(n, j -> if j<=i then 1 else 0));
-     S := newSchur(R,M,p);
-     dim S := s -> rawSchurDimension raw s;
-     Mgens := M.generators;
-     t := new SchurRingIndexedVariableTable from p;
-     t.SchurRing = S;
-     t#symbol _ = a -> ( m := schur2monom(a,Mgens,M); new S from rawTerm(S.RawRing, raw (1_R), m.RawMonomial));
-     S.use = S -> (globalAssign(p,t); S);
-     S.use S;
-     S.getSchur = par -> (t_par);
-     S)
-
-
-{*
-schurRing(Ring,Symbol,ZZ) := SchurRing => opts -> (A,s,n) -> (
-     -- will create a SchurRing SR.
-     B = if instance(A, SchurRing) then A.symmRing else A;
-     e := opts.symmNames.e;
-     h := opts.symmNames.h;
-     p := opts.symmNames.p;
-     SR.symmRing = symmRing(B, e,h,p, n);
-     )
-*}
-
--- BUG in M2: R_0 .. R_n does not always give elements in the ring R!!
--- workaround:
-varlist = (i,j,R) -> apply(i..j, p -> R_p)
-
---want SymmRing = new Type of PolynomialRing...
-
-symmRings := new MutableHashTable;
-symmRing = (n) -> (
-     if not symmRings#?n then (
-     	  e := getSymbol "e";
-     	  h := getSymbol "h";
-     	  p := getSymbol "p";
-     	  R := QQ[e_1..e_n,p_1..p_n,h_1..h_n,
-	    Degrees => toList(1..n,1..n,1..n), MonomialSize => 8];
-       	  R.eVariable = (i) -> R_(i-1);
-	  R.pVariable = (i) -> R_(n+i-1);
-	  R.hVariable = (i) -> R_(2*n+i-1);
-	  s := getSymbol "s";
-     	  S := schurRing(s, n, CoefficientRing => QQ);
-     	  R.Schur = S;
-     	  R.dim = n;
-	  
-	  degsEHP := toList(1..n);
-     	  blocks := {toList(0..(n-1)),toList(n..(2*n-1)),toList(2*n..(3*n-1))};
---     	  locVarsE := apply(blocks#0,i->R_i);
---     	  locVarsP := apply(blocks#1,i->R_i);
---     	  locVarsH := apply(blocks#2,i->R_i);
-     	  vrs := symbol vrs;
-     	  locVarsE := apply(blocks#0,i->vrs_i);
-     	  locVarsP := apply(blocks#1,i->vrs_i);
-     	  locVarsH := apply(blocks#2,i->vrs_i);
-          R.symRingForE = QQ[locVarsH | locVarsP | locVarsE ,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
-     	  R.mapToE = map(R.symRingForE,R,apply(blocks#2|blocks#1|blocks#0,i->(R.symRingForE)_i));
-     	  R.mapFromE = map(R,R.symRingForE,apply(blocks#2|blocks#1|blocks#0,i->R_i));
-     	  R.symRingForP = QQ[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
-     	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
-     	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
-time     	  EtoP(n,R);
-time     	  PtoE(n,R);
-time     	  HtoE(n,R);
-time     	  EtoH(n,R);
-time     	  PtoH(n,R);
---time     	  EtoP(n,R);
-time     	  HtoP(n,R);
-time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
-time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
-time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
-     	  collectGarbage();
-     	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
-     	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
-     	  R.mapSymToH = (f) -> f%R.grbH;
---	  R.mapSymToE = map(R,R,flatten splice {varlist(0,n-1,R),apply(n, i -> PtoE(i+1,R)),apply(n, i -> HtoE(i+1,R))});
---     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
---     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
-     	  R.plethysmMaps = new MutableHashTable;
-	  symmRings#n = R;
-	  );
-     symmRings#n)
-
-toSymm(RingElement,Ring) := (ps,R) ->
-(
-     S := ring ps;
-     tms := listForm ps;
-     sum apply(tms,(p,a)->(
-	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
-	       lift(a,coefficientRing S)))
-)
-
-toP (RingElement,Ring) := (ps,R) ->
---ps should be an element of a schurRing, R a symmRing
-(
-     toP toSymm(ps,R)
-     )
-toH (RingElement,Ring) := (ps,R) ->
---ps should be an element of a schurRing, R a symmRing
-(
-     toH toSymm(ps,R)
-     )
-toE (RingElement,Ring) := (ps,R) ->
---ps should be an element of a schurRing, R a symmRing
-(
-     toE toSymm(ps,R)
-     )
