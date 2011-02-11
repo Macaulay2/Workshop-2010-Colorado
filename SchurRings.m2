@@ -143,6 +143,10 @@ symmetricRingOf (Ring) := R -> (
      	  if R.?symmRing2 then R.symmRing2 else
 	  if class R === SchurRing2 then
 	  (
+	       if numgens R === infinity then 
+	          error"symmetric ring expects finite schurRings";
+     	       if coefficientRing R === ZZ then
+	       	  error"base ring has to be QQ";
      	       R.symmRing2 = symmRing2(symmetricRingOf coefficientRing R,numgens R);
      	       R.symmRing2.Schur = R;
 	       R.symmRing2
@@ -204,8 +208,6 @@ newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      	  toList apply(cc, mm, (c,m) -> (rawmonom2partition m, new A from c)));
      if (A.?schurLevel) then SR.schurLevel = A.schurLevel + 1
      else SR.schurLevel = 1;
-     if n >= 0 and A =!= ZZ then
-       SR.symmRing2 = symmRing2(symmetricRing A,n);
      SR
      )
 
@@ -3566,10 +3568,10 @@ plethysm2({1,1},a_{1}*c_{1})
 restart
 loadPackage"SchurRings"
 
-n = 30
-m = 30
+n = 20
+m = 20
 time R = symmRing2(QQ,n)
-time ple = plethysm(e_5,e_6);
+time ple = plethysm(e_5,e_3);
 
 time toS(ple,Strategy=>Pieri);
 time toS(ple,Strategy=>Stembridge);
