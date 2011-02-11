@@ -42,14 +42,14 @@ newPackage(
 --create them at once: schurRing(Ring,{list of symbols},{list of dimensions})
 
 export {schurRing, SchurRing, schurRing2, SchurRing2,
-     symmRing, symmRing2, symmetricRing,
+     symmRing, symmRing2, symmetricRingOf,
      toS, toE, toP, toH, 
-     plethysm, jacobiTrudi, 
+     plethysm, jacobiTrudi, plethysm2,
      centralizerSize, classFunction, symmetricFunction, scalarProduct, internalProduct, 
      cauchy, wedge, preBott, bott, doBott, weyman,
      Stillman, Stembridge, Pieri, Schur, Memoize, EorH,
      eVariable, pVariable, hVariable, getSchur,
-     SchurRingIndexedVariableTable, ClassFunction}
+     SchurRingIndexedVariableTable, ClassFunction, SchurLevel}
 -- Improve the names/interface of the following:
 --, symmRing, plethysmMap, jacobiTrudi, plethysm, cauchy, bott}
 
@@ -69,9 +69,6 @@ protect symbol EtoHTable
 protect symbol grbP
 protect symbol EtoPTable
 protect symbol HtoPTable
-protect symbol mapSymToE
-protect symbol mapSymToP
-protect symbol mapSymToH
 protect symbol plethysmMaps
 protect symbol mapFromE
 protect symbol sFunction
@@ -139,12 +136,38 @@ undocumented (net, SchurRing2)
 
 SchurRing2 _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
 coefficientRing SchurRing2 := Ring => R -> last R.baseRings
+numgens SchurRing2 := Ring => R -> R.numgens
 
-symmetricRing = method()
-symmetricRing (Ring) := R -> (
-     	  if class R === SchurRing2 then R.symmRing2 else
-	  R     
+symmetricRingOf = method()
+symmetricRingOf (Ring) := R -> (
+     	  if R.?symmRing2 then R.symmRing2 else
+	  if class R === SchurRing2 then
+	  (
+     	       R.symmRing2 = symmRing2(symmetricRingOf coefficientRing R,numgens R);
+     	       R.symmRing2.Schur = R;
+	       R.symmRing2
+	       )
+	  else R     
      )
+
+schurRingOf = method()
+schurRingOf (Ring) := R -> (
+     	  if R.?Schur then R.Schur else
+	  if schurLevel R > 0 then
+	  (
+	       if class R === SchurRing2 then R else
+	       (
+		    s := getSymbol "s";
+     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
+     	       	    R.Schur.symmRing2 = R;
+	       	    R.Schur
+		    )
+	       )
+	  else R     
+     )
+
+schurLevel = method()
+schurLevel (Ring) := R -> if R.?schurLevel then R.schurLevel else 0
 
 newSchur2 = method()
 newSchur2(Ring,Symbol) := (A,p) -> newSchur2(A,p,-1)
@@ -152,7 +175,7 @@ newSchur2(Ring,Symbol,InfiniteNumber) := (A,p,inf) -> (
      if inf == infinity 
        then newSchur2(A,p,-1)
        else error "expected positive integer or infinity")
-  
+       
 newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      if not (A.?Engine and A.Engine) 
      then error "expected coefficient ring handled by the engine";
@@ -179,6 +202,8 @@ newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      	  n := numgens SR;
      	  (cc,mm) := rawPairs(raw A, raw f);
      	  toList apply(cc, mm, (c,m) -> (rawmonom2partition m, new A from c)));
+     if (A.?schurLevel) then SR.schurLevel = A.schurLevel + 1
+     else SR.schurLevel = 1;
      if n >= 0 and A =!= ZZ then
        SR.symmRing2 = symmRing2(symmetricRing A,n);
      SR
@@ -204,6 +229,7 @@ schurRing2(Ring,Symbol,ZZ) := SchurRing => (R,p,n) -> (
      t := new SchurRingIndexedVariableTable from p;
      t.SchurRing = S;
      t#symbol _ = a -> ( S _ a);
+     S.getSchur = par -> (t_par); --this should go away
      S.use = S -> (globalAssign(p,t); S);
      S.use S;
      S)
@@ -406,16 +432,15 @@ symmRing2 (Ring,ZZ) := (A,n) -> (
      	  R.symRingForP = A[locVarsH | locVarsE | locVarsP,Degrees=>flatten toList(3:degsEHP),MonomialOrder=>GRevLex, MonomialSize => 8];
      	  R.mapToP = map(R.symRingForP,R,apply(blocks#1|blocks#2|blocks#0,i->(R.symRingForP)_i));
      	  R.mapFromP = map(R,R.symRingForP,apply(blocks#2|blocks#0|blocks#1,i->R_i));
-time     	  EtoP(n,R);
-time     	  PtoE(n,R);
-time     	  HtoE(n,R);
-time     	  EtoH(n,R);
-time     	  PtoH(n,R);
---time     	  EtoP(n,R);
-time     	  HtoP(n,R);
-time     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
-time     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
-time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
+     	  EtoP(n,R);
+     	  PtoE(n,R);
+     	  HtoE(n,R);
+     	  EtoH(n,R);
+     	  PtoH(n,R);
+     	  HtoP(n,R);
+     	  R.grbE = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToE(R_(n-1+i))-R.PtoETable#i,R.mapToE(R_(2*n-1+i))-R.HtoETable#i})};
+     	  R.grbH = forceGB matrix{flatten apply(splice{1..n},i->{R_(n-1+i)-R.PtoHTable#i,R_(-1+i)-R.EtoHTable#i})};
+     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-1+i))-R.EtoPTable#i,R.mapToP(R_(2*n-1+i))-R.HtoPTable#i})};
      	  collectGarbage();
      	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
      	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
@@ -424,6 +449,9 @@ time     	  R.grbP = forceGB matrix{flatten apply(splice{1..n},i->{R.mapToP(R_(-
 --     	  R.mapSymToP = map(R,R,flatten splice {apply(n, i -> EtoP(i+1,R)), varlist(n,2*n-1,R), apply(n, i -> HtoP(i+1,R))});
 --     	  R.mapSymToH = map(R,R,flatten splice {apply(n, i -> EtoH(i+1,R)), apply(n, i -> PtoH(i+1,R)), varlist(2*n,3*n-1,R)});
      	  R.plethysmMaps = new MutableHashTable;
+
+     if (A.?schurLevel) then R.schurLevel = A.schurLevel + 1
+     else R.schurLevel = 1;
      R)
 ---------------------------------------------------------------
 --------------Jacobi-Trudi-------------------------------------
@@ -536,11 +564,13 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      df := local df;
      dg := local dg;
      
-     if class Rf === SchurRing then
+     if class Rf === SchurRing or class Rf === SchurRing2 then
      (
 	  df = degSchurPol(f);
-	  Rf = symmRing df;
-	  f = toP(f,Rf);
+     	  Rf = symmetricRingOf Rf;
+--	  Rf = symmRing df;
+--	  f = toP(f,Rf);
+     	  f = toP f;
 	  )
      else 
      (
@@ -548,15 +578,17 @@ plethysm(RingElement,RingElement) := (f,g) -> (
 	  f = toP f;
 	  );
      
-     if class R === SchurRing then
+     if class R === SchurRing or class R === SchurRing2 then
      (
 	  issy = false;
 	  SB := R;
 	  dg = degSchurPol(g);
 	  d := df*dg;
 	  if d == 0 then d = 1;
-	  R = symmRing d;
-	  g = toP(g,R);
+--	  R = symmRing d;
+	  R = symmetricRingOf R;
+--	  g = toP(g,R);
+     	  g = toP g;
 	  )
      else 
      (
@@ -565,7 +597,7 @@ plethysm(RingElement,RingElement) := (f,g) -> (
 	  );
 
      n := R.dim;
-     if n<df*dg then error"Need symmetric ring of higher dimension";
+     if issy and n<df*dg then error"Need symmetric ring of higher dimension";
 
      N := Rf.dim;
      phi := map(R,Rf,flatten splice {N:0_R,apply(1..N, j -> (if j<=df then (plethysmMap(j,R))g else 0)),N:0_R});
@@ -574,10 +606,35 @@ plethysm(RingElement,RingElement) := (f,g) -> (
 
 plethysm(BasicList,RingElement) := (lambda,g) -> (
      d := sum toList lambda;
-     Rf := symmRing d;
+     Rf := symmRing2(QQ,d);
      f := jacobiTrudi(lambda,Rf);
      plethysm(f,g))
 
+
+plethysm2 = method()
+plethysm2(BasicList,RingElement) := (lambda,g) ->
+(
+     Rg := ring g;
+     levg := schurLevel Rg;     
+     if levg == 0 then g else
+     if levg == 1 then plethysm(lambda,g) else
+     (
+	  lam := toList(lambda);
+	  d := sum lam;
+     	  ch := classFunction(lam);
+	  T := Rg;
+	  coeRings := {};
+	  while schurLevel T>0 do
+	  (
+	       coeRings = {T} | coeRings;
+	       T = coefficientRing T;
+	       );
+     	  pard := partitions d/toList;
+	  lpar := toList((set pard)^**levg)/toList;
+     	  coes := lpar/(i->scalarProduct(ch,i/classFunction//product)*(for j from 0 to #i-1 list (coeRings#j)_(i#j))//product)//sum
+	  )
+     )
+     
 --degree of a polynomial in a SchurRing
 degSchurPol = method()
 degSchurPol(RingElement) := ps -> (
@@ -622,7 +679,7 @@ toSymm(RingElement) := (ps) ->
      S := ring ps;
      if class S =!= SchurRing2 then ps else
      (
-     R := S.symmRing2;
+     R := symmetricRingOf S;
      tms := listForm ps;
      sum apply(tms,(p,a)->(
 	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
@@ -632,13 +689,35 @@ toSymm(RingElement) := (ps) ->
 
 toSymm(Thing) := (ps) -> ps
 
+mapSymToE = method()
+mapSymToE (RingElement) := (f) -> (
+     R:=ring f; 
+     if R.?mapSymToE then R.mapSymToE f else f
+)
+mapSymToH = method()
+mapSymToH (RingElement) := (f) -> (
+     R:=ring f; 
+     if R.?mapSymToH then R.mapSymToH f else f
+)
+mapSymToP = method()
+mapSymToP (RingElement) := (f) -> (
+     R:=ring f; 
+     if R.?mapSymToP then R.mapSymToP f else f
+)
+
 toE = method()
 --writes a symmetric function in terms of
 --elementary symmetric polynomials
 --toE (RingElement) := (f) -> (ring f).mapSymToE f
 toE (RingElement) := (f) -> (
-     if class ring f === SchurRing2 then toE toSymm f
-     else (ring f).mapSymToE f
+     R := ring f;
+     if class R === SchurRing2 then toE toSymm f
+     else 
+     (
+	  if not R.?schurLevel then f else
+	  if R.schurLevel>1 then terms f/(i->(toE leadCoefficient i*(mapSymToE leadMonomial i)))//sum
+	  else mapSymToE f
+	  )
      )
 --f should be an element of a symmRing
 toE (RingElement,Ring) := (ps,R) ->
@@ -650,7 +729,17 @@ toE (RingElement,Ring) := (ps,R) ->
 toP = method()
 --writes a symmetric function in terms of
 --power sums
-toP (RingElement) := (f) -> (ring f).mapSymToP f
+--toP (RingElement) := (f) -> (ring f).mapSymToP f
+toP (RingElement) := (f) -> (
+     R := ring f;
+     if class R === SchurRing2 then toP toSymm f
+     else 
+     (
+	  if not R.?schurLevel then f else
+	  if R.schurLevel>1 then terms f/(i->(toP leadCoefficient i*(mapSymToP leadMonomial i)))//sum
+	  else mapSymToP f
+	  )
+     )
 --f should be an element of a symmRing
 toP (RingElement,Ring) := (ps,R) ->
 --ps should be an element of a schurRing, R a symmRing
@@ -661,7 +750,17 @@ toP (RingElement,Ring) := (ps,R) ->
 toH = method()
 --writes a symmetric function in terms of
 --complete symmetric polynomials
-toH (RingElement) := (f) -> (ring f).mapSymToH f
+--toH (RingElement) := (f) -> (ring f).mapSymToH f
+toH (RingElement) := (f) -> (
+     R := ring f;
+     if class R === SchurRing2 then toH toSymm f
+     else 
+     (
+	  if not R.?schurLevel then f else
+	  if R.schurLevel>1 then terms f/(i->(toH leadCoefficient i*(mapSymToH leadMonomial i)))//sum
+	  else mapSymToH f
+	  )
+     )
 --f should be an element of a symmRing
 toH (RingElement,Ring) := (ps,R) ->
 --ps should be an element of a schurRing, R a symmRing
@@ -673,7 +772,8 @@ leadTermFcn := local leadTermFcn;
 retFcn := local retFcn;
 mappingFcn := local mappingFcn;
 
-toS = method(Options => {Strategy => Stembridge, Memoize => true})
+toS = method(Options => {Strategy => Pieri, Memoize => true})
+toS(RingElement,SchurRing2) :=
 toS(RingElement,SchurRing) := opts -> (f,S) -> (
      -- f is a polynomial in 'symmRing n', of degree d<=n
      -- S is a SchurRing
@@ -681,11 +781,11 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
      R := ring f;
      n := R.dim;
      d := first degree f;
-     if d>n then error"need symmetric ring of higher dimension";
+--     if d>n then error"need symmetric ring of higher dimension";
      rez := 0_S;
-     s := S.Symbol;
+--     s := S.Symbol;
      ngS := numgens S;
-     use S;
+--     use S;
      if opts.Strategy == Stembridge then
      (
      	  hf = toH(f);
@@ -700,7 +800,13 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
 	       par = reverse par;
 	       hf = hf - coe_0_0*(jacobiTrudi(par,R,Memoize => opts.Memoize));
 	       if #par <= ngS then
-	          rez = rez + lift(coe_0_0,coefficientRing S)*S.getSchur(par);--value toString is kind of stupid..
+	       (
+--     	       	  SS := coefficientRing S;
+--		  while class SS === SchurRing2 do SS = coefficientRing SS;
+--	          rez = rez + lift(coe_0_0,SS)*S.getSchur(par);--value toString is kind of stupid..
+     	       	  SS := coefficientRing symmetricRingOf S;
+	          rez = rez + toS(lift(coe_0_0,SS))*S.getSchur(par);--value toString is kind of stupid..
+		  );
      	       );
      )
      else if opts.Strategy == Stillman then
@@ -723,15 +829,24 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
 	  )
      else if opts.Strategy == Pieri then
      (
-          mappingFcn = map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then S.getSchur({i}) else 0)));
-	  leadTermFcn = (pl) -> (if support pl == {} then null else last support pl);
-	  retFcn = (pl) -> lift(pl,(coefficientRing ring pl));
+--          mappingFcn = map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then S.getSchur({i}) else 0)));
+     	  mappingFcn = (v) -> (schurRingOf ring v)_{index v-2*(ring v).dim+1};
+	  leadTermFcn = (pl) -> (
+	       R := ring pl;
+	       spl := select(support pl,i->index i<numgens R);
+	       if spl == {} then null else last spl
+	       );
+	  retFcn = (pl) -> toS lift(pl,(coefficientRing ring pl));
      	  rez = recTrans(toH(f));
 	  )
      else error"Invalid strategy";
      rez
      )
-toS(RingElement) := opts -> (f) -> (toS(f,(ring f).Schur,opts))
+toS(RingElement) := opts -> (f) -> (
+     R := ring f;
+     if (schurLevel R == 0 or class R === SchurRing2) then f else
+     toS(f,schurRingOf R,opts))
+toS(Thing) := opts -> (f) -> f
 
 recTrans = method()
 recTrans (RingElement) := (pl) ->
@@ -962,7 +1077,7 @@ centralizerSize(List) := lambda ->
      )
 
 ClassFunction = new Type of HashTable
-
+{*
 classFunction = method()
 classFunction(RingElement) := (f)->
 (
@@ -990,6 +1105,43 @@ classFunction(RingElement) := (f)->
 	  ch#par = lift(coe#j,coefficientRing R) * centralizerSize(degs);
 	  );
      new ClassFunction from ch
+     )
+*}
+classFunction = method()
+classFunction(RingElement) := (f)->
+(
+     R := local R;
+     pf := local pf;
+     Rf := ring f;
+     if class Rf === SchurRing2 then
+     (
+     	  R = symmetricRingOf ring f;
+	  pf = toP f;
+	  )
+     else
+     (
+	  R = Rf;
+     	  pf = toP f;
+	  );
+     n := R.dim;
+     (mon,coe) := apply(coefficients pf,i->flatten entries i);
+--     exps := apply(exponents pf,i->i_{n..(2*n-1)});
+     ch := new MutableHashTable;
+     for j from 0 to #mon-1 do
+     (
+     	  degs := (flatten exponents mon#j)_{(n)..(2*n-1)};
+     	  par := multsToSeq(degs);
+	  ch#par = lift(coe#j,coefficientRing R) * centralizerSize(degs);
+	  );
+     new ClassFunction from ch
+     )
+
+classFunction(BasicList) := (lambda)->
+(
+     lam := toList(lambda);
+     s := symbol s;
+     R := schurRing2(QQ,s,sum lam);
+     classFunction(R_lam)    
      )
 
 ClassFunction + ClassFunction := (ch1,ch2)->
@@ -1076,13 +1228,13 @@ internalProduct(RingElement,RingElement) := (f1,f2)->
      R2 := ring f2;
      R := local R;
      issy := false;
-     if (class R2 =!= SchurRing) then (R = R2; issy = true;)
-     else R = symmRing degSchurPol(f2);
+     if (class R2 =!= SchurRing2) then issy = true;
+     R = symmetricRingOf ring f2;
      ch1 := classFunction f1;
      ch2 := classFunction f2;
      rez := symmetricFunction(internalProduct(ch1,ch2),R);
      if issy then rez else
-     toS(rez,R2)
+     toS rez
      )
 
 
@@ -2476,35 +2628,35 @@ SeeAlso
 -- test Jacobi-Trudi
 --------------------
 TEST ///
-E = symmRing 5
+E = symmRing2(QQ,5)
 f = jacobiTrudi({4,1},E)
 assert (toS f == s_{4,1})
 ///
 
 TEST ///
-E = symmRing 5
+E = symmRing2(QQ,5)
 f = jacobiTrudi({2,1},E)
 assert (toS f == s_{2,1})
 ///
 
 TEST ///
-E = symmRing 13
+E = symmRing2(QQ,13)
 f = jacobiTrudi({7,4,2},E)
 assert (toS f == s_{7,4,2})
 ///
 
 TEST ///
-P = symmRing 6
+P = symmRing2(QQ,6)
 f = toS plethysm(jacobiTrudi({2},P), jacobiTrudi({2},P))
 assert(f == s_{4}+s_{2,2})
 ///
 
-TEST ///
-Q = symmRing 6
-S = schurRing(q,4)
+{*TEST ///
+Q = symmRing2(QQ,6)
+S = schurRing2(QQ,q,4)
 f = toS(plethysm(jacobiTrudi({3},Q), jacobiTrudi({2},Q)),S)
 assert(dim f == 220)
-///
+///*}
 ------------------------
 -- end test Jacobi-Trudi
 ------------------------
@@ -2513,58 +2665,60 @@ assert(dim f == 220)
 -- test of plethysm, toS
 ------------------------
 TEST ///
-R = symmRing 5
+R = symmRing2(QQ,5)
 pl = plethysm({1,1},jacobiTrudi({2},R))
 assert(toS pl == s_{3,1})
 ///
 
 TEST ///
-R = symmRing 12
+R = symmRing2(QQ,12)
 pl = plethysm({1,1,1},jacobiTrudi({4},R))
-assert(#terms(toS pl) == 7)
+assert(#listForm(toS pl) == 7)
 ///
 
-TEST ///
-R = symmRing 9
-S = schurRing(q,3)
+{*TEST ///
+R = symmRing2(QQ, 9)
+S = schurRing2(QQ,q,3)
 pl = plethysm(h_3,q_{2,1})
 assert (dim pl == 120)
-///
+///*}
 
 TEST ///
-R = symmRing 10
-S = schurRing(s,3)
+R = symmRing2(QQ,10)
+S = schurRing2(QQ,s,3)
 assert(toS(plethysm(h_3,e_3),S) == s_{3,3,3})
 ///
 
 TEST ///
-S = schurRing(q,4)
+S = schurRing2(QQ,q,4) --wrong
 assert(plethysm(q_{2,1},q_{1,1,1}) == q_{3,3,2,1})
 ///
 
 TEST ///
-R = symmRing 12
+R = symmRing2(QQ, 12)
 f = e_4
 lambda = new Partition from {3}
-plethysm(lambda,f) == plethysm(h_3,e_4)
+assert(plethysm(lambda,f) == plethysm(h_3,e_4))
 ///
 
-TEST ///
-schurRing(s,2,CoefficientRing => QQ)
+TEST /// --wrong
+schurRing2(QQ,s,2)
 assert(dim(plethysm(s_{2,1}+s_{3},s_{3})) == 40)
 ///
 
 TEST ///
-R = symmRing 20
-assert(#terms(toS(plethysm(h_5,h_4),Memoize=>true)) == 95)
+R = symmRing2(QQ,20)
+assert(#listForm(toS(plethysm(h_5,h_4),Memoize=>true)) == 95)
 ///
 
+{*
 TEST ///
-R = symmRing 10
-S = schurRing(o,5,CoefficientRing => QQ)
-sch = toS(plethysm({2,1},h_3),S,Strategy => Stillman,Memoize => false)
+R = symmRing2(QQ, 10)
+S = schurRing2(QQ,o,5)
+sch = toS(plethysm({2,1},h_3),S)
 assert(dim sch == 14770)
 ///
+*}
 ----------------------------
 -- end test of plethysm, toS
 ----------------------------
@@ -2572,33 +2726,33 @@ assert(dim sch == 14770)
 --------------------------------------------------------------
 ----- test characters of symmetric groups, scalarProd, intProd
 --------------------------------------------------------------
-TEST ///
+{*TEST ///
 assert(chi({2,1,1,1},{2,1,1,1}) == -2)
 assert(chi({3,1,1},{1,1,1,1,1}) == 6)
 assert(chi({3,2},{3,1,1}) == -1)
 assert(chi({2,2,1},{3,1,1}) == -1)
 assert(chi({3,1,1},{2,2,1}) == -2)
 ///
-
+*}
 TEST ///
-R = symmRing 20
-S = schurRing(o,6)
+R = symmRing2(QQ,20)
+S = schurRing2(QQ,o,20)
 assert(scalarProduct(o_{6,4,3,2,1},jacobiTrudi({3,3,3},R)*toP(o_{4,2,1},R)) == 2)
 assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),jacobiTrudi({4,3,3,3,2,1},R)) == 0)
 assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),o_{4,3,3,3,2,1}) == 0)
 ///
 
 TEST ///
-R = symmRing 5
-A = schurRing(a,2)
+R = symmRing2(QQ,5)
+A = schurRing2(QQ,a,4)
 assert(internalProduct(e_2+h_2,a_{2}) == a_{2}+a_{1,1})
 assert(toE internalProduct(a_{2},e_2+h_2) == toE p_1^2)
-assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)
+--assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)
 ///
 
 
 TEST ///
-R = symmRing 10
+R = symmRing2(QQ,10)
 ch1 = new ClassFunction from {{4,4} => 2, {8} => -1, {5,2,1} => 2, {3,2,2,1} => 1};
 ch2 = new ClassFunction from {{2,2,2,2} => -4, {5,2,1} => 1, {3,2,2,1} => 3};
 assert(toP symmetricFunction(internalProduct(ch1,ch2),R) == 1/8*p_1*p_2^2*p_3+1/5*p_1*p_2*p_5)
@@ -2606,13 +2760,13 @@ assert(toP symmetricFunction(ch1*ch2,R) == 1/8*p_1*p_2^2*p_3+1/5*p_1*p_2*p_5)
 ///
 
 TEST ///
-R = symmRing 4
+R = symmRing2(QQ,4)
 f = p_2^2
 g = (e_2+h_2)^2
 ch1 = classFunction(f)
 ch2 = classFunction(g)
-symmetricFunction(internalProduct(ch1,ch2),R) == 0
-internalProduct(f,g) == 0
+assert(symmetricFunction(internalProduct(ch1,ch2),R) == 0)
+assert(internalProduct(f,g) == 0)
 ///
 ----------------------------------------------------------------
 --- end test characters of symmetric groups, scalarProd, intProd
@@ -2622,32 +2776,33 @@ internalProduct(f,g) == 0
 --- test toS, toP, toE, toH
 ---------------------------
 TEST ///
-R = symmRing 6
+R = symmRing2(QQ,6)
 assert(toE(toS(e_1*e_2*e_3),R) == e_1*e_2*e_3)
 ///
 
 TEST ///
-R = symmRing 5
-S = schurRing(q,3)
+R = symmRing2(QQ,5)
+S = schurRing2(QQ,q,3)
 assert(toE(q_{2},R) + e_2 == e_1^2)
 ///
 
 TEST///
-R = symmRing 4
+R = symmRing2(QQ, 4)
 assert(toP toE toH toE toH toP toE toE toP toH (p_1+p_2+p_3) == p_1+p_2+p_3)
 ///
-
+{*
 TEST ///
-R = symmRing 6
-S = schurRing(o,2)
+R = symmRing2(QQ,6)
+S = schurRing2(QQ,o,2)
 toSf = map(S, R, apply(gens R, x -> toS(x,S)))
 assert(toSf(e_1*e_2*e_3) == 0)
 assert(toSf(h_1*h_2*h_3) == o_{1}*o_{2}*o_{3})
 ///
+*}
 
 TEST ///
-R = symmRing 7
-toH toP toE (toS (jacobiTrudi({2,1},R))^2,R) == (h_1*h_2-h_3)^2
+R = symmRing2(QQ,7)
+assert(toH toP toE (toS (jacobiTrudi({2,1},R))^2,R) == (h_1*h_2-h_3)^2)
 ///
 -------------------------------
 --- end test toS, toP, toE, toH
@@ -2658,9 +2813,9 @@ toH toP toE (toS (jacobiTrudi({2,1},R))^2,R) == (h_1*h_2-h_3)^2
 ---------------------------
 
 TEST ///
-R = symmRing 6
-A = schurRing(a,1)
-B = schurRing(b,2)
+R = symmRing2(QQ, 6)
+A = schurRing2(QQ,a,1)
+B = schurRing2(QQ,b,2)
 
 x = cauchy(2,a_{1},b_{2})
 y = toS(plethysm(R_1,R_13),B)
@@ -3296,7 +3451,7 @@ EtoH (ZZ) := (n) ->
      lis
 )
 
---time EtoH 30;
+time EtoH 30;
 
 restart
 n = 40
@@ -3324,31 +3479,98 @@ oo/size
 restart
 loadPackage"SchurRings"
 
-S = schurRing2(QQ,s,5)
-T = schurRing2(S,t,6)
+S = schurRing2(QQ,s,10)
+T = schurRing2(S,t,10)
 
-symmetricRing T
+symmetricRingOf T
 
 debug SchurRings
-toSymm s_{2,1}
-toSymm t_{2,1}
-oo-ooo
+f = toSymm S_{2,1}
+g = toSymm T_{2,1}
+f - g
+toS oo
+
 toE s_{2,1}
 toE t_{2,1}
 toE h_3
 toE s_{3}
+toH oo
+toH s_{3}
 
-rep = s_{1}*t_{2}+s_{2,1}*t_{1,1}
+plethysm(t_{2},t_{3})
+plethysm(t_{2},s_{2})
 
-exteriorPower (SchurRing2) := (rep) ->
+toE plethysm(t_{2},h_3)
+toE plethysm(h_2,t_{2,1})
+toS oo
+plethysm(t_{2},t_{2,1})
+plethysm(s_{2},t_{2,1})
+
+
+rep = S_{1}*T_{2}+S_{2,1}*T_{1,1}
+toSymm rep
+toE oo
+toP oo
+toH oo
+toP oo
+toS oo
+toE oo
+toS oo
+toH oo
+
+rep = s_{2}*t_{2}
+
+toP S_{2}
+toE oo
+toH oo
+toS oo
+
+plethysm(h_2,S_{3,1})
+toH oo
+plethysm(S_{2},oo)
+
+R = symmRing2(QQ,10)
+e_5
+toS oo
+
+exteriorPower (ZZ,RingElement) := opts -> (r,rep) ->
 (
      lis := listForm rep/((a,b)->(T_a,b));
-     wedge(2,lis)
-     cauchy(3,s_{2},t_{1,1})
-     
-     
+     wedge(r,lis)/((a,b)->a*b)//sum
      )
+
+
+exteriorPower(2,S_{2}*T_{2}+T_{1})
+toE oo
+toS oo
+
+exteriorPower(2,T_{2})
+plethysm(S_{1,1},T_{2})
+
 
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
 -- End:
+
+restart
+loadPackage"SchurRings"
+
+R = schurRing2(QQ,a,10)
+S = schurRing2(R,b,10)
+T = schurRing2(S,c,10)
+g = a_{1}*b_{1}*c_{1}
+plethysm2({2},g)
+
+plethysm2({1,1},a_{1}*c_{1})
+
+restart
+loadPackage"SchurRings"
+
+n = 30
+m = 30
+time R = symmRing2(QQ,n)
+time ple = plethysm(e_5,e_6);
+
+time toS(ple,Strategy=>Pieri);
+time toS(ple,Strategy=>Stembridge);
+oo==ooo
