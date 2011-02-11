@@ -135,6 +135,8 @@ net SchurRing2 := R -> (
 undocumented (net, SchurRing2)
 
 SchurRing2 _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
+SchurRing2 _ Sequence := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
+SchurRing2 _ ZZ := (SR, L) -> new SR from rawSchurFromPartition(raw SR, 1:L)
 coefficientRing SchurRing2 := Ring => R -> last R.baseRings
 numgens SchurRing2 := Ring => R -> R.numgens
 
@@ -227,7 +229,8 @@ schurRing2(Ring,Symbol) := (R,p) -> schurRing2(R,p,infinity)
 schurRing2(Ring,Symbol,InfiniteNumber) := 
 schurRing2(Ring,Symbol,ZZ) := SchurRing => (R,p,n) -> (
      S := newSchur2(R,p,n);
-     dim S := s -> rawSchurDimension raw s;
+     dim S := s -> dimSchur(s);
+     dim(Thing,S) := (n,s) -> dimSchur(n, s);
      t := new SchurRingIndexedVariableTable from p;
      t.SchurRing = S;
      t#symbol _ = a -> ( S _ a);
@@ -1478,6 +1481,66 @@ weyman (ZZ,List) := (i,L) -> (
      B := preBott(i,L);
      doBott(i,B))
 
+
+--------------------------------
+-- Dimension -------------------
+--------------------------------
+-- Function to compute the dimension of a Schur module
+
+hooklengths = (lambda) -> (
+     mu := conjugate lambda;
+     product for i from 0 to #lambda-1 list (
+	  product for j from 0 to lambda#i-1 list (
+	       lambda#i + mu#j - i - j -1
+	       ))
+     )
+
+dimSchur = method()
+dimSchur(Thing,List) := (n,lambda) -> dimSchur(n, new Partition from lambda)
+dimSchur(Thing,Partition) := (n, lambda) -> (
+     -- lambda is a list {a0,a1,...,a(r-1)}, a0 >= a1 >= ... >= a(r-1) > 0
+     -- n can be a number or a symbol
+     powers := new MutableList from toList(lambda#0 + #lambda - 1 : 0);
+     base := 1 - #lambda;
+     for i from 0 to #lambda-1 do
+       for j from 0 to lambda#i-1 do
+       	    powers#(j-i-base) = powers#(j-i-base) + 1;
+     if not instance(n,ZZ) then n = hold n;
+     num := product for s from 0 to #powers-1 list (n + (base+s))^(powers#s);
+     -- now get the hook lengths
+     answer := num/hooklengths lambda;
+     if instance(answer,QQ) then lift(answer,ZZ) else answer
+     )
+dimSchur(Thing,RingElement) := (n, F) -> (
+     -- assumption: F is an element in a SchurRing2
+     L := listForm F;
+     sum apply(L, p -> (
+	       lambda := new Partition from p#0;
+	       if p#1 == 1 then dimSchur(n,lambda) else p#1 * dimSchur(n,lambda)))
+     )
+dimSchur(List,RingElement) := (ns, F) -> (
+     -- assumption: F is an element in a SchurRing2
+     L := listForm F;
+     n := ns#0;
+     lev := schurLevel ring F;
+     if lev =!= #ns then error ("expected Schur ring of level "|lev);
+     if lev > 1 then (
+	  n1 := drop(ns,1);
+	  L = apply(L, p -> (p#0, dimSchur(n1,p#1)));
+	  );
+     sum apply(L, p -> (
+	       lambda := new Partition from p#0;
+	       if p#1 === 1 then dimSchur(n,lambda) else p#1 * dimSchur(n,lambda)))
+     )
+dimSchur(RingElement) := (F) -> (
+     schurdims := (S) -> (
+	  if schurLevel S === 0 then {}
+	  else prepend(numgens S, schurdims coefficientRing S));
+     ns := schurdims ring F;
+     if any(ns, i -> not instance(i,ZZ))
+     then error "expected finitely generated Schur rings";
+     dimSchur(ns,F)
+     )
 ---------------------------------------------------------------
 --------End old stuff----------------------------------------------
 ---------------------------------------------------------------
@@ -3411,21 +3474,13 @@ P2E + for i from 1 to n list toE p_i
 H2E - for i from 1 to n list toE h_i
 E2H - for i from 1 to n list toH e_i
 --------------------------------------------------------------
-restart
-path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
-debug loadPackage "SchurRings"
-debug Core
-mypromote = method()
-mypromote(RingElement,SchurRing2) := (f,S) -> new S from rawPromote(raw S, raw f)
-mylift = method()
-mylift(RingElement,SchurRing2) := (f,S) -> new S from rawLift(raw S, raw f)
 
 R = schurRing2(QQ,s,3)
 S = schurRing2(QQ,t,4)
 T = schurRing2(ZZ,u,4)
 F = 3*t_{3}*t_{2,1,1} + t_{3,2,1,1}
 F = 3*u_{3}*u_{2,1,1}
-mypromote(F,S)
+promote(F,S)
 mypromote(F,R)
 mylift(oo,T)
 R = schurRing2(QQ,s,3)

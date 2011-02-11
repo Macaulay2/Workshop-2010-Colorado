@@ -82,3 +82,25 @@ fh2 := toh(fe);
 fs := tos(fh);
 fs2 := tos(fe);
 -------------------------
+
+------- Some tests to be added to the main file ----------------------
+R = schurRing2(QQ,s)
+F = s_{2,1}
+F^2 == s_(4,2)+s_(4,1,1)+s_(3,3)+2*s_(3,2,1)+s_(3,1,1,1)+s_(2,2,2)+s_(2,2,1,1)
+
+-- test of dimensions
+restart
+debug loadPackage "SchurRings"
+R = schurRing2(QQ,r,3)
+S = schurRing2(R,s,4)
+F = r_{2,1}
+dim F
+dim(4,F)
+A = QQ[n]
+dim(n,F)
+G = r_{2,1} * s_{3}
+dim G
+A = QQ[m,n]
+dim({n,m},G)
+value oo
+----------------------------------------------------------------------
