@@ -41,17 +41,20 @@ newPackage(
 --if we want tensor products of representation rings, we should
 --create them at once: schurRing(Ring,{list of symbols},{list of dimensions})
 
-export {schurRing, SchurRing, schurRing2, SchurRing2,
-     symmRing, symmRing2, symmetricRingOf,
+export {schurRing2, SchurRing2, symmRing2,
+     symmetricRingOf, schurRingOf,
      toS, toE, toP, toH, 
-     plethysm, jacobiTrudi, plethysm2,
-     centralizerSize, classFunction, symmetricFunction, scalarProduct, internalProduct, 
-     cauchy, wedge, preBott, bott, doBott, weyman,
+     jacobiTrudi, plethysm2,
+     centralizerSize, classFunction, symmetricFunction, 
+     scalarProduct, internalProduct,
+     SchurRingIndexedVariableTable, 
+     ClassFunction, schurLevel,
+     
      Stillman, Stembridge, Pieri, Schur, Memoize, EorH,
      eVariable, pVariable, hVariable, getSchur,
-     SchurRingIndexedVariableTable, ClassFunction, SchurLevel}
--- Improve the names/interface of the following:
---, symmRing, plethysmMap, jacobiTrudi, plethysm, cauchy, bott}
+     schurRing, SchurRing, symmRing, plethysm,
+     cauchy, wedge, preBott, bott, doBott, weyman
+     }
 
 debug Core
 
@@ -73,50 +76,9 @@ protect symbol plethysmMaps
 protect symbol mapFromE
 protect symbol sFunction
 
-SchurRing = new Type of EngineRing
-SchurRing.synonym = "Schur ring"
-monoid SchurRing := o -> R -> R.monoid
-expression SchurRing := S -> new FunctionApplication from { schurRing, (S.Symbol, numgens monoid S) }
-undocumented (expression, SchurRing)
 
-toExternalString SchurRing := R -> toString expression R
-undocumented (toExternalString, SchurRing),
-
-toString SchurRing := R -> (
-     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
-     else toString expression R)
-undocumented (toString, SchurRing)
-
-net SchurRing := R -> (
-     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
-     else net expression R)
-undocumented (net, SchurRing)
-
-degreeLength SchurRing := (RM) -> degreeLength monoid RM
-coefficientRing SchurRing := Ring => R -> last R.baseRings
-
-ck := i -> if i < 0 then error "expected decreasing row lengths" else i
-
-schur2monom = (a,Mgens,M) -> (
-     if # a === 0 then 1_M
-     else product(# a, i -> (Mgens#i) ^ (
-	       ck if i+1 < # a 
-	       then a#i - a#(i+1)
-	       else a#i)))
-
-rawmonom2schur = (m) -> (
-     t := new MutableHashTable;
-     apply(rawSparseListFormMonomial m, (x,e) -> scan(0 .. x, i -> if t#?i then t#i = t#i + e else t#i = e)); 
-     values t
-     )
-
-rawmonom2partition = (m) -> (
-     reverse splice apply(rawSparseListFormMonomial m, (x,e) -> e:x)
-     )
----------
 SchurRing2 = new Type of EngineRing
 SchurRing2.synonym = "Schur2 ring"
-
 
 expression SchurRing2 := S -> new FunctionApplication from { schurRing, (expression last S.baseRings, S.Symbol, S.numgens ) }
 undocumented (expression, SchurRing2)
@@ -133,6 +95,10 @@ net SchurRing2 := R -> (
      if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
      else net expression R)
 undocumented (net, SchurRing2)
+
+rawmonom2partition = (m) -> (
+     reverse splice apply(rawSparseListFormMonomial m, (x,e) -> e:x)
+     )
 
 SchurRing2 _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
 SchurRing2 _ Sequence := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
@@ -164,7 +130,8 @@ schurRingOf (Ring) := R -> (
 	       if class R === SchurRing2 then R else
 	       (
 		    s := getSymbol "s";
-     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
+--     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
+     	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,infinity);
      	       	    R.Schur.symmRing2 = R;
 	       	    R.Schur
 		    )
@@ -615,7 +582,6 @@ plethysm(BasicList,RingElement) := (lambda,g) -> (
      f := jacobiTrudi(lambda,Rf);
      plethysm(f,g))
 
-
 plethysm2 = method()
 plethysm2(BasicList,RingElement) := (lambda,g) ->
 (
@@ -788,9 +754,7 @@ toS(RingElement,SchurRing) := opts -> (f,S) -> (
      d := first degree f;
 --     if d>n then error"need symmetric ring of higher dimension";
      rez := 0_S;
---     s := S.Symbol;
      ngS := numgens S;
---     use S;
      if opts.Strategy == Stembridge then
      (
      	  hf = toH(f);
@@ -884,6 +848,58 @@ recTrans (RingElement) := (pl) ->
      	  )
      )
 
+--------
+convolve = method()
+convolve(List,ZZ) := (L,conv) -> (
+     A := ring L_0;
+     toList drop(apply(rawConvolve(L/raw//toSequence, conv), f -> new A from f),1)
+     )
+
+
+PtoE = (m,R) -> (
+     n := R.dim;
+     A := R.symRingForE;
+     p2e := prepend(1_A, for i from 1 to n list ((-1)^(i+1) * A_(2*n+i-1)));
+     R.PtoETable = {1_A} | (- convolve(p2e,2));
+     )
+
+HtoE = (m,R) -> (
+     n := R.dim;
+     A := R.symRingForE;
+     h2e := prepend(1_A, for i from 1 to n list (-1)^(i+1)*A_(2*n+i-1));
+     R.HtoETable = {1_A} | convolve(h2e,0);
+     )
+
+HtoP = (m,R) -> (
+     n := R.dim;
+     A := R.symRingForP;
+     h2p := prepend(1_A, for i from 1 to n list A_(2*n+i-1));
+     R.HtoPTable = {1_A} | convolve(h2p,1);
+     )
+
+EtoP = (m,R) -> (
+     n := R.dim;
+     A := R.symRingForP;
+     e2p := prepend(1_A, for i from 1 to n list (-1)^(i+1)*A_(2*n+i-1));
+     R.EtoPTable = {1_A} | convolve(e2p,1);
+     )
+
+PtoH = (m,R) -> (
+     n := R.dim;
+     A := R;
+     p2h := prepend(1_A, for i from 1 to n list (- A_(2*n+i-1)));
+     R.PtoHTable = {1_A} | convolve(p2h,2);
+     )
+
+EtoH = (m,R) -> (
+     n := R.dim;
+     A := R;
+     e2h := prepend(1_A, for i from 1 to n list (-1)^(i+1)*A_(2*n+i-1));
+     R.EtoHTable = {1_A} | convolve(e2h,0);
+     )
+
+
+{*
 PtoE = (m,R) -> (
      -- R is a symmring n
      -- R should have a field named PtoETable, which is
@@ -1043,6 +1059,7 @@ PtoH = (m,R) -> (
 --     );
      PH#m
      )
+*}
 ---------------------------------------------------------------
 --------------End transition-----------------------------------
 ---------------------------------------------------------------
@@ -2695,25 +2712,32 @@ SeeAlso
 TEST ///
 E = symmRing2(QQ,5)
 f = jacobiTrudi({4,1},E)
-assert (toS f == s_{4,1})
+g = toS f
+G = ring g
+assert (g == G_{4,1})
 ///
 
 TEST ///
 E = symmRing2(QQ,5)
 f = jacobiTrudi({2,1},E)
-assert (toS f == s_{2,1})
+g = toS f
+G = ring g
+assert (g == G_{2,1})
 ///
 
 TEST ///
 E = symmRing2(QQ,13)
 f = jacobiTrudi({7,4,2},E)
-assert (toS f == s_{7,4,2})
+g = toS f
+G = ring g
+assert (toS f == G_{7,4,2})
 ///
 
 TEST ///
 P = symmRing2(QQ,6)
 f = toS plethysm(jacobiTrudi({2},P), jacobiTrudi({2},P))
-assert(f == s_{4}+s_{2,2})
+G = ring f
+assert(f == G_{4}+G_{2,2})
 ///
 
 {*TEST ///
@@ -2732,7 +2756,8 @@ assert(dim f == 220)
 TEST ///
 R = symmRing2(QQ,5)
 pl = plethysm({1,1},jacobiTrudi({2},R))
-assert(toS pl == s_{3,1})
+G = schurRingOf ring pl
+assert(toS pl == G_{3,1})
 ///
 
 TEST ///
@@ -3626,8 +3651,50 @@ loadPackage"SchurRings"
 n = 20
 m = 20
 time R = symmRing2(QQ,n)
-time ple = plethysm(e_5,e_3);
+time ple = plethysm(h_4,h_5);
 
 time toS(ple,Strategy=>Pieri);
 time toS(ple,Strategy=>Stembridge);
 oo==ooo
+
+
+
+------------------------------------
+----------Old Stuff
+------------------------------------
+SchurRing = new Type of EngineRing
+SchurRing.synonym = "Schur ring"
+monoid SchurRing := o -> R -> R.monoid
+expression SchurRing := S -> new FunctionApplication from { schurRing, (S.Symbol, numgens monoid S) }
+undocumented (expression, SchurRing)
+
+toExternalString SchurRing := R -> toString expression R
+undocumented (toExternalString, SchurRing),
+
+toString SchurRing := R -> (
+     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
+     else toString expression R)
+undocumented (toString, SchurRing)
+
+net SchurRing := R -> (
+     if hasAttribute(R,ReverseDictionary) then toString getAttribute(R,ReverseDictionary)
+     else net expression R)
+undocumented (net, SchurRing)
+
+degreeLength SchurRing := (RM) -> degreeLength monoid RM
+coefficientRing SchurRing := Ring => R -> last R.baseRings
+
+ck := i -> if i < 0 then error "expected decreasing row lengths" else i
+
+schur2monom = (a,Mgens,M) -> (
+     if # a === 0 then 1_M
+     else product(# a, i -> (Mgens#i) ^ (
+	       ck if i+1 < # a 
+	       then a#i - a#(i+1)
+	       else a#i)))
+
+rawmonom2schur = (m) -> (
+     t := new MutableHashTable;
+     apply(rawSparseListFormMonomial m, (x,e) -> scan(0 .. x, i -> if t#?i then t#i = t#i + e else t#i = e)); 
+     values t
+     )
