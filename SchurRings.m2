@@ -286,7 +286,7 @@ jacobiTrudi(BasicList,Ring) := opts -> (lambda,R) ->
      	  rez = det(map(R^n, n, (i,j) -> 
 	       (
 	       	    aux := lam#i-i+j;
-	       	    if aux < 0 then 0_R
+	       	    if aux < 0 or aux>R.dim then 0_R
 	       	    else if aux == 0 then 1_R else u aux)
 	       ),
 	  Strategy => Cofactor);
@@ -311,7 +311,8 @@ jT = (lambda) ->
 	  sgn := 1;
 	  for i from 0 to ll-1 do
 	  (
-     	       rez = rez + sgn*auxR_(2*auxEH*auxn-1+lambda#(ll-1-i)+i)*jT(l1|l2);
+     	       if lambda#(ll-1-i)+i<=auxn then --just added, won't work for h-polynomials
+	       rez = rez + sgn*auxR_(2*auxEH*auxn-1+lambda#(ll-1-i)+i)*jT(l1|l2);
 	       sgn = - sgn;
 	       l1 = drop(l1,-1);
 	       if lambda#(ll-1-i)>1 then
@@ -370,52 +371,11 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      
      PtoE(maxf*maxg,SRg);
      phi := map(SRg,SRf,flatten splice {nf:0_SRg,
-	       apply(1..nf, j -> (if j<=maxf then (plethysmMap(j,maxf,SRg))pg else 0)),
+	       apply(1..nf, j -> (if j<=maxf then (plethysmMap(j,maxg,SRg))pg else 0_SRg)),
 	       nf:0_SRg});
      pl := phi pf;
      if issy then pl else toS pl
 )
-{*     
-     if class Rf === SchurRing or class Rf === SchurRing2 then
-     (
---	  df = degSchurPol(f);
-     	  Rf = symmetricRingOf Rf;
---	  Rf = symmRing df;
---	  f = toP(f,Rf);
-     	  f = toP f;
-	  )
-     else 
-     (
---	  df = (degree f)#0;
-	  f = toP f;
-	  );
-     
-     if class R === SchurRing or class R === SchurRing2 then
-     (
-	  issy = false;
-	  SB := R;
-	  dg = degSchurPol(g);
-	  d := df*dg;
-	  if d == 0 then d = 1;
---	  R = symmRing d;
-	  R = symmetricRingOf R;
---	  g = toP(g,R);
-     	  g = toP g;
-	  )
-     else 
-     (
-	  dg = (degree g)#0;
-	  g = toP g;
-	  );
-
-     n := R.dim;
-     if issy and n<df*dg then error"Need symmetric ring of higher dimension";
-
-     N := Rf.dim;
-     phi := map(R,Rf,flatten splice {N:0_R,apply(1..N, j -> (if j<=df then (plethysmMap(j,R))g else 0)),N:0_R});
-     if issy then phi f
-     else toS(phi f,SB))
-*}
 
 plethysm(BasicList,RingElement) := (lambda,g) -> (
      d := sum toList lambda;
@@ -2162,10 +2122,12 @@ assert(f == G_{4}+G_{2,2})
 ///
 
 TEST ///
-Q = symmRing2(QQ,6)
-S = schurRing2(QQ,q,4)
-f = toS(plethysm(jacobiTrudi({3},Q), jacobiTrudi({2},Q)),S)
-assert(dim f == 220)
+Q = symmRing2(QQ,5)
+--S = schurRing2(QQ,q,4)
+S = schurRingOf Q
+f = toS(plethysm(jacobiTrudi({3},Q), jacobiTrudi({2},Q)))
+--assert(dim f == 220)
+assert(dim(4,f) == 220)
 ///
 ------------------------
 -- end test Jacobi-Trudi
@@ -2187,21 +2149,22 @@ pl = plethysm({1,1,1},jacobiTrudi({4},R))
 assert(#listForm(toS pl) == 7)
 ///
 
-{*TEST ///
+TEST ///
 R = symmRing2(QQ, 9)
 S = schurRing2(QQ,q,3)
 pl = plethysm(h_3,q_{2,1})
 assert (dim(pl) == 120)
-///*}
-
-TEST ///
-R = symmRing2(QQ,10)
-S = schurRing2(QQ,s,3)
-assert(toS(plethysm(h_3,e_3),S) == s_{3,3,3})
 ///
 
 TEST ///
-S = schurRing2(QQ,q,4) --wrong
+R = symmRing2(QQ,3)
+--S = schurRing2(QQ,s,3)
+S = schurRingOf R
+assert(toS(plethysm(h_3,e_3)) == S_{3,3,3})
+///
+
+TEST ///
+S = schurRing2(QQ,q,4)
 assert(plethysm(q_{2,1},q_{1,1,1}) == q_{3,3,2,1})
 ///
 
@@ -2212,7 +2175,7 @@ lambda = new Partition from {3}
 assert(plethysm(lambda,f) == plethysm(h_3,e_4))
 ///
 
-TEST /// --wrong
+TEST ///
 schurRing2(QQ,s,2)
 assert(dim(plethysm(s_{2,1}+s_{3},s_{3})) == 40)
 ///
@@ -2222,14 +2185,16 @@ R = symmRing2(QQ,20)
 assert(#listForm(toS(plethysm(h_5,h_4),Memoize=>true)) == 95)
 ///
 
-{*
-TEST ///
+
+{*TEST ///
 R = symmRing2(QQ, 10)
-S = schurRing2(QQ,o,5)
-sch = toS(plethysm({2,1},h_3),S)
-assert(dim sch == 14770)
-///
-*}
+--S = schurRing2(QQ,o,5)
+S = schurRingOf R
+sch = toS(plethysm({2,1},h_3))
+--assert(dim sch == 14770)
+assert(dim(5,sch) == 14770)
+///*} --is this wrong??
+
 ----------------------------
 -- end test of plethysm, toS
 ----------------------------
@@ -2258,7 +2223,7 @@ R = symmRing2(QQ,5)
 A = schurRing2(QQ,a,4)
 assert(internalProduct(e_2+h_2,a_{2}) == a_{2}+a_{1,1})
 assert(toE internalProduct(a_{2},e_2+h_2) == toE p_1^2)
-assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)--?
+assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9)
 ///
 
 
@@ -2318,6 +2283,7 @@ assert(toH toP toE (toS (jacobiTrudi({2,1},R))^2) == (h_1*h_2-h_3)^2)
 --- end test toS, toP, toE, toH
 -------------------------------
 
+{*
 ---------------------------
 -- test of cauchy, wedge --
 ---------------------------
@@ -2354,6 +2320,7 @@ assert (cauchy(2,1_A,1_B) == {})
 -------------------------------
 -- end test of cauchy, wedge --
 -------------------------------
+*}
 end
 
 restart
