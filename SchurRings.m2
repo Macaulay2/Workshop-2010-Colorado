@@ -330,14 +330,19 @@ jT = (lambda) ->
 ---------------------------------------------------------------
 --------------Plethysm-----------------------------------------
 ---------------------------------------------------------------
-plethysmMap = (d,R) -> (
+plethysmMap = (d,maxf,R) -> (
      -- d is an integer
      -- R is symmRing n
      -- returns the map p_d : R --> R
      --    which sends p_i to p_(i*d).
      n := R.dim;
      if not R.plethysmMaps#?d then (
-	 fs := splice {n:0_R,apply(1..(n//d), j -> R_(n-1+d*j)),(2*n-n//d):0_R};
+	 nd := n//d; 
+	 fs := splice {n:0_R};
+	 topf := min(maxf,nd);
+	 fs = join(fs, apply(1..topf, j -> R_(n-1+d*j)));
+	 if maxf>nd then fs = join(fs, apply(topf+1..maxf,j-> R.mapFromE R.PtoETable#(d*j)));
+	 fs = join(fs, 2*n-maxf:0_R);
          R.plethysmMaps#d = map(R,R,fs);
 	 );
      R.plethysmMaps#d
@@ -348,15 +353,32 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      -- f is a polynomial in symmRing N / SchurRing SA
      -- g is a polynomial in symmRing n / SchurRing SB
      -- result is in symmRing n / SchurRing SB
-     R := ring g;
+     Rg := ring g;
      Rf := ring f;
-     issy := true;
-     df := local df;
-     dg := local dg;
+     issy := not instance(Rg,SchurRing2);
      
+     pg := toP g;
+     pf := toP f;
+     
+     SRg := ring pg;
+     SRf := ring pf;
+          
+     ng := SRg.dim;
+     nf := SRf.dim;
+     maxg := support(pg)/index//max-ng+1;
+     maxf := support(pf)/index//max-nf+1;
+     
+     PtoE(maxf*maxg,SRg);
+     phi := map(SRg,SRf,flatten splice {nf:0_SRg,
+	       apply(1..nf, j -> (if j<=maxf then (plethysmMap(j,maxf,SRg))pg else 0)),
+	       nf:0_SRg});
+     pl := phi pf;
+     if issy then pl else toS pl
+)
+{*     
      if class Rf === SchurRing or class Rf === SchurRing2 then
      (
-	  df = degSchurPol(f);
+--	  df = degSchurPol(f);
      	  Rf = symmetricRingOf Rf;
 --	  Rf = symmRing df;
 --	  f = toP(f,Rf);
@@ -364,7 +386,7 @@ plethysm(RingElement,RingElement) := (f,g) -> (
 	  )
      else 
      (
-	  df = (degree f)#0;
+--	  df = (degree f)#0;
 	  f = toP f;
 	  );
      
@@ -393,6 +415,7 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      phi := map(R,Rf,flatten splice {N:0_R,apply(1..N, j -> (if j<=df then (plethysmMap(j,R))g else 0)),N:0_R});
      if issy then phi f
      else toS(phi f,SB))
+*}
 
 plethysm(BasicList,RingElement) := (lambda,g) -> (
      d := sum toList lambda;
@@ -612,6 +635,7 @@ PtoE = (m,R) -> (
      n := R.dim;
      A := R.symRingForE;
      p2e := prepend(1_A, for i from 1 to n list ((-1)^(i+1) * A_(2*n+i-1)));
+     if m>n then p2e = join(p2e,toList((m-n):0_A));
      R.PtoETable = {1_A} | (- convolve(p2e,2));
      )
 
@@ -690,36 +714,7 @@ centralizerSize(List) := lambda ->
      )
 
 ClassFunction = new Type of HashTable
-{*
-classFunction = method()
-classFunction(RingElement) := (f)->
-(
-     R := local R;
-     pf := local pf;
-     Rf := ring f;
-     if class Rf === SchurRing then
-     (
-     	  R = symmRing degSchurPol(f);
-	  pf = toP(f,R);
-	  )
-     else
-     (
-	  R = Rf;
-     	  pf = toP f;
-	  );
-     n := R.dim;
-     (mon,coe) := apply(coefficients pf,i->flatten entries i);
---     exps := apply(exponents pf,i->i_{n..(2*n-1)});
-     ch := new MutableHashTable;
-     for j from 0 to #mon-1 do
-     (
-     	  degs := (flatten exponents mon#j)_{(n)..(2*n-1)};
-     	  par := multsToSeq(degs);
-	  ch#par = lift(coe#j,coefficientRing R) * centralizerSize(degs);
-	  );
-     new ClassFunction from ch
-     )
-*}
+
 classFunction = method()
 classFunction(RingElement) := (f)->
 (
@@ -738,7 +733,6 @@ classFunction(RingElement) := (f)->
 	  );
      n := R.dim;
      (mon,coe) := apply(coefficients pf,i->flatten entries i);
---     exps := apply(exponents pf,i->i_{n..(2*n-1)});
      ch := new MutableHashTable;
      for j from 0 to #mon-1 do
      (
@@ -1194,7 +1188,7 @@ document {
      }
 
 document {
-     Key => {schurRing,(schurRing,Symbol,ZZ),(schurRing,Thing,ZZ)},
+     Key => {schurRing2,(schurRing2,Ring,Symbol,ZZ),(schurRing2,Ring,Thing,ZZ)},
      Headline => "Make a Schur ring",
      TT "schurRing(s,n)", " -- creates a Schur ring of degree n with variables based on the symbol s",
      PARA{"This is the representation ring for the general linear group of ", TT "n", " by ", TT "n", " matrices."},
@@ -1203,7 +1197,7 @@ document {
      SeeAlso => {"SchurRing", "symmRing"}}
 
 document {
-     Key => {SchurRing, (degreeLength,SchurRing), (coefficientRing, SchurRing), (monoid, SchurRing)},
+     Key => {SchurRing2, (coefficientRing, SchurRing2)},
      Headline => "the class of all Schur rings",
      "A Schur ring is the representation ring for the general linear group of 
      n by n matrices, and one can be constructed with ", TO schurRing, ".",
@@ -1218,33 +1212,6 @@ document {
      EXAMPLE "s_{3,2,1} * s_{1,1}",
      SeeAlso => {schurRing}}
 
-doc ///
-Key
-  [schurRing,CoefficientRing]
-Headline
-  The coefficient ring of a Schur ring
-Usage
-  CoefficientRing => R
-Inputs
-  R:Ring
-Description
-  Text
-    
-    This option allows one to choose the base ring for a Schur ring.
-  
-Caveat
-  This only works when {\tt R} is @TO ZZ@ or @TO QQ@. One would
-  like to have Schur rings over arbitrary base rings.
-///
--- document {
---      Key => (symbol _, SchurRing, List),
---      Headline => "make an element of a Schur ring",
---      TT "S_v", " -- produce the element of the Schur ring ", TT "S", " corresponding
---      to the Young diagram whose rows have lengths as in the list ", TT "v", ".",
---      PARA{},
---      "The row lengths should be in decreasing order.",
---      SeeAlso => "SchurRing"}
-
 document {
      Key => {SchurRingIndexedVariableTable,(symbol _,SchurRingIndexedVariableTable,Thing)},
      "This class is used as part of the implementation of a type of indexed variable used just for Schur rings.",
@@ -1253,11 +1220,11 @@ document {
 
 doc ///
 Key
-  symmRing
+  symmRing2
 Headline
   Make a Symmetric ring
 Usage
-  symmRing n
+  symmRing2 n
 Inputs
   n:ZZ
 Description
@@ -1269,7 +1236,7 @@ Description
     symmetric functions.
 
 SeeAlso
-  SchurRing
+  SchurRing2
 ///
 
 doc ///
@@ -1335,38 +1302,6 @@ doc ///
       Example
         R = symmRing 4;
         toS(e_1*h_2+p_3)
-
-      Text
-
-        An error is returned if the degree of the input function {\tt f}
-	is larger than the dimension of the Symmetric ring of {\tt f}.
-///
-
-doc ///
-   Key
-     (toS,RingElement,SchurRing)
-   Headline
-     Represents a virtual character in the s-basis
-   Usage
-     fs = toS(f,S)
-   Inputs
-     f:RingElement
-       element of a Symmetric ring
-     S:SchurRing
-   Outputs
-     fs:RingElement
-        element of {\tt S}
-   Description
-      Text
-
-        The input function {\tt f} should be interpreted as a virtual character
-	as well as the output, which is an element of {\tt S}, the representation
-	ring of a certain general linear group.
-
-      Example
-        R = symmRing 8;
-	S = schurRing(s,2);
-        toS(h_2^4,S)
 
       Text
 
@@ -1470,41 +1405,6 @@ doc ///
 ///
 
 doc ///
-   Key
-     (toE,RingElement,Ring)
-   Headline
-     Represents a symmetric function in the e-basis
-   Usage
-     fe = toE(f,R)
-   Inputs
-     f:RingElement
-       element of a Schur ring
-     R:Ring
-       a Symmetric ring
-   Outputs
-     fe:RingElement
-        element of a Symmetric ring
-   Description
-      Text
-
-        If {\tt f} is a symmetric function, represented as an element
-	of a Schur ring, and {\tt R} is a Symmetric ring, then the output {\tt fe}
-	is the representation of {\tt f} as a polynomial in the 
-	elementary symmetric functions in {\tt R}.
-
-      Example
-        R = symmRing 7;
-	S = schurRing(s,3);
-        toE(s_{3,2,1}*s_{2}+s_{2,1}^2,R)
-
-      Text
-
-        An error is returned if the representation of {\tt f}
-	involves symmetric functions {\tt e_n} for {\tt n} larger
-	than the dimension of {\tt R}.
-///
-
-doc ///
   Key
     toH
   Headline
@@ -1563,41 +1463,6 @@ doc ///
 ///
 
 doc ///
-   Key
-     (toH,RingElement,Ring)
-   Headline
-     Represents a symmetric function in the h-basis
-   Usage
-     fh = toH(f,R)
-   Inputs
-     f:RingElement
-       element of a Schur ring
-     R:Ring
-       a Symmetric ring
-   Outputs
-     fh:RingElement
-        element of a Symmetric ring
-   Description
-      Text
-
-        If {\tt f} is a symmetric function, represented as an element
-	of a Schur ring, and {\tt R} is a Symmetric ring, then the output {\tt fh}
-	is the representation of {\tt f} as a polynomial in the 
-	complete symmetric functions in {\tt R}.
-
-      Example
-        R = symmRing 7;
-	S = schurRing(s,3);
-        toH(s_{3,2,1}*s_{2}+s_{2,1}^2,R)
-
-      Text
-
-        An error is returned if the representation of {\tt f}
-	involves symmetric functions {\tt h_n} for {\tt n} larger
-	than the dimension of {\tt R}.
-///
-
-doc ///
   Key
     toP
   Headline
@@ -1653,41 +1518,6 @@ doc ///
       Example
         R = symmRing 4;
         toP(e_1*h_2+p_3)
-///
-
-doc ///
-   Key
-     (toP,RingElement,Ring)
-   Headline
-     Represents a symmetric function in the p-basis
-   Usage
-     fp = toP(f,R)
-   Inputs
-     f:RingElement
-       element of a Schur ring
-     R:Ring
-       a Symmetric ring
-   Outputs
-     fp:RingElement
-        element of a Symmetric ring
-   Description
-      Text
-
-        If {\tt f} is a symmetric function, represented as an element
-	of a Schur ring, and {\tt R} is a Symmetric ring, then the output {\tt fp}
-	is the representation of {\tt f} as a polynomial in the 
-	power-sum symmetric functions in {\tt R}.
-
-      Example
-        R = symmRing 5;
-        S = schurRing(s,3);
-        toP(s_{2,1}*s_{2},R)
-
-      Text
-
-        An error is returned if the representation of {\tt f}
-	involves symmetric functions {\tt p_n} for {\tt n} larger
-	than the dimension of {\tt R}.
 ///
 
 doc ///
