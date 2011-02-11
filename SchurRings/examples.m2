@@ -1,5 +1,16 @@
 restart
-path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
+loadPackage"SchurRings"
+
+S = schurRing2(QQ,s,5)
+T = schurRing2(S,t,4)
+
+f = 1_S*t_{2,1}
+g = s_{2,1}*1_T
+
+f-g
+
+
+restart
 loadPackage "SchurRings"
 
 
