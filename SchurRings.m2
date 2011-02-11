@@ -119,7 +119,7 @@ symmetricRingOf (Ring) := R -> (
      	       R.symmRing2.Schur = R;
 	       R.symmRing2
 	       )
-	  else error"R does not have a Symmetric Ring"
+	  else R
      )
 
 schurRingOf = method()
@@ -127,7 +127,7 @@ schurRingOf (Ring) := R -> (
      	  if R.?Schur then R.Schur else
 	  if schurLevel R > 0 then
 	  (
-	       if class R === SchurRing2 then R else
+	       if instance(R, SchurRing2) then R else
 	       (
 		    s := getSymbol "s";
      	       	    R.Schur = schurRing2(symmetricRingOf coefficientRing R,s,numgens R);
@@ -135,7 +135,7 @@ schurRingOf (Ring) := R -> (
 	       	    R.Schur
 		    )
 	       )
-	  else error"R does not have a Schur Ring"
+	  else error"Expected ring to have a Schur Ring"
      )
 
 schurLevel = method()
@@ -254,7 +254,7 @@ auxn = local auxn;
 auxEH = local auxEH;
 ----
 
-jacobiTrudi = method(Options => {Memoize => true, EorH => "H"})
+jacobiTrudi = method(Options => {Memoize => true, EorH => "E"})
 jacobiTrudi(BasicList,Ring) := opts -> (lambda,R) ->
 (
      lam := new Partition from lambda;
@@ -489,11 +489,6 @@ toE (RingElement) := (f) -> (
 	  )
      )
 --f should be an element of a symmRing
-toE (RingElement,Ring) := (ps,R) ->
---ps should be an element of a schurRing, R a symmRing
-(
-     toE toSymm(ps,R)
-     )
 
 toP = method()
 --writes a symmetric function in terms of
@@ -510,11 +505,6 @@ toP (RingElement) := (f) -> (
 	  )
      )
 --f should be an element of a symmRing
-toP (RingElement,Ring) := (ps,R) ->
---ps should be an element of a schurRing, R a symmRing
-(
-     toP toSymm(ps,R)
-     )
 
 toH = method()
 --writes a symmetric function in terms of
@@ -531,25 +521,19 @@ toH (RingElement) := (f) -> (
 	  )
      )
 --f should be an element of a symmRing
-toH (RingElement,Ring) := (ps,R) ->
---ps should be an element of a schurRing, R a symmRing
-(
-     toH toSymm(ps,R)
-     )
 
 leadTermFcn := local leadTermFcn;
 retFcn := local retFcn;
 mappingFcn := local mappingFcn;
 
 toS = method(Options => {Strategy => Pieri, Memoize => true})
-toS(RingElement,SchurRing2) := opts -> (f,S) -> (
-     -- f is a polynomial in 'symmRing n', of degree d<=n
-     -- S is a SchurRing
-     local hf;
+toS(RingElement) := opts -> (f) -> (
      R := ring f;
+     if (schurLevel R == 0 or class R === SchurRing2) then f else
+     S := schurRingOf R;
+     local hf;
      n := R.dim;
      d := first degree f;
---     if d>n then error"need symmetric ring of higher dimension";
      rez := 0_S;
      ngS := numgens S;
      if opts.Strategy == Stembridge then
@@ -567,35 +551,13 @@ toS(RingElement,SchurRing2) := opts -> (f,S) -> (
 	       hf = hf - coe_0_0*(jacobiTrudi(par,R,Memoize => opts.Memoize));
 	       if #par <= ngS then
 	       (
---     	       	  SS := coefficientRing S;
---		  while class SS === SchurRing2 do SS = coefficientRing SS;
---	          rez = rez + lift(coe_0_0,SS)*S.getSchur(par);--value toString is kind of stupid..
      	       	  SS := coefficientRing symmetricRingOf S;
 	          rez = rez + toS(lift(coe_0_0,SS))*S_par;--value toString is kind of stupid..
 		  );
      	       );
      )
-     else if opts.Strategy == Stillman then
-     (
-	  hf = toH(f);
-{*	  ef := toE(f);
-	  le := #terms(ef);
-	  lh := #terms(hf);
-	  if le<lh then 
-	  (
-	       mtos := map(S,R,apply(splice{1..n},i->(if i<=ngS then value(toString s_(splice{i:1})) else 0)) | splice{2*n:0});
-     	       rez = mtos(ef);
-	       )
-	  else 	  
-*}
---	  (
-	       mtos := map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then S.getSchur({i}) else 0)));
-     	       rez = mtos(hf);
---	       );
-	  )
      else if opts.Strategy == Pieri then
      (
---          mappingFcn = map(S,R,splice{2*n:0} | apply(splice{1..n},i->(if i<=ngS then S.getSchur({i}) else 0)));
      	  mappingFcn = (v) -> (schurRingOf ring v)_{index v-2*(ring v).dim+1};
 	  leadTermFcn = (pl) -> (
 	       R := ring pl;
@@ -608,10 +570,7 @@ toS(RingElement,SchurRing2) := opts -> (f,S) -> (
      else error"Invalid strategy";
      rez
      )
-toS(RingElement) := opts -> (f) -> (
-     R := ring f;
-     if (schurLevel R == 0 or class R === SchurRing2) then f else
-     toS(f,schurRingOf R,opts))
+
 toS(Thing) := opts -> (f) -> f
 
 recTrans = method()
@@ -2537,12 +2496,12 @@ G = ring f
 assert(f == G_{4}+G_{2,2})
 ///
 
-{*TEST ///
+TEST ///
 Q = symmRing2(QQ,6)
 S = schurRing2(QQ,q,4)
 f = toS(plethysm(jacobiTrudi({3},Q), jacobiTrudi({2},Q)),S)
 assert(dim f == 220)
-///*}
+///
 ------------------------
 -- end test Jacobi-Trudi
 ------------------------
@@ -2551,7 +2510,7 @@ assert(dim f == 220)
 -- test of plethysm, toS
 ------------------------
 TEST ///
-R = symmRing2(QQ,5)
+R = symmRing2(QQ,4)
 pl = plethysm({1,1},jacobiTrudi({2},R))
 G = schurRingOf ring pl
 assert(toS pl == G_{3,1})
@@ -2567,7 +2526,7 @@ assert(#listForm(toS pl) == 7)
 R = symmRing2(QQ, 9)
 S = schurRing2(QQ,q,3)
 pl = plethysm(h_3,q_{2,1})
-assert (dim pl == 120)
+assert (dim(pl) == 120)
 ///*}
 
 TEST ///
@@ -3672,3 +3631,19 @@ toSymm(RingElement,Ring) := (ps,R) ->
 	       (try b:=jacobiTrudi(p,R) then b else error"Need symmetric ring of higher dimension")*
 	       lift(a,coefficientRing S)))
 )
+
+toP (RingElement,Ring) := (ps,R) ->
+--ps should be an element of a schurRing, R a symmRing
+(
+     toP toSymm(ps,R)
+     )
+toH (RingElement,Ring) := (ps,R) ->
+--ps should be an element of a schurRing, R a symmRing
+(
+     toH toSymm(ps,R)
+     )
+toE (RingElement,Ring) := (ps,R) ->
+--ps should be an element of a schurRing, R a symmRing
+(
+     toE toSymm(ps,R)
+     )
