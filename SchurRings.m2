@@ -3188,6 +3188,69 @@ assert(lisF === lisH2)
 
 S = schurRing(symbol s, 10)
 F = s_{12,3} * s_{12,4};
+
+R = QQ[h_1..h_5]
+debug Core
+rawConvolve((raw (1_R),raw (h_1),raw (-h_2),raw(h_3),raw(-h_4),raw(h_5)),0)
+oo/(f -> new R from f)
+
+
+n = 30
+A = symmRing n
+A = QQ[h_1..h_30,MonomialSize=>8]
+Hs = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
+ANS = for i from 1 to n list toH e_i;
+time L = toList drop(apply(rawConvolve(Hs/raw//toSequence, 0), f -> new A from f),1);
+L - ANS
+
+restart
+debug Core
+n = 50
+A = ZZ/32003[h_1..h_n,MonomialSize=>8]
+Hs = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
+time L = toList drop(apply(rawConvolve(Hs/raw//toSequence, 0), f -> new A from f),1);
+time M = matrix{L};
+B = QQ (monoid A)
+time sub(M,B);
+
+restart
+debug Core
+convolve = method()
+convolve(List,ZZ) := (L,conv) -> (
+     A := ring L_0;
+     toList drop(apply(rawConvolve(L/raw//toSequence, conv), f -> new A from f),1)
+     )
+path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
+debug loadPackage "SchurRings"
+
+n = 30
+time A = symmRing n
+
+h2p = prepend(1_A, for i from 1 to n list p_i)
+time H2P = convolve(h2p,1);
+
+p2h = prepend(1_A, for i from 1 to n list -h_i)
+time P2H = convolve(p2h,2);
+
+e2p = prepend(1_A, for i from 1 to n list ((-1)^(i+1) * p_i))
+time E2P = convolve(e2p,1);
+
+p2e = prepend(1_A, for i from 1 to n list ((-1)^(i+1) * e_i))
+time P2E = - convolve(p2e,2);
+
+h2e = prepend(1_A, for i from 1 to n list (-1)^(i+1)*e_i)
+time H2E = convolve(h2e,0);
+
+e2h = prepend(1_A, for i from 1 to n list (-1)^(i+1)*h_i)
+time E2H = convolve(e2h,0);
+
+H2P - for i from 1 to n list toP h_i
+P2H - for i from 1 to n list toH p_i
+E2P - for i from 1 to n list toP e_i
+P2E + for i from 1 to n list toE p_i
+H2E - for i from 1 to n list toE h_i
+E2H - for i from 1 to n list toH e_i
+
 --------------------------------------------------------------
 restart
 n = 35

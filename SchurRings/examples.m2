@@ -1,5 +1,8 @@
 restart
+path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
 loadPackage "SchurRings"
+
+
 
 S = schurRing2(QQ,s,3)
 S1 = schurRing2(S,t,6)
@@ -12,6 +15,9 @@ g = s_{1}*t_{1}
 g^3+g*g*g -- this shouldn't be 0
 
 (s_{1}+t_{2})^2 --this isn't right
+
+f = s_{1}+t_{2}
+f = t_{2} + s_{1}
 
 restart
 loadPackage"SchurRings"
