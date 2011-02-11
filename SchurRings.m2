@@ -161,6 +161,7 @@ newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      SR.baseRings = append(A.baseRings,A);
      SR.generators = {};
      SR.numgens = if n < 0 then infinity else n;
+     SR.degreeLength = 0;
      commonEngineRingInitializations SR;
      ONE := SR#1;
      if A.?char then SR.char = A.char;
@@ -178,7 +179,8 @@ newSchur2(Ring,Symbol,ZZ) := (A,p,n) -> (
      	  n := numgens SR;
      	  (cc,mm) := rawPairs(raw A, raw f);
      	  toList apply(cc, mm, (c,m) -> (rawmonom2partition m, new A from c)));
-     SR.symmRing2 = symmRing2(symmetricRing A,n);
+     if n >= 0 and A =!= ZZ then
+       SR.symmRing2 = symmRing2(symmetricRing A,n);
      SR
      )
 
@@ -3226,6 +3228,7 @@ debug loadPackage "SchurRings"
 n = 30
 time A = symmRing n
 
+--A = QQ[h_1..h_n,e_1..e_n,p_1..p_n,MonomialSize=>8]
 h2p = prepend(1_A, for i from 1 to n list p_i)
 time H2P = convolve(h2p,1);
 
@@ -3250,6 +3253,26 @@ E2P - for i from 1 to n list toP e_i
 P2E + for i from 1 to n list toE p_i
 H2E - for i from 1 to n list toE h_i
 E2H - for i from 1 to n list toH e_i
+--------------------------------------------------------------
+restart
+path = prepend("~/local/conferences/2010-aug-m2/Colorado-2010/", path)
+debug loadPackage "SchurRings"
+debug Core
+mypromote = method()
+mypromote(RingElement,SchurRing2) := (f,S) -> new S from rawPromote(raw S, raw f)
+mylift = method()
+mylift(RingElement,SchurRing2) := (f,S) -> new S from rawLift(raw S, raw f)
+
+R = schurRing2(QQ,s,3)
+S = schurRing2(QQ,t,4)
+T = schurRing2(ZZ,u,4)
+F = 3*t_{3}*t_{2,1,1} + t_{3,2,1,1}
+F = 3*u_{3}*u_{2,1,1}
+mypromote(F,S)
+mypromote(F,R)
+mylift(oo,T)
+R = schurRing2(QQ,s,3)
+S = schurRing2(QQ,t,4)
 
 --------------------------------------------------------------
 restart
