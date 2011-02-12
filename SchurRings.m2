@@ -3,11 +3,12 @@
 
 newPackage(
 	"SchurRings",
-    	Version => "0.2", 
-    	Date => "May 23, 2007",
+    	Version => "0.5", 
+    	Date => "February 12, 2011",
     	Authors => {
 	     {Name => "Michael Stillman", Email => "mike@math.cornell.edu", HomePage => "http://www.math.cornell.edu/~mike/"},
-	     {Name => "Hal Schenck"}
+	     {Name => "Hal Schenck"},
+	     {Name => "Claudiu Raicu"}
 	     },
     	Headline => "representation rings of general linear groups and of symmetric groups",
     	DebuggingMode => true,
