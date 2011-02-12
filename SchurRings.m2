@@ -811,7 +811,7 @@ chi(BasicList,BasicList) := (lambda, rho) ->
      rh := toList rho;
      ll := sum la;
      if ll != sum(rh) then error"Partitions must have the same size.";
-     R := symmRing ll;
+     R := symmRing(QQ,ll);
      sl := jacobiTrudi(la,R);
      pr := 1_R;
      for i from 0 to #rh-1 do pr = pr * R_(ll-1+rh#i);
@@ -1212,7 +1212,7 @@ doc ///
 	  combination of Schur functions. 
       
       Example
-      	  R = symmRing 6;
+      	  R = symmRing(QQ,6);
 	  toS(h_3*e_3)
       
       Text	  
@@ -1222,9 +1222,8 @@ doc ///
 	  group, and the output as a representation of {\tt f} as a sum of characters.
       
       Example
-      	  R = symmRing 6;
-	  S = schurRing(s,3);
-	  toS(h_3*e_3,S)
+      	  R = symmRing(QQ,6);
+	  toS(h_3*e_3)
       
       Text
       
@@ -1260,7 +1259,7 @@ doc ///
 	ring {\tt R.Schur} attached to the Symmetric ring {\tt R} of {\tt f}.
 
       Example
-        R = symmRing 4;
+        R = symmRing(QQ,4);
         toS(e_1*h_2+p_3)
 
       Text
@@ -1319,7 +1318,7 @@ doc ///
 	  in the elementary symmetric functions.
 
       Example
-      	  R = symmRing 7;
+      	  R = symmRing(QQ,7);
 	  toE(h_3*e_3+p_2*h_5+h_1^2*p_3)
       
       Text	  
@@ -1329,9 +1328,9 @@ doc ///
 	  to specify a Symmetric ring to carry the e-representation of {\tt f}.
       
       Example
-      	  R = symmRing 9;
-	  S = schurRing(s,3);
-	  toE(s_{3,2,1}*s_{2}+s_{4,2},R)
+      	  R = symmRing(QQ,9);
+	  S = schurRingOf R
+	  toE(S_{3,2,1}*S_{2}+S_{4,2})
   SeeAlso
     toH
     toS
@@ -1360,7 +1359,7 @@ doc ///
 	elementary symmetric functions in {\tt R}.
 
       Example
-        R = symmRing 4;
+        R = symmRing(QQ,4);
         toE(e_1*h_2+p_3)
 ///
 
@@ -1377,7 +1376,7 @@ doc ///
 	  in the complete symmetric functions.
 
       Example
-      	  R = symmRing 7;
+      	  R = symmRing(QQ,7);
 	  toH(h_3*e_3+p_2*h_5+h_1^2*p_3)
       
       Text	  
@@ -1387,9 +1386,9 @@ doc ///
 	  to specify a Symmetric ring to carry the h-representation of {\tt f}.
       
       Example
-      	  R = symmRing 9;
-	  S = schurRing(s,3);
-	  toH(s_{3,2,1}*s_{2}+s_{4,2},R)
+      	  R = symmRing(QQ,9);
+	  S = schurRingOf R
+	  toH(S_{3,2,1}*S_{2}+S_{4,2})
   SeeAlso
     toE
     toS
@@ -1418,7 +1417,7 @@ doc ///
 	complete symmetric functions in {\tt R}.
 
       Example
-        R = symmRing 4;
+        R = symmRing(QQ,4);
         toH(e_1*h_2+p_3)
 ///
 
@@ -1435,7 +1434,7 @@ doc ///
 	  in the power-sum symmetric functions.
 
       Example
-      	  R = symmRing 7;
+      	  R = symmRing(QQ,7);
 	  toP(2*(e_1^2-e_2))
 
       Text	  
@@ -1445,9 +1444,9 @@ doc ///
 	  to specify a Symmetric ring to carry the p-representation of {\tt f}.
       
       Example
-      	  R = symmRing 6;
-	  S = schurRing(s,2);
-	  toP(2*s_{3}-s_{2,1},R)
+      	  R = symmRing(QQ,6);
+	  S = schurRingOf R
+	  toP(2*S_{3}-S_{2,1})
   SeeAlso
     toH
     toS
@@ -1476,7 +1475,7 @@ doc ///
 	power-sum symmetric functions in {\tt R}.
 
       Example
-        R = symmRing 4;
+        R = symmRing(QQ,4);
         toP(e_1*h_2+p_3)
 ///
 
@@ -1507,7 +1506,7 @@ Description
     function in terms of {\tt h-}polynomials.
   
   Example
-    R = symmRing 10;
+    R = symmRing(QQ,10);
     jacobiTrudi({3,2,2,1},R,EorH => "E")
     jacobiTrudi(new Partition from {4,4,1},R)
     toS oo
@@ -1578,10 +1577,10 @@ Description
     the ring of {\tt g}.
     
   Example
-    R = symmRing 10;
+    R = symmRing(QQ,10);
     p = plethysm(h_2,h_5)
     toS p
-    S = schurRing(q,3);
+    S = schurRing(QQ,q,3);
     plethysm(h_2,q_{2,1})
     plethysm(q_{2,1},q_{2,1})
     
@@ -1615,8 +1614,8 @@ Description
     or virtual character. This is the most commonly used form of plethysm.
 
   Example
-    R = symmRing 6
-    S = schurRing(q,3)
+    R = symmRing(QQ,6)
+    S = schurRing(QQ,q,3)
     plethysm({2,1},e_2)
     plethysm({2,1,1},q_{1,1}) 
 ///
@@ -1711,7 +1710,7 @@ Description
     as an element of {\tt R}.
     
   Example
-    R = symmRing 4;
+    R = symmRing(QQ,4);
     symmetricFunction(new ClassFunction from {{1,1,1,1}=>2},R)
 SeeAlso
   classFunction
@@ -1740,14 +1739,14 @@ Description
     The character of the standard representation of {\tt S_5} is
     
   Example
-    R = symmRing 5;
+    R = symmRing(QQ,5);
     classFunction(jacobiTrudi({4,1},R))
   Text
 
     The character of the second exterior power of the standard representation of {\tt S_5} is
     
   Example
-    R = symmRing 5;
+    R = symmRing(QQ,5);
     classFunction(jacobiTrudi({3,1,1},R))
 SeeAlso
   symmetricFunction
@@ -1774,8 +1773,8 @@ Description
     The number of standard tableaux of shape {\tt \{4,3,2,1\}} is:
   
   Example
-    R = symmRing 10;
-    S = schurRing(s,4);
+    R = symmRing(QQ,10);
+    S = schurRing(QQ,s,4);
     scalarProduct(h_1^10,s_{4,3,2,1})
 SeeAlso
   internalProduct
@@ -1802,9 +1801,10 @@ Description
     computes the standard pairing between {\tt f1} and {\tt f2}.
     
   Example
-    R = symmRing 5;
+    R = symmRing(QQ,5);
+    S = schurRingOf R
     scalarProduct(h_5,p_5)
-    scalarProduct(s_{4,1},p_5)
+    scalarProduct(S_{4,1},p_5)
   
   Text
   
@@ -1812,7 +1812,7 @@ Description
     s-basis expansion of {\tt h_5} are as computed above:
     
   Example
-    R = symmRing 5;
+    R = symmRing(QQ,5);
     toS p_5
 ///
 
@@ -1859,15 +1859,15 @@ Description
     the unit of the representation ring of {\tt S_n}:
   
   Example
-    R = symmRing 5;
-    S = schurRing(s,3);
+    R = symmRing(QQ,5);
+    S = schurRing(QQ,s,3);
     internalProduct(h_3,s_{2,1})
   Text
   
     The square of the sign representation is the trivial representation:
     
   Example
-    R = symmRing 5;
+    R = symmRing(QQ,5);
     toH internalProduct(e_3,e_3)
 SeeAlso
   scalarProduct
@@ -1896,10 +1896,10 @@ Description
     The output {\tt ip} is an element in the ring of {\tt f2}.
     
   Example
-     R = symmRing 6;
-     S = schurRing(s,3);
+     R = symmRing(QQ,6);
+     S = schurRing(QQ,s,3);
      internalProduct(s_{3},e_3)
-     Q = schurRing(q,4);
+     Q = schurRing(QQ,q,4);
      internalProduct(s_{3,3},q_{4,2})   
   Text
    
@@ -1954,7 +1954,7 @@ Description
 
   Example
     centralizerSize{1,1,1}
-    R = symmRing 6;
+    R = symmRing(QQ,6);
     u = p_1 * p_2 * p_3;
     scalarProduct(u,u)
 ///
@@ -2026,8 +2026,8 @@ Description
     power of {\tt V\otimes W}.
 
   Example
-    A = schurRing(a,4);
-    B = schurRing(b,5);
+    A = schurRing(QQ,a,4);
+    B = schurRing(QQ,b,5);
     cauchy(3,a_{1},b_{1})
   Text    
     
@@ -2071,8 +2071,8 @@ Description
     sum of {\tt V_j\otimes W_j}.
 
   Example
-    A = schurRing(a,4);
-    B = schurRing(b,5);
+    A = schurRing(QQ,a,4);
+    B = schurRing(QQ,b,5);
     wedge(2,{(a_{1},b_{1}),(a_{2}+a_{1,1},b_{3})})
   Text    
     
