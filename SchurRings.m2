@@ -1123,7 +1123,7 @@ document {
      multiplication is given by the decomposition of the tensor product of representations",
      PARA{},
      "We create such a ring in Macaulay2 using the ", TO schurRing, " function:",
-     EXAMPLE "R = schurRing(s,4);",
+     EXAMPLE "R = schurRing(QQ,s,4);",
      "A monomial represents the irreducible representation with a given highest weight. 
      The standard 4 dimensional representation is",
      EXAMPLE "V = s_{1}",
@@ -1161,7 +1161,7 @@ document {
      Headline => "the class of all Schur rings",
      "A Schur ring is the representation ring for the general linear group of 
      n by n matrices, and one can be constructed with ", TO schurRing, ".",
-     EXAMPLE "R = schurRing(s, 4)",
+     EXAMPLE "R = schurRing(QQ, s, 4)",
      "The element corresponding to the Young diagram ", TT "{3,2,1}", " is
      obtained as follows.",
      EXAMPLE "s_{3,2,1}",
@@ -2192,7 +2192,7 @@ R = symmRing(QQ, 10)
 S = schurRingOf R
 sch = toS(plethysm({2,1},h_3))
 --assert(dim sch == 14770)
-assert(dim(5,sch) == 14770)
+assert(dim(5,sch) == 14280)
 /// --maybe this is wrong??
 
 ----------------------------
@@ -2202,14 +2202,14 @@ assert(dim(5,sch) == 14770)
 --------------------------------------------------------------
 ----- test characters of symmetric groups, scalarProd, intProd
 --------------------------------------------------------------
-{*TEST ///
+TEST ///
 assert(chi({2,1,1,1},{2,1,1,1}) == -2)
 assert(chi({3,1,1},{1,1,1,1,1}) == 6)
 assert(chi({3,2},{3,1,1}) == -1)
 assert(chi({2,2,1},{3,1,1}) == -1)
 assert(chi({3,1,1},{2,2,1}) == -2)
 ///
-*}
+
 TEST ///
 R = symmRing(QQ,20)
 S = schurRing(QQ,o,20)
@@ -2310,8 +2310,8 @@ assert(#(set(wedge(2,L)) - (set cauchy(2,a_{2},b_{1}) + set{(a_{2}*a_{1,1},b_{1}
 ///
 
 TEST ///
-A = schurRing(a,1)
-B = schurRing(b,2)
+A = schurRing(QQ,a,1)
+B = schurRing(QQ,b,2)
 c = (cauchy(3,1_A,b_{2}))#0
 assert (first c == 1_A)
 assert (dim last c == 1)
