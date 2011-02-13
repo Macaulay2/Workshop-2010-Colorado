@@ -33,26 +33,17 @@ newPackage(
 --toP =>
 --toS =>
 
---should get rid of Stembridge, Stillman as options, keep Pieri
-
---any schurRing should have a symmetric ring attached to it
---toSymm(RingElement,Ring) should be replaced by toSymm(schurRing)
---the output should live in the symmetric ring of the schurRing
-
---the coefficient ring of a schurRing should represent the scalars
---if we want tensor products of representation rings, we should
---create them at once: schurRing(Ring,{list of symbols},{list of dimensions})
 
 export {schurRing, SchurRing, symmRing,
      symmetricRingOf, schurRingOf,
-     toS, toE, toP, toH, 
+     toS, toE, toP, toH,
      jacobiTrudi, plethysm2, plethysm,
      centralizerSize, classFunction, symmetricFunction, 
      scalarProduct, internalProduct,
      SchurRingIndexedVariableTable, EHPSVariables,
      ClassFunction, schurLevel,
      
-     Stillman, Stembridge, Pieri, Schur, Memoize, EorH,
+     Memoize, Schur, EorH,
      eVariable, pVariable, hVariable, getSchur,
      cauchy, wedge, preBott, bott, doBott, weyman
      }
@@ -367,8 +358,8 @@ plethysm(RingElement,RingElement) := (f,g) -> (
           
      ng := SRg.dim;
      nf := SRf.dim;
-     maxg := support(pg)/index//max-ng+1;
-     maxf := support(pf)/index//max-nf+1;
+     maxg := max(support(pg)/index//max-ng+1,0);
+     maxf := max(support(pf)/index//max-nf+1,0);
      
      PtoE(maxf*maxg,SRg);
      phi := map(SRg,SRf,flatten splice {nf:0_SRg,
@@ -507,52 +498,26 @@ leadTermFcn := local leadTermFcn;
 retFcn := local retFcn;
 mappingFcn := local mappingFcn;
 
-toS = method(Options => {Strategy => Pieri, Memoize => true})
-toS(RingElement) := opts -> (f) -> (
+toS = method()
+toS(RingElement) := (f) -> (
      R := ring f;
      if (schurLevel R == 0 or class R === SchurRing) then f else
      S := schurRingOf R;
      local hf;
      n := R.dim;
      d := first degree f;
-     rez := 0_S;
      ngS := numgens S;
-     if opts.Strategy == Stembridge then
-     (
-     	  hf = toH(f);
-     	  while (hf!=0) do
-     	  (
-     	       lt := leadTerm hf;
-     	       (mon,coe) := coefficients lt;
-     	       degs := (flatten exponents mon_0_0)_{(2*n)..(3*n-1)};
-     	       par := {};
-     	       for i from 0 to n-1 do
-	           par = par | splice{degs#i:(i+1)};
-	       par = reverse par;
-	       hf = hf - coe_0_0*(jacobiTrudi(par,R,Memoize => opts.Memoize));
-	       if #par <= ngS then
-	       (
-     	       	  SS := coefficientRing symmetricRingOf S;
-	          rez = rez + toS(lift(coe_0_0,SS))*S_par;--value toString is kind of stupid..
-		  );
-     	       );
-     )
-     else if opts.Strategy == Pieri then
-     (
-     	  mappingFcn = (v) -> (schurRingOf ring v)_{index v-2*(ring v).dim+1};
-	  leadTermFcn = (pl) -> (
-	       R := ring pl;
-	       spl := select(support pl,i->index i<numgens R);
-	       if spl == {} then null else last spl
-	       );
-	  retFcn = (pl) -> toS lift(pl,(coefficientRing ring pl));
-     	  rez = recTrans(toH(f));
-	  )
-     else error"Invalid strategy";
-     rez
+     mappingFcn = (v) -> (schurRingOf ring v)_{index v-2*(ring v).dim+1};
+     leadTermFcn = (pl) -> (
+     R := ring pl;
+     spl := select(support pl,i->index i<numgens R);
+     if spl == {} then null else last spl
+     );
+     retFcn = (pl) -> toS lift(pl,(coefficientRing ring pl));
+     recTrans(toH(f))
      )
 
-toS(Thing) := opts -> (f) -> f
+toS(Thing) := (f) -> f
 
 recTrans = method()
 recTrans (RingElement) := (pl) ->
@@ -679,20 +644,14 @@ ClassFunction = new Type of HashTable
 classFunction = method()
 classFunction(RingElement) := (f)->
 (
-     R := local R;
-     pf := local pf;
      Rf := ring f;
-     if class Rf === SchurRing then
-     (
-     	  R = symmetricRingOf ring f;
-	  pf = toP f;
-	  )
-     else
-     (
-	  R = Rf;
-     	  pf = toP f;
-	  );
+
+     R :=symmetricRingOf Rf;
+     pf := toP f;
      n := R.dim;
+     
+     if (degree pf)#0 > n then error"Can't interpret ring element as a symmetric function";
+     
      (mon,coe) := apply(coefficients pf,i->flatten entries i);
      ch := new MutableHashTable;
      for j from 0 to #mon-1 do
@@ -1269,43 +1228,6 @@ doc ///
 	is larger than the dimension of the Symmetric ring of {\tt f}.
 ///
 
-doc///
-   Key
-     [toS,Memoize]
-   Headline
-     Store values of the jacobiTrudi function.
-   Usage
-     Memoize => b
-   Inputs
-     b:Boolean
-   Description
-     Text
-
-       This option is relevant when the method {\tt toS} is used with the
-       default @TO Stembridge@ strategy. If the option is set to {\tt true}
-       then all the values of the @TO jacobiTrudi@ function that are computed in
-       the process are recorded into a special hash table attached to the
-       symmetric ring inside which the computations are done.
-///   
-
-doc///
-   Key
-    [toS,Strategy]
-   Headline
-     Stembridge or Stillman's strategy.
-   Description
-     Text
-       The @TO Stembridge@ strategy refers to the method of computing the
-       representation of a symmetric function in the s-basis used by John
-       Stembridge in his Maple SF package. The bottleneck of this strategy
-       is the computation of Jacobi-Trudi determinants, so this is best used
-       with the option {\tt Memoize} set to {\tt true}.
-       
-       If the amount of available memory is an issue, then one can use the
-       @TO Stillman@ strategy, in which case the option {\tt Memoize} is
-       irrelevant.
-///   
-
 doc ///
   Key
     toE
@@ -1775,7 +1697,7 @@ Description
   
   Example
     R = symmRing(QQ,10);
-    S = schurRing(QQ,s,4);
+    S = schurRing(QQ,s,10);
     scalarProduct(h_1^10,s_{4,3,2,1})
 SeeAlso
   internalProduct
@@ -1898,9 +1820,9 @@ Description
     
   Example
      R = symmRing(QQ,6);
-     S = schurRing(QQ,s,3);
+     S = schurRing(QQ,s,6);
      internalProduct(s_{3},e_3)
-     Q = schurRing(QQ,q,4);
+     Q = schurRing(QQ,q,6);
      internalProduct(s_{3,3},q_{4,2})   
   Text
    
@@ -1972,34 +1894,6 @@ doc ///
       and @TO toS@ methods, allowing one to store the values
       of the @TO jacobiTrudi@ function in order to speed up
       computations.
-///
-
-doc ///
-  Key
-    Stillman
-  Headline
-    Strategy for finding the s-basis representation of a symmetric function
-  Description
-    Text
-      This is one of the two strategies implemented for the 
-      @TO toS@ method that computes a representation of
-      a symmetric function in the basis of Schur functions. 
-  SeeAlso
-    Stembridge
-///
-
-doc ///
-  Key
-    Stembridge
-  Headline
-    Strategy for finding the s-basis representation of a symmetric function
-  Description
-    Text
-      This is one of the two strategies implemented for the 
-      @TO toS@ method that computes a representation of
-      a symmetric function in the basis of Schur functions. 
-  SeeAlso
-    Stillman
 ///
 
 doc ///
@@ -2183,7 +2077,7 @@ assert(dim(plethysm(s_{2,1}+s_{3},s_{3})) == 40)
 
 TEST ///
 R = symmRing(QQ,20)
-assert(#listForm(toS(plethysm(h_5,h_4),Memoize=>true)) == 95)
+assert(#listForm(toS plethysm(h_5,h_4)) == 95)
 ///
 
 
@@ -2221,10 +2115,10 @@ assert(scalarProduct(jacobiTrudi({6,4,3,2,1},R),o_{4,3,3,3,2,1}) == 0)
 
 TEST ///
 R = symmRing(QQ,5)
-A = schurRing(QQ,a,2)
+A = schurRing(QQ,a,4)
 assert(internalProduct(e_2+h_2,a_{2}) == a_{2}+a_{1,1})
 assert(toE internalProduct(a_{2},e_2+h_2) == toE p_1^2)
-assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 9) ----maybe this is wrong??
+assert(dim internalProduct(a_{2,1}*a_{1},a_{2,2}) == 176)
 ///
 
 
@@ -2295,17 +2189,17 @@ A = schurRing(QQ,a,1)
 B = schurRing(QQ,b,2)
 
 x = cauchy(2,a_{1},b_{2})
-y = toS(plethysm(R_1,R_13),B)
+y = toS(plethysm(R_1,R_13))
 assert(x#0#1 == y)
 
 x = cauchy(3,a_{1},b_{2})
-y = toS(plethysm(R_2,R_13),B)
+y = toS(plethysm(R_2,R_13))
 assert(x#0#1 == y)
 ///
-
+*}
 TEST ///
-A = schurRing(a,2)
-B = schurRing(b,2)
+A = schurRing(QQ,a,2)
+B = schurRing(QQ,b,2)
 L = {(a_{2},b_{1}),(a_{1,1},b_{1,1})}
 assert(#(set(wedge(2,L)) - (set cauchy(2,a_{2},b_{1}) + set{(a_{2}*a_{1,1},b_{1}*b_{1,1})})) == 0)
 ///
@@ -2321,7 +2215,7 @@ assert (cauchy(2,1_A,1_B) == {})
 -------------------------------
 -- end test of cauchy, wedge --
 -------------------------------
-*}
+
 end
 
 restart
@@ -2502,10 +2396,16 @@ m = 20
 time R = symmRing(QQ,n)
 time ple = plethysm(h_5,h_6);
 
-time toS(ple,Strategy=>Pieri);
-time toS(ple,Strategy=>Stembridge); --don't try this
-oo==ooo
+time toS ple;
 
+restart
+loadPackage"SchurRings"
+
+n = 6
+time R = symmRing(QQ,n)
+time ple = plethysm(h_5,h_6);
+
+time toS ple;
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
 -- End:
