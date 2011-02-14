@@ -94,13 +94,36 @@ debug loadPackage "SchurRings"
 R = schurRing2(QQ,r,3)
 S = schurRing2(R,s,4)
 F = r_{2,1}
-dim F
-dim(4,F)
+assert(dim F == 8)
+assert(dim(4,F) == 20)
 A = QQ[n]
-dim(n,F)
+assert(value dim(n,F) == 1/3 * (n-1)*n*(n+1))
 G = r_{2,1} * s_{3}
-dim G
+G2 = G*G
+assert(dim G2 == (dim G)^2)
+assert(dim G == dimSchur(3,{2,1}) * dimSchur(4,{3}))
+dimSchur(4,G) 
 A = QQ[m,n]
-dim({n,m},G)
-value oo
+dimG = value dim({n,m},G)
+dimG2 = value dim({n,m},G2)
+dimG2 == dimG^2  -- FAILS -- as it should: the result is NOT valid for schur rings in >= 4 variables in r!!
+
+
+R = schurRing2(QQ,r)
+S = schurRing2(R,s)
+F = r_{2,1}
+assert(dim(3, F) == 8)
+assert(dim(4,F) == 20)
+A = QQ[n]
+assert(value dim(n,F) == 1/3 * (n-1)*n*(n+1))
+G = r_{2,1} * s_{3}
+G2 = G*G
+assert(dim(10, G2) == (dim(10, G))^2)
+assert(dim({4,3}, G) == dimSchur(3,{2,1}) * dimSchur(4,{3}))
+dimSchur(4,G) 
+A = QQ[m,n]
+dimG = value dim({n,m},G)
+dimG2 = value dim({n,m},G2)
+assert(dimG2 == dimG^2)  -- now it is true!
+
 ----------------------------------------------------------------------

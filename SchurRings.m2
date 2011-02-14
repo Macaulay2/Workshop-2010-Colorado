@@ -191,7 +191,7 @@ schurRing(Ring,Symbol,ZZ) := SchurRing => opts -> (R,p,n) -> (
      S.use = S -> (globalAssign(p,t); S);
      S.use S;
      S)
-
+schurRing(Thing,ZZ) := (s,n) -> schurRing(ZZ,s,n)
 
 SchurRingIndexedVariableTable = new Type of IndexedVariableTable
 SchurRingIndexedVariableTable _ Thing := (x,i) -> x#symbol _ i
