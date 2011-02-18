@@ -1,22 +1,20 @@
 restart
 loadPackage"SchurRings"
 
-S = schurRing2(QQ,s,5)
-T = schurRing2(S,t,4)
+n = 4
+m = 2
+R = symmRing(QQ,n)
+ple = plethysm(h_2,h_2);
 
-f = 1_S*t_{2,1}
-g = s_{2,1}*1_T
-
-f-g
-
+p = toS ple;
+size p --size does something weird now; 
+p --this will break M2
 
 restart
 loadPackage "SchurRings"
 
-
-
-S = schurRing2(QQ,s,3)
-S1 = schurRing2(S,t,6)
+S = schurRing(QQ,s,3)
+S1 = schurRing(S,t,6)
 
 f = s_{5}*t_{3}
 f^3 + f * f * f --this shouldn't be 0
@@ -109,8 +107,8 @@ dimG2 = value dim({n,m},G2)
 dimG2 == dimG^2  -- FAILS -- as it should: the result is NOT valid for schur rings in >= 4 variables in r!!
 
 
-R = schurRing2(QQ,r)
-S = schurRing2(R,s)
+R = schurRing(QQ,r,5)
+S = schurRing(R,s,5)
 F = r_{2,1}
 assert(dim(3, F) == 8)
 assert(dim(4,F) == 20)

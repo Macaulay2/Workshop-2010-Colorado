@@ -21,10 +21,6 @@ newPackage(
 --symmRing(coefficientRing) -- options -> names of e,h,p variables
 --     	    	      	    -- maybe coefficientRing is an option
 
---cauchy,wedge becomes exteriorPower(r,element in a schurRing or symmRing)
---this implements the Cauchy formula for tensor products of two Schur rings
---symmetricPower(r,element in a schurRing or symmRing)
-
 --plethysm should work for tensor products of schurRings, or symmRings
 
 --longer names for
@@ -37,15 +33,15 @@ newPackage(
 export {schurRing, SchurRing, symmRing,
      symmetricRingOf, schurRingOf,
      toS, toE, toP, toH,
-     jacobiTrudi, plethysm2, plethysm,
+     jacobiTrudi, plethysm,
      centralizerSize, classFunction, symmetricFunction, 
      scalarProduct, internalProduct,
      SchurRingIndexedVariableTable, EHPSVariables,
      ClassFunction, schurLevel,
      
      Memoize, Schur, EorH,
-     eVariable, pVariable, hVariable, getSchur,
-     cauchy, wedge, preBott, bott, doBott, weyman
+     eVariable, pVariable, hVariable, getSchur
+--     cauchy, wedge, preBott, bott, doBott, weyman
      }
 
 debug Core
@@ -64,7 +60,7 @@ protect symbol EtoHTable
 protect symbol grbP
 protect symbol EtoPTable
 protect symbol HtoPTable
-protect symbol plethysmMaps
+--protect symbol plethysmMaps
 protect symbol mapFromE
 protect symbol sFunction
 
@@ -93,6 +89,7 @@ rawmonom2partition = (m) -> (
      )
 
 SchurRing _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
+--SchurRing _ List := (SR, L) -> new SR from rawSchurFromPartition(raw SR,select(L,i->i>0))
 SchurRing _ Sequence := (SR, L) -> new SR from rawSchurFromPartition(raw SR, L)
 SchurRing _ ZZ := (SR, L) -> new SR from rawSchurFromPartition(raw SR, 1:L)
 coefficientRing SchurRing := Ring => R -> last R.baseRings
@@ -232,7 +229,7 @@ symmRing (Ring,ZZ) := opts -> (A,n) -> (
      	  R.mapSymToE = (f) -> R.mapFromE(R.mapToE(f)%R.grbE);
      	  R.mapSymToP = (f) -> R.mapFromP(R.mapToP(f)%R.grbP);
      	  R.mapSymToH = (f) -> f%R.grbH;
-     	  R.plethysmMaps = new MutableHashTable;
+--     	  R.plethysmMaps = new MutableHashTable;
 	  if (A.?schurLevel) then R.schurLevel = A.schurLevel + 1
      	  else R.schurLevel = 1;
      	  R)
@@ -323,22 +320,32 @@ jT = (lambda) ->
 ---------------------------------------------------------------
 --------------Plethysm-----------------------------------------
 ---------------------------------------------------------------
-plethysmMap = (d,maxf,R) -> (
+plethysmMap = (d,maxg,R) -> (
      -- d is an integer
      -- R is symmRing n
      -- returns the map p_d : R --> R
      --    which sends p_i to p_(i*d).
-     n := R.dim;
-     if not R.plethysmMaps#?d then (
-	 nd := n//d; 
-	 fs := splice {n:0_R};
-	 topf := min(maxf,nd);
-	 fs = join(fs, apply(1..topf, j -> R_(n-1+d*j)));
-	 if maxf>nd then fs = join(fs, apply(topf+1..maxf,j-> R.mapFromE R.PtoETable#(d*j)));
-	 fs = join(fs, 2*n-maxf:0_R);
-         R.plethysmMaps#d = map(R,R,fs);
-	 );
-     R.plethysmMaps#d
+     auxS := R;
+     lev := schurLevel R;
+     fs := {};
+     local nS;
+     local nSd;
+     while lev > 0 do
+     (
+     	  nS = auxS.dim;
+          nSd = nS//d; 
+     	  fs = join(fs,splice{nS:0_auxS});
+	  topf := min(maxg#(lev-1),nSd);
+	  fs = join(fs, apply(1..topf, j -> auxS_(nS-1+d*j)));
+	  if maxg#(lev-1)>nSd then fs = join(fs, apply(topf+1..maxg#(lev-1),j-> auxS.mapFromE auxS.PtoETable#(d*j)));
+	  fs = join(fs, 2*nS-maxg#(lev-1):0_auxS);
+	  auxS = coefficientRing auxS;
+	  lev = schurLevel auxS;
+	  );
+	 map(R,R,fs)
+--         R.plethysmMaps#d = map(R,R,fs);
+--	 );
+--     R.plethysmMaps#d
      )
 
 plethysm = method()
@@ -348,20 +355,34 @@ plethysm(RingElement,RingElement) := (f,g) -> (
      -- result is in symmRing n / SchurRing SB
      Rg := ring g;
      Rf := ring f;
+     if schurLevel Rf > 1 then error"Undefined plethysm operation";
+
      issy := not instance(Rg,SchurRing);
-     
      pg := toP g;
      pf := toP f;
      
      SRg := ring pg;
      SRf := ring pf;
           
-     ng := SRg.dim;
      nf := SRf.dim;
-     maxg := max(support(pg)/index//max-ng+1,0);
      maxf := max(support(pf)/index//max-nf+1,0);
      
-     PtoE(maxf*maxg,SRg);
+     auxS := SRg;
+     nS := auxS.dim;
+     lev := schurLevel auxS;
+     maxg := {};
+     spg := support(pg)/index;
+     local ma;
+     while lev>0 do
+     (
+     	  ma = max(select(spg,i->i<3*nS)//max-nS+1,0);
+	  if maxf*ma >= #auxS.PtoETable then PtoE(maxf*ma,auxS);
+	  maxg = join({ma},maxg);
+	  spg = select(spg,i->i>=3*nS)/(j->j-3*nS);
+     	  auxS = coefficientRing auxS;
+	  nS = auxS.dim;
+	  lev = schurLevel auxS;
+	  );
      phi := map(SRg,SRf,flatten splice {nf:0_SRg,
 	       apply(1..nf, j -> (if j<=maxf then (plethysmMap(j,maxg,SRg))pg else 0_SRg)),
 	       nf:0_SRg});
@@ -375,30 +396,7 @@ plethysm(BasicList,RingElement) := (lambda,g) -> (
      f := jacobiTrudi(lambda,Rf);
      plethysm(f,g))
 
-plethysm2 = method()
-plethysm2(BasicList,RingElement) := (lambda,g) ->
-(
-     Rg := ring g;
-     levg := schurLevel Rg;     
-     if levg == 0 then g else
-     if levg == 1 then plethysm(lambda,g) else
-     (
-	  lam := toList(lambda);
-	  d := sum lam;
-     	  ch := classFunction(lam);
-	  T := Rg;
-	  coeRings := {};
-	  while schurLevel T>0 do
-	  (
-	       coeRings = {T} | coeRings;
-	       T = coefficientRing T;
-	       );
-     	  pard := partitions d/toList;
-	  lpar := toList((set pard)^**levg)/toList;
-     	  coes := lpar/(i->scalarProduct(ch,i/classFunction//product)*(for j from 0 to #i-1 list (coeRings#j)_(i#j))//product)//sum
-	  )
-     )
-     
+
 --degree of a polynomial in a SchurRing
 degSchurPol = method()
 degSchurPol(RingElement) := ps -> (
@@ -502,20 +500,30 @@ toS = method()
 toS(RingElement) := (f) -> (
      R := ring f;
      if (schurLevel R == 0 or class R === SchurRing) then f else
-     S := schurRingOf R;
-     local hf;
-     n := R.dim;
-     d := first degree f;
-     ngS := numgens S;
-     mappingFcn = (v) -> (schurRingOf ring v)_{index v-2*(ring v).dim+1};
-     leadTermFcn = (pl) -> (
-     R := ring pl;
-     spl := select(support pl,i->index i<numgens R);
-     if spl == {} then null else last spl
-     );
-     retFcn = (pl) -> toS lift(pl,(coefficientRing ring pl));
-     recTrans(toH(f))
+     (
+	  S := schurRingOf R;
+     	  local hf;
+     	  n := R.dim;
+     	  d := first degree f;
+     	  ngS := numgens S;
+     	  mappingFcn = (v) -> (schurRingOf ring v)_{index v-2*(ring v).dim+1};
+     	  leadTermFcn = (pl) -> (
+     	       R := ring pl;
+     	       spl := select(support pl,i->index i<numgens R);
+     	       if spl == {} then null else last spl
+     	       );
+     	  retFcn = (pl) -> toS lift(pl,(coefficientRing ring pl));
+     	  recTrans(toH(f))*1_S
+	  )
      )
+
+toS(RingElement,SchurRing) := (f, T) ->
+(
+     fS := toS f;
+     dimT := numgens T;
+     (listForm fS)/(i-> if #i#0<=dimT then T_(i#0)*i#1 else 0_T)//sum
+     )
+
 
 toS(Thing) := (f) -> f
 
@@ -549,6 +557,8 @@ recTrans (RingElement) := (pl) ->
 	  rez
      	  )
      )
+
+recTrans(Thing) := p -> p
 
 --------
 convolve = method()
@@ -855,8 +865,18 @@ L = {(a_{1},b_{1}), (a_{3}+a_{2,1},b_{2,2})}
 ----end wedge powers
 *}
 
+exteriorPower (ZZ,RingElement) := opts -> (r,rep) ->
+(
+     plethysm(splice{r:1},rep)
+     )
 
-cauchy = (i,f,g) -> (
+symmetricPower (ZZ,RingElement) := (r,rep) ->
+(
+     plethysm({r},rep)
+     )
+
+{*cauchy := method(Options => {SymmOrSkew => Symmetric}) --Symmetric, Skewsymmetric
+cauchy(ZZ,RingElement,RingElement) := opts -> (i,f,g) -> (
      -- f and g are elements of Schur rings (possibly different)
      -- compute the i th exterior power of the representation f ** g
      P := partitions i;
@@ -865,7 +885,7 @@ cauchy = (i,f,g) -> (
 		   a := plethysm(lambda,f);
 		   if a == 0 then null
 		   else (
-			b := plethysm(conjugate lambda, g);
+			b := plethysm(if opts.SymmOrSkew == Symmetric then lambda else conjugate lambda, g);
 			if b == 0 then null else (a,b)
 		    ))));
      select(result, x -> x =!= null)
@@ -898,28 +918,27 @@ pairProduct = L -> (
 ----e.g. L = {{(h_2,e_3)},{(h_1,e_3),(p_2,e_2)}}
 ----pairProduct L = {(h_1*h_2,e_3^2), (p_2*h_2,e_2*e_3)}
 
-wedge = method()		    
-wedge(List,List) := (C,L) -> (
+wedge = method(Options => options cauchy) 
+wedge(List,List) := opts -> (C,L) -> (
      -- C is a composition of 0..n-1, n == #L
      -- form the product of the exterior powers of the corresponding representations.
      result := {}; -- each entry will be of the form (f,g)
      C0 := positions(C, x -> x =!= 0);
-     wedgeL := apply(C0, i -> cauchy(C#i,L#i#0,L#i#1));
+     wedgeL := apply(C0, i -> cauchy(C#i,L#i#0,L#i#1,opts));
      pairProduct wedgeL
      )
 
-wedge(ZZ,List) := (r,L) -> (
+wedge(ZZ,List) := opts -> (r,L) -> (
      -- r is an integer >= 1
      -- L is a list of pairs (f,g), f,g are in (possibly different) Schur rings.
      -- returns wedge(r)(L), as a sum of representations of GL(m) x GL(n)
      n := #L;
      p := compositions1(r,n);
-     flatten apply(p, x -> wedge(x,L))
+     flatten apply(p, x -> wedge(x,L,opts))
      )
 --this computes the r-th wedge power of the direct sum of
 --V_i\tensor W_i where V_i, W_i are GL(V) and GL(W) (virtual) modules
 --corresponding to pairs of (virtual) characters (f_i,g_i)
-
 preBott = method()
 preBott(ZZ,List) := (i,L) -> (
      R1 := ring L#0#0;
@@ -1002,7 +1021,7 @@ weyman = method()
 weyman (ZZ,List) := (i,L) -> (
      B := preBott(i,L);
      doBott(i,B))
-
+*}
 
 --------------------------------
 -- Dimension -------------------
@@ -1069,7 +1088,7 @@ dimSchur(RingElement) := (F) -> (
 
 beginDocumentation()
 
-undocumented (wedge,List,List)
+--undocumented (wedge,List,List)
 undocumented {EorH, Schur}
 
 document {
@@ -1896,92 +1915,6 @@ doc ///
       computations.
 ///
 
-doc ///
-Key
-  cauchy
-Headline
-  Exterior power of a tensor product of representations
-Usage
-  l = cauchy(r,f,g)
-Inputs
-  r:ZZ
-  f:RingElement
-    element of a Schur ring
-  g:RingElement
-    element of a Schur ring
-Outputs
-  l:List
-Description
-  Text
-    
-    Given representations {\tt V,W} over (possibly different)
-    general linear groups {\tt G,H}, with corresponding characters {\tt f,g},
-    and given any positive integer {\tt r}, the method computes
-    the character (over {\tt G\times H}) of the {\tt r}-th exterior 
-    power of {\tt V\otimes W}.
-
-  Example
-    A = schurRing(QQ,a,4);
-    B = schurRing(QQ,b,5);
-    cauchy(3,a_{1},b_{1})
-  Text    
-    
-    The output {\tt l} is a list of pairs of characters {\tt f_j,g_j}
-    corresponding to representations {\tt V_j,W_j} such that the direct
-    sum of {\tt V_j\otimes W_j} is the {\tt r}-th exterior power of
-    {\tt V\otimes W}.
-    
-Caveat
-  This is terrible. Once we make Schur rings work over arbitrary
-  base rings we'll be able to work with tensor products of
-  representation rings, and the elements of these rings will replace
-  the lists of pairs as outputs of this function.
-SeeAlso
-  wedge
-///
-
-doc ///
-Key
-  wedge
-  (wedge,ZZ,List)
-Headline
-  Exterior power of a representation over a product of general linear groups
-Usage
-  l = wedge(r,L)
-Inputs
-  r:ZZ
-  L:List
-    list of pairs of elements of (possibly different) Schur ring
-Outputs
-  l:List
-Description
-  Text
-    
-    This is the general case of @TO cauchy@. Given a representation {\tt U}
-    over a product of general linear groups {\tt G,H},
-    and given any positive integer {\tt r}, the method computes
-    the character (over {\tt G\times H}) of the {\tt r}-th exterior
-    power of {\tt U}. {\tt U} is given as a list of pairs of characters {\tt f_j,g_j}
-    corresponding to representations {\tt V_j,W_j} such that {\tt U} is the direct
-    sum of {\tt V_j\otimes W_j}.
-
-  Example
-    A = schurRing(QQ,a,4);
-    B = schurRing(QQ,b,5);
-    wedge(2,{(a_{1},b_{1}),(a_{2}+a_{1,1},b_{3})})
-  Text    
-    
-    The output {\tt l} is a list of pairs of characters {\tt f_j,g_j}
-    corresponding to representations {\tt V_j,W_j} such that the direct
-    sum of {\tt V_j\otimes W_j} is the {\tt r}-th exterior power of
-    {\tt U}.
-    
-Caveat
-  This is terrible. See @TO cauchy@ for details.
-SeeAlso
-  cauchy
-///
-
 --------------------
 -- test Jacobi-Trudi
 --------------------
@@ -2178,44 +2111,6 @@ assert(toH toP toE (toS (jacobiTrudi({2,1},R))^2) == (h_1*h_2-h_3)^2)
 --- end test toS, toP, toE, toH
 -------------------------------
 
-{*
----------------------------
--- test of cauchy, wedge --
----------------------------
-
-TEST ///
-R = symmRing(QQ, 6)
-A = schurRing(QQ,a,1)
-B = schurRing(QQ,b,2)
-
-x = cauchy(2,a_{1},b_{2})
-y = toS(plethysm(R_1,R_13))
-assert(x#0#1 == y)
-
-x = cauchy(3,a_{1},b_{2})
-y = toS(plethysm(R_2,R_13))
-assert(x#0#1 == y)
-///
-*}
-TEST ///
-A = schurRing(QQ,a,2)
-B = schurRing(QQ,b,2)
-L = {(a_{2},b_{1}),(a_{1,1},b_{1,1})}
-assert(#(set(wedge(2,L)) - (set cauchy(2,a_{2},b_{1}) + set{(a_{2}*a_{1,1},b_{1}*b_{1,1})})) == 0)
-///
-
-TEST ///
-A = schurRing(QQ,a,1)
-B = schurRing(QQ,b,2)
-c = (cauchy(3,1_A,b_{2}))#0
-assert (first c == 1_A)
-assert (dim last c == 1)
-assert (cauchy(2,1_A,1_B) == {})
-///
--------------------------------
--- end test of cauchy, wedge --
--------------------------------
-
 end
 
 restart
@@ -2362,13 +2257,6 @@ R = symmRing(QQ,10)
 e_5
 toS oo
 
-exteriorPower (ZZ,RingElement) := opts -> (r,rep) ->
-(
-     lis := listForm rep/((a,b)->(T_a,b));
-     wedge(r,lis)/((a,b)->a*b)//sum
-     )
-
-
 exteriorPower(2,S_{2}*T_{2}+T_{1})
 toE oo
 toS oo
@@ -2384,9 +2272,11 @@ R = schurRing(QQ,a,10)
 S = schurRing(R,b,10)
 T = schurRing(S,c,10)
 g = a_{1}*b_{1}*c_{1}
-plethysm2({2},g)
+time plethysm2({2},g)
+time plethysm({2},g)
 
-plethysm2({1,1},a_{1}*c_{1})
+time plethysm2({1,1},a_{1}*c_{1})
+time plethysm({1,1},g)
 
 restart
 loadPackage"SchurRings"
@@ -2396,7 +2286,9 @@ m = 20
 time R = symmRing(QQ,n)
 time ple = plethysm(h_5,h_6);
 
-time toS ple;
+time p = toS ple;
+size p
+p
 
 restart
 loadPackage"SchurRings"
@@ -2406,6 +2298,29 @@ time R = symmRing(QQ,n)
 time ple = plethysm(h_5,h_6);
 
 time toS ple;
+
+restart
+loadPackage"SchurRings"
+
+S = schurRing(QQ,s,3,EHPSVariables => {es,hs,ps,s})
+T = schurRing(S,t,2)
+
+symmetricPower(3,S_{1}*1_T)
+exteriorPower(3,T_{1}*S_{1})
+
+exteriorPower(3,S_{1}+T_{1})
+symmetricPower(3,S_{1}+T_{1})
+
+
+exteriorPower(3,S_{1})
+exteriorPower(3,S_{1}*T_{1})
+toH oo
+toE oo
+toP oo
+toS oo
+
+viewHelp symmetricPower 
+
 -- Local Variables:
 -- compile-command: "make -C $M2BUILDDIR/Macaulay2/packages PACKAGES=SchurRings pre-install"
 -- End:
