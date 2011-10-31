@@ -793,7 +793,7 @@ removeNodes = method()
      --         and all edges incident to those nodes.
 removeNodes(Digraph,List) := (G,v) -> (
      v = set v;
-     H = select(pairs graph G, x -> not member(x#0,v));
+     H := select(pairs graph G, x -> not member(x#0,v));
      H = apply(H, x -> (x#0, x#1 - v));
      if instance(G,Graph) then graph H else digraph H
      )
