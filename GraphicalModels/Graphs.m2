@@ -871,6 +871,11 @@ floydWarshall(Digraph) := G -> (
      new HashTable from D
      )
 
+diameter = method()
+     -- Input:  A digraph
+     -- Output:  The diameter of the diagraph, i.e., the length of the longest shortest path
+diameter(Digraph) := G -> max values floydWarshall G          
+
 collateVertices = method()
 collateVertices (MixedGraph) := (g) -> (
     -- Input: A MixedGraph
