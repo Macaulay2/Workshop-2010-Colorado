@@ -47,6 +47,7 @@ export {Graph,
      inducedSubgraph,
      completeGraph,
      cycleGraph,
+     wheelGraph,
      writeDotFile,
      SortedDigraph,
      topSort,
@@ -992,6 +993,12 @@ cycleGraph(ZZ) := n -> (
      graph(new HashTable from G)
      )
   
+wheelGraph = method()
+     -- Input: a positive integer n
+     -- Output: the wheel graph on n nodes labeled 0 through n-1
+wheelGraph(ZZ) := n -> (
+     graph (apply(n-1,i->{0,i+1})|{{1,n-1}}|apply(n-2,i->{i+1,i+2}))
+     )
 
 --------------------
 -- Documentation  --
