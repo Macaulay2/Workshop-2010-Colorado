@@ -33,6 +33,7 @@ export {Graph,
      Singletons,
      vertices,
      edges,
+     adjacent,
      descendents,
      nondescendents,
      parents,
@@ -531,6 +532,11 @@ edges(Bigraph) := G -> (
 	  G#cache#edges = E;
 	  E)
      )
+
+adjacent = method()
+     -- Input: A graph and two vertices u and v
+     -- Output:  Whether or not u and v are adjacent, i.e., whether uv is an edge
+adjacent(Graph,Thing,Thing) := member(u,neighbors(G,v))     
 
 
 descendents = method()
