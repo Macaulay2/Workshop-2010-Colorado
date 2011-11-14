@@ -59,6 +59,7 @@ export {Graph,
      incidenceMatrix,
      reachable,
      floydWarshall,
+     diameter,
      collateVertices
      }
 exportMutable {dotBinary,jpgViewer}
