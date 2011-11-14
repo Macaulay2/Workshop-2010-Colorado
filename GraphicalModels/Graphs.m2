@@ -755,6 +755,8 @@ neighbors(MixedGraph,Thing) := (G,v) -> (
 	       G1.cache#neighbors = new HashTable from h);
 	  n)
      )
+
+degree(Graph,Thing) := (G,v) -> #neighbors(G,v)
 	 
 nonneighbors = method()
      -- Input: A graph and the key for the vertex of interest.
