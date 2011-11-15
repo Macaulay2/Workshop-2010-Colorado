@@ -551,7 +551,8 @@ descendents(Digraph,Thing) := (G,v) -> (
      	  while notDone === true do(
 	       if (toList cC) === {} then notDone = false
 	       else (
-	       	    cC = set flatten apply(toList cC, i -> toList children(G,i));
+		    -- bugfix -- thanks to David W. Cook II for pointing it out!
+	       	    cC = set flatten apply(toList cC, i -> toList children(G,i)) - dE;
 	       	    dE = dE + cC;
 	       	    )
 	       );
