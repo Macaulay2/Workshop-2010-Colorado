@@ -536,7 +536,8 @@ edges(Bigraph) := G -> (
 adjacent = method()
      -- Input: A graph and two vertices u and v
      -- Output:  Whether or not u and v are adjacent, i.e., whether uv is an edge
-adjacent(Graph,Thing,Thing) := member(u,neighbors(G,v))     
+-- thanks to David W. Cook II for pointing out the typo
+adjacent(Graph,Thing,Thing) := (G,u,v) -> member(u,neighbors(G,v))     
 
 
 descendents = method()
