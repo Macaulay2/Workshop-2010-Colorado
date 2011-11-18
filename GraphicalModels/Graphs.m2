@@ -52,8 +52,10 @@ export {Graph,
      writeDotFile,
      SortedDigraph,
      topSort,
+     BFS,
      DFS,
      isCyclic,
+     isBipartite,
      adjacencyMatrix,
      degreeMatrix,
      laplacianMatrix,
@@ -934,6 +936,38 @@ topSort(Digraph) := G -> (
      else error("digraph must be acyclic")
      )     
 
+BFS = method()
+     -- Input: A graph and a vertex s
+     -- Output: the distance from s and parent of each vertex after a breadth-first search
+BFS(Graph,Thing) := (G,s) -> (
+     c := new MutableHashTable; -- color
+     d := new MutableHashTable; -- distance
+     p := new MutableHashTable; -- parent
+     scan(toList(set vertices G - {s}),u->(
+	       c#u = "white";
+	       d#u = infinity;
+	       )
+	  );
+     c#s = "gray";
+     d#s = 0;
+     Q := {s};
+     while #Q > 0 do (
+	  u := first Q;
+	  Q = remove(Q,0);
+	  scan(toList neighbors(G,u),v->(
+		    if c#v == "white" then (
+			 c#v = "gray";
+			 d#v = d#u + 1;
+			 p#v = u;
+			 Q = Q|{v}
+			 )
+		    )
+	       );
+	  c#u = "black"
+	  );
+     hashTable{"distance"=>new HashTable from d,"parent"=>new HashTable from p}
+     )     
+
 DFS = method()
      -- Input: A digraph
      -- Output: the discovery and finishing times for each vertex after a depth-first search
@@ -980,6 +1014,15 @@ isCyclic(Digraph) := G -> (
      	  )
      )
 
+isBipartite = method()
+     -- Input:  A graph
+     -- Output:  Whether the graph is bipartite
+isBipartite(Graph) := G -> (
+     d := (BFS(G,first vertices G))#"distance";
+     p := hashTable apply(keys d,v->v => d#v % 2);
+     not any(vertices G,v->member(p#v,apply(toList neighbors(G,v),u->p#u)))    
+     )     
+
 -------------------
 -- Common Graphs --
 -------------------
@@ -995,6 +1038,14 @@ completeGraph(ZZ) := n -> (
       apply(L, i-> G#i =  set L - set {i});
       graph(new HashTable from G)
       )   
+
+     -- Input: A list of positive integers n_1,...,n_k 
+     -- Output: the complete k-partite graph with n_1 + ... + n_k vertices
+completeGraph(List) := L -> (
+     k := -1;
+     p := hashTable flatten apply(#L,i->apply(L_i,j->(k = k + 1; k => i)));
+     graph hashTable apply(sum L,v->v=>set select(keys p,u->p#u != p#v))     
+     )
 
 cycleGraph = method()
      -- Input: a positive integer n
