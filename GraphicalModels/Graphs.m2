@@ -11,7 +11,8 @@
 newPackage("Graphs",
      Authors => {
 	  {Name => "Amelia Taylor", Email => "originalbrickhouse@gmail.com"},
-	  {Name => "Augustine O'Keefe", Email => "aokeefe@tulane.edu"}
+	  {Name => "Augustine O'Keefe", Email => "aokeefe@tulane.edu"},
+	  {Name => "Douglas A. Torrance", Email => "torrance@vandals.uidaho.edu"}
 	  },
      ---- Also Doug Torrance.  --- clearly a current author.  Current role of Amelia and Tina?
      ---- Shaowei Lin and Alex Diaz contributed mixedGraph
@@ -56,6 +57,7 @@ export {Graph,
      DFS,
      isCyclic,
      isBipartite,
+     connectedComponents,
      adjacencyMatrix,
      degreeMatrix,
      laplacianMatrix,
@@ -63,7 +65,10 @@ export {Graph,
      reachable,
      floydWarshall,
      diameter,
-     collateVertices
+     collateVertices,
+     indexGraph,
+     graphUnion,
+     disjointGraphUnion
      }
 exportMutable {dotBinary,jpgViewer}
 
@@ -908,6 +913,51 @@ collateVertices (MixedGraph) := (g) -> (
     bb := bigraph(new HashTable from hh);
     mixedGraph(gg,dd,bb))
 
+indexGraph = method()
+     -- Input: A graph or digraph
+     -- Output: Replace the vertices with indices, offset by an integer if desired
+indexGraph(Digraph) := G -> indexGraph(G,0)
+
+indexGraph(Digraph,ZZ) := (G,n) -> (
+     V := vertices G;
+     I := hashTable apply(#V,i->{V_i,i+n});
+     H := hashTable apply(V,v->{I#v,set apply(toList children(G,v),u->I#u)});
+     if instance(G,Graph) then graph H else digraph H
+     )
+
+graphUnion = method(Dispatch=>Thing)
+     -- Input: A list or sequence of graphs or digraphs
+     -- Output: The union of all the graphs or digraphs (note that if the vertex sets are not disjoint, then each vertex will appear only once)
+graphUnion(List) := L -> (
+     if any(L,G->not instance(G,Digraph)) then error "expected graphs or digraphs";
+     H := new MutableHashTable;
+     scan(L,G->scan(vertices G,v->(
+		    if H#?v then H#v = H#v + children(G,v)
+		    else H#v = children(G,v)
+		    )
+	       )
+	  );
+     H = new HashTable from H;
+     if all(L,G->instance(G,Graph)) then graph H else digraph H
+     )
+graphUnion(Sequence) := S -> graphUnion toList S
+
+disjointGraphUnion = method(Dispatch=>Thing)
+      -- Input: A list or sequence of graphs or digraphs
+      -- Output: The union of all the graphs or digraphs (first reindexes the graphs to guarantee the vertex sets are disjoint)
+disjointGraphUnion(List) := L -> graphUnion apply(#L,i->indexGraph(L_i,sum apply(i,j->#vertices L_j)))
+disjointGraphUnion(Sequence) := S -> disjointGraphUnion toList S      
+
+       
+
+ZZ*Digraph := (n,G) -> (
+     -- Input: A positive integer and a graph or digraph
+     -- Output: The disjoint union of that graph or digraph with itself n times
+     if n < 1 then error "expected a positive integer";
+     disjointGraphUnion apply(n,i->G)
+     )
+     
+
 ----------------------
 -- Topological Sort --
 ----------------------
@@ -1018,10 +1068,31 @@ isBipartite = method()
      -- Input:  A graph
      -- Output:  Whether the graph is bipartite
 isBipartite(Graph) := G -> (
-     d := (BFS(G,first vertices G))#"distance";
-     p := hashTable apply(keys d,v->v => d#v % 2);
-     not any(vertices G,v->member(p#v,apply(toList neighbors(G,v),u->p#u)))    
-     )     
+     C := connectedComponents G;
+     if #C == 1 then (
+     	  d := (BFS(G,first vertices G))#"distance";
+	  p := hashTable apply(keys d,v->v => d#v % 2);
+	  not any(vertices G,v->member(p#v,apply(toList neighbors(G,v),u->p#u)))    
+	  )
+     else all(C,isBipartite)
+     )
+
+
+connectedComponents = method()
+     -- Input: A graph
+     -- Output:  A list of the connected components of the graph     
+connectedComponents(Graph) := G -> (
+     V := vertices G;
+     componentVertices := {};
+     while #V > 0 do (
+     	  v := first V;
+	  d := (BFS(G,v))#"distance";
+	  V' := select(keys d,v->d#v < infinity);
+	  componentVertices = componentVertices|{V'};
+	  V = V - set V'
+	  );
+     apply(componentVertices,V->inducedSubgraph(G,V))
+     )
 
 -------------------
 -- Common Graphs --
@@ -1429,15 +1500,15 @@ doc ///
 	      M:Matrix
          Description
             Text
- 	      The (i,j)-entry of the adjacency matrix is 1 if there exists an arc or edge connected the ith vertex to the jth vertex and 0 otherwise.
+ 	      The (i,j)-entry of the adjacency matrix is 1 if there exists an arc or edge connecting the ith vertex to the jth vertex and 0 otherwise.
             Example
 	    	 adjacencyMatrix completeGraph 5
       ///
       
 doc ///
          Key
-	      (showTikZ,Digraph)
 	      showTikZ
+	      (showTikZ,Digraph)
          Headline
 	      outputs TikZ syntax for displaying a graph or digraph in TeX
          Usage
@@ -1449,23 +1520,297 @@ doc ///
 	      	    TikZ syntax which can be pasted into a .tex file to display G
          Description
             Text
-	    	 showTikZ requires the external program dot2tex, available at http://www.fauskes.net/code/dot2tex/.
+	    	 showTikZ requires the external program @HREF {"http://www.fauskes.net/code/dot2tex/","dot2tex"}@.
 		 
 		 The following code gives TikZ syntax for the complete graph K_5.
-            Text
+            Example
      	       	 showTikZ completeGraph 5
+      ///
+
+doc ///
+         Key
+	      degreeMatrix
+	      (degreeMatrix,Graph)
+         Headline
+	      Computes the degree matrix of a graph
+         Usage
+	      M = degreeMatrix(G)
+         Inputs
+	      G:Graph
+         Outputs
+	      M:Matrix
+         Description
+            Text
+ 	      The (i,j)-entry of the degree matrix is the degree of the ith vertex if i = j and 0 otherwise
+            Example
+	    	 degreeMatrix completeGraph 5
       ///
       
 doc ///
-        Key
-	     [showTikZ,Options]
-        Headline
-	     a string which is passed to dot2tex.  Defaults to "-t math --prog=dot -f tikz --figonly".  Run "dot2tex --help" for all possibilties.
-        Usage
-	     foo
-	Inputs
-	     S:String     
+         Key
+     	       (degree,Graph,Thing)	     	  
+         Headline
+	      The degree of a vertex of a graph
+         Usage
+	      d = degree(G,v)
+         Inputs
+	      G:Graph
+	      v:Thing
+         Outputs
+	      d:ZZ
+         Description
+            Text
+ 	      The degree of a vertex is the number of other vertices that are adjacent to it, i.e., there exists an edge connecting them.
+            Example
+	    	 G = completeGraph 5
+		 degree(G,0)
+      ///
+
+doc ///
+         Key
+	      adjacent
+	      (adjacent,Graph,Thing,Thing)
+         Headline
+	      Whether two vertices are adjacent
+         Usage
+	      adjacent(G,u,v)
+         Inputs
+	      G:Graph
+	      u:Thing
+	      v:Thing
+         Outputs
+	      :Boolean
+         Description
+            Text
+ 	      Two vertices are adjacent if there is an edge connecting them
+            Example
+	    	 G = completeGraph 5
+		 adjacent(G,0,1)
+      ///      
+      
+doc ///
+         Key
+	      BFS
+	      (BFS,Graph,Thing)
+         Headline
+	      Perform a breadth-first search of a graph.
+         Usage
+	      BFS(G,v)
+         Inputs
+	      G:Graph
+	      v:Thing
+     	 Outputs
+	      H:HashTable
+         Description
+            Text
+	    	 This function performs a breadth-first search of a graph starting at a given vertex v.  A hash table H is returned with two keys, "distance" and "parent".  H#"distance" gives the distance from the given vertex to v and H#"parent" the vertex visited before the given vertex during the breadth-first search
+            Example
+	    	 G = wheelGraph 5
+		 BFS(G,1)
+      ///      
+      
+doc ///
+         Key
+	      completeGraph
+	      (completeGraph,ZZ)
+	      (completeGraph,List)
+         Headline
+	      Returns a complete graph or complete k-partite graph
+         Usage
+	      completeGraph n
+	      completeGraph L
+         Inputs
+	      n:ZZ
+	      L:List
+     	 Outputs
+	      :Graph
+         Description
+            Text
+	    	 completeGraph n returns K_n, the graph with n vertices and all possible edges.
+            Example
+	    	 completeGraph 5
+	    Text
+	    	 completeGraph \{n_1,...,n_k\}  returns the graph with n_1+...+n_k vertices which can be divided into k disjoint sets V_1,...,V_k (such that V_i contains n_i vertices) such that, if u is in V_i and v is in V_j, then uv is an edge if and only if i != j.
+	    Example
+	    	 completeGraph {2,2}
+      ///      
+      
+      
+      
+doc ///
+         Key
+     	       cycleGraph
+     	       (cycleGraph,ZZ)
+         Headline
+	      Returns the cycle graph on n vertices.
+         Usage
+	      cycleGraph n
+         Inputs
+	      n:ZZ
+     	 Outputs
+	      :Graph
+         Description
+            Text
+	    	 Returns the cycle graph on n vertices.
+            Example
+	    	 cycleGraph 5
+      ///      
+      
+      
+doc ///
+     Key
+     	  graphUnion
+	  (graphUnion,List)
+	  (graphUnion,Sequence)
+     Headline
+     	  Finds the union of all graphs or digraphs in a list or sequence.
+     Usage
+     	  graphUnion L
+     Inputs
+     	  L:List
+	       or @ofClass Sequence@ of graphs or digraphs
+     Outputs
+     	  :Graph
+	       or @ofClass Digraph@
+     Description
+     	  Text
+     	       Finds the union of all graphs or digraphs in the given list or sequence.  The union is defined as the graph whose vertex set is the union of all the vertex sets of the given graphs and whose edge set is the union of all the edge sets of the given graphs.  Note that if a given vertex or edge appears in more than one graph, then it will only show up once in the union.  To avoid this, i.e., force the vertex sets to be disjoint, use the method @TO disjointGraphUnion@.
+	  Example
+	       G = graph {{0,1},{0,2},{1,2}}
+	       H = graph {{a,b},{a,c},{b,c}}
+	       graphUnion(G,H)
+	       graphUnion(G,G)
+	  Text
+	       If at least one of the elements of the list or sequence is a digraph, then a digraph will be returned.
+	  Example
+	       G = graph {{0,1},{0,2},{1,2}}
+	       H = digraph {{a,b},{a,c},{b,c}}
+	       graphUnion(G,H)
      ///
+     
+doc ///
+     Key
+     	  disjointGraphUnion
+	  (disjointGraphUnion,List)
+	  (disjointGraphUnion,Sequence)
+     Headline
+     	  Finds the union of all graphs or digraphs in a list or sequence, reindexing to guarantee disjoint vertex sets.  
+     Usage
+     	  disjointGraphUnion L
+     Inputs
+     	  L:List 
+	       or @ofClass Sequence@ of graphs or digraphs
+     Outputs
+     	  :Graph
+	       or @ofClass Digraph@
+     Description
+     	  Text
+     	       Finds the union of all graphs or digraphs in the given list or sequence.  The graphs are relabeled using @TO indexGraph@ to guarantee that the vertex sets are disjoint.  If you do not want to relabel the vertices, use @TO graphUnion@.
+	  Example
+	       G = graph {{0,1},{0,2},{1,2}}
+	       H = graph {{a,b},{a,c},{b,c}}
+	       disjointGraphUnion(G,H)
+	       disjointGraphUnion(G,G)
+	  Text
+	       If at least one of the elements of the list or sequence is a digraph, then a digraph will be returned.
+	  Example
+	       G = graph {{0,1},{0,2},{1,2}}
+	       H = digraph {{a,b},{a,c},{b,c}}
+	       disjointGraphUnion(G,H)
+     ///
+
+doc  ///
+     Key
+     	  (symbol *,ZZ,Digraph)
+     Headline
+     	  Multiply a positive integer times a graph or digraph
+     Usage
+     	  n*G
+     Inputs
+     	  n:ZZ
+     	  G:Digraph
+	      or @ofClass Digraph@
+     Outputs
+     	  :Graph
+	       or @ofClass Digraph@
+     Description
+     	  Text
+     	       Finds the disjoint union of n copies of a given graph or digraph.  Note that the vertices are relabeled so that the vertex sets are disjoint before taking the union.
+	  Example
+	       2*completeGraph 2
+     ///
+     	  
+doc ///
+         Key
+	      indexGraph
+	      (indexGraph,Digraph)
+	      (indexGraph,Digraph,ZZ)
+         Headline
+	      Relabels the vertices of a graph or digraph with the indices of the vertices starting at a given integer
+         Usage
+	      indexGraph G
+	      indexGraph(G,n)
+         Inputs
+	      G:Digraph
+	      n:ZZ
+     	 Outputs
+	      :Digraph
+         Description
+            Text
+     	       Relabels the vertices of a graph or digraph with the indices of the vertices starting at a given integer.  If no integer is given, the default is 0.
+            Example
+	       G = graph {{a,b},{a,c},{b,c}}
+	       indexGraph G
+	       indexGraph(G,5)
+    ///      
+	  
+doc ///
+         Key
+	      connectedComponents
+	      (connectedComponents,Graph)
+      	 Headline
+	      Returns a list of the connected components of a graph
+         Usage
+	      connectedComponents G
+         Inputs
+	      G:Graph
+     	 Outputs
+	      :List
+         Description
+            Text
+     	       A connected graph is a graph in which for any two vertices, there exists a path between them.  A connected component of a graph is an induced subgraph which is connected and if any other vertices are added, the result will not be connected.  This method returns a list containing all the connected components of the graph.  If a graph is already connected, then this list will contain a single element.
+            Example
+	       G = 2*completeGraph 2
+	       connectedComponents G
+    ///      
+	  
+doc ///
+         Key
+	      DFS
+	      (DFS,Digraph)
+      	 Headline
+	      Perform a depth-first search on a graph or digraph.
+         Usage
+	      DFS G
+         Inputs
+	      G:Digraph
+     	 Outputs
+	      H:HashTable
+         Description
+            Text
+     	       This method returns a hash table H with two keys, "discoveryTime" and "finishingTime".  H#"discoveryTime" is a hash table whose keys are the vertices of G and whose values are the discovery times of each vertex after a depth-first search.  H#"finishingTime" is the same, except with finishing times.
+            Example
+	       G = completeGraph 5
+	       DFS G
+    ///      
+	  
+	  
+	        
+      
+            
+
+
+
 
 TEST /// ---- family members, neighbors and non-neighbors. 
 G = graph({{a,b},{b,c},{a,c},{c,d}}, Singletons => {e})
@@ -1481,6 +1826,7 @@ assert(foreFathers(H,c) === set {a,b})
 ///
 
 end
+
 
 
 
