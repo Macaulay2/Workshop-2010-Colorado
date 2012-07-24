@@ -86,9 +86,9 @@ GrassmannCayleyAlgebra =  method(
      TypicalValue => Ring, 
      Options => { 
 	  CoefficientRing => ZZ, 
-	  PointName => symbol a,
-	  BasisChoice => symbol e,
-	  PluckerVariable => symbol p
+	  PointName => getSymbol "a",
+	  BasisChoice => getSymbol "e",
+	  PluckerVariable => getSymbol "p"
 	  });
 
 GrassmannCayleyAlgebra (ZZ,ZZ) := o -> (d,n) -> (
@@ -467,7 +467,7 @@ polynomialRing = method(
      TypicalValue => PolynomialRing, 
      Options => { 
 	  CoefficientRing => ZZ, 
-	  Variable => symbol p
+	  Variable => getSymbol "p"
 	  });
 
 polynomialRing(ZZ,ZZ) := o -> (k, n) -> (
